@@ -104,11 +104,24 @@ for f in "${LLM_IMPORT_FILES[@]+"${LLM_IMPORT_FILES[@]}"}"; do
 done
 
 # Source-level scan: find JS/MJS files that import known LLM packages, then flag unsafe string concat into prompt variables.
-LLM_JS_FILES=()
-while IFS= read -r f; do LLM_JS_FILES+=("$f"); done < <(grep -rlE "(require|from)[[:space:]]*['\"]((openai|@anthropic-ai\/sdk|anthropic|langchain|@langchain))" \
+LLM_JS_IMPORT_FILES=()
+while IFS= read -r f; do LLM_JS_IMPORT_FILES+=("$f"); done < <(grep -rlE "(require|from)[[:space:]]*['\"]((openai|@anthropic-ai\/sdk|anthropic|langchain|@langchain))" \
   --include="*.js" --include="*.mjs" \
   --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist \
   . 2>/dev/null || true)
+# Content-based detection for AI SDKs not using openai/anthropic imports (e.g. proprietary/custom wrappers).
+LLM_JS_FILES=()
+while IFS= read -r f; do LLM_JS_FILES+=("$f"); done < <(
+  { printf "%s\n" "${LLM_JS_IMPORT_FILES[@]+"${LLM_JS_IMPORT_FILES[@]}"}"; \
+    grep -rl \
+      -e "systemPrompt" -e "assembleSystemPrompt" -e "buildSystemPrompt" -e "constructPrompt" \
+      -e "promptTemplate" -e "buildPrompt" -e "assemblePrompt" \
+      -e "chat\.completions" -e "generateContent" -e "invokeModel" \
+      --include="*.js" --include="*.mjs" --include="*.ts" \
+      . 2>/dev/null \
+      | grep -v "/node_modules/" | grep -v "/dist/" | grep -v "/tests/artifacts/" || true; \
+  } | sort -u | grep .
+)
 for f in "${LLM_JS_FILES[@]+"${LLM_JS_FILES[@]}"}"; do
   while IFS=: read -r file line rest; do
     # Skip lines with a karen-ignore comment.
@@ -120,13 +133,12 @@ done
 
 # Context-file declaration check for prompt injection policy.
 # Requires actual security policy language, not just architectural mentions of injection.
-# Pattern anchors on: sanitize/escape + (before|user|input|untrusted/external) co-occurrence,
-# or explicit "prompt inject" / "treat.*adversar" / "never raw user input" phrasing.
+# Bounded span (150 chars) prevents false pass across unrelated sentences; perl -0777 slurps whole file.
+# Explicit multi-pattern OR covers: sanitize/escape near untrusted/input/prompt, prompt inject phrases, treat-adversar, never-raw-input.
 INJECTION_POLICY_FOUND=0
 for f in CLAUDE.md AGENTS.md .cursorrules; do
-  if [ -f "$f" ] && grep -qiE \
-    '(sanitiz|sanitise|escap)[a-z]* (before|all|user|input|untrusted|external)|(untrusted|external|user).*(input|content).*(sanitiz|escap|validate)|(sanitiz|escap|validate).*(untrusted|external|user|input|prompt)|prompt.inject|inject.*polic|treat.*adversar|never.*(raw|inject).*(user|input|prompt)|(sanitiz|escap|validate) before (inject|insert|use|build|concatenat|append)' \
-    "$f" 2>/dev/null; then
+  if [ ! -f "$f" ]; then continue; fi
+  if perl -0777 -ne 'exit 0 if /(?:sanitiz|sanitise|escap|validate).{0,150}(?:untrusted|external|user.?input|prompt)/is; exit 0 if /prompt.inject|inject.*polic|treat.*adversar|never.{0,40}(?:raw|inject).{0,40}(?:user|input|prompt)/is; exit 1' "$f" 2>/dev/null; then
     INJECTION_POLICY_FOUND=1; break
   fi
 done

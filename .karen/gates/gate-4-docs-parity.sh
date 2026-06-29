@@ -31,11 +31,11 @@ fi
 if find . -name "*.go" -not -name "*_test.go" -not -path "./.git/*" 2>/dev/null | grep -q .; then
   # Collect all doc files into a temp file for efficient multi-symbol lookup.
   DOCS_TMP=$(mktemp)
-  # shellcheck disable=SC2064  # variable set here intentionally captured
-  trap "rm -f '$DOCS_TMP'; _ec=$?; if [ \"\$SUMMARY_EMITTED\" -eq 0 ]; then printf 'GATE_CRASH:0\tgate crashed (exit %s)\n' \"\$_ec\"; echo 'FAIL (1 issues)'; fi" EXIT
+  # shellcheck disable=SC2064  # intentional: capture DOCS_TMP at trap registration time
+  trap "_ec=\$?; rm -f '$DOCS_TMP'; if [ \"\$SUMMARY_EMITTED\" -eq 0 ]; then printf 'GATE_CRASH:0\tgate crashed (exit %s)\n' \"\$_ec\"; echo 'FAIL (1 issues)'; fi" EXIT
   {
     cat README.md 2>/dev/null || true
-    find . -path './docs/*.md' -o -path './docs/**/*.md' 2>/dev/null | while IFS= read -r mdf; do
+    find ./docs -name '*.md' 2>/dev/null | while IFS= read -r mdf; do
       cat "$mdf" 2>/dev/null || true
     done
   } > "$DOCS_TMP"
@@ -74,10 +74,87 @@ if find . -name "*.go" -not -name "*_test.go" -not -path "./.git/*" 2>/dev/null 
     | grep -v '_test.go' | grep -v '.git' | head -100 || true)
 fi
 
+# --- CHECK 2b: JS exported-symbol coverage — analog of Go exported func/type check ---
+# For non-Go projects, verify exported JS/MJS public API symbols appear in documentation.
+# Scope: only symbols listed in .karen.json "docs.publicApiSymbols" (allowlist mode), OR
+#        when no allowlist is set, only symbols from files matching "docs.publicApiFiles"
+#        globs (e.g. ["src/index.js","src/api.js"]).  If neither is configured the check
+#        is skipped — scanning every export without an explicit public-API boundary
+#        produces false positives for internal helpers and erodes gate trust.
+if [ ! -f go.mod ]; then
+  JS_SRC=""
+  for d in src lib sdk/src; do
+    [ -d "$ROOT/$d" ] && JS_SRC="$ROOT/$d" && break
+  done
+
+  if [ -n "$JS_SRC" ] && [ -f "$ROOT/.karen.json" ]; then
+    # Read public API config (jq preferred; skip check entirely on fallback failure).
+    JS_PUBLIC_SYMBOLS=""
+    JS_PUBLIC_FILES=""
+    if command -v jq &>/dev/null; then
+      JS_PUBLIC_SYMBOLS=$(jq -r '(.docs.publicApiSymbols // [])[]' "$ROOT/.karen.json" 2>/dev/null || true)
+      JS_PUBLIC_FILES=$(jq -r '(.docs.publicApiFiles // [])[]' "$ROOT/.karen.json" 2>/dev/null || true)
+    fi
+
+    # Only run the check when the project has explicitly declared its public surface.
+    if [ -n "$JS_PUBLIC_SYMBOLS" ] || [ -n "$JS_PUBLIC_FILES" ]; then
+      DOC_TMP=$(mktemp)
+      find "$ROOT" -maxdepth 3 -name "*.md" ! -path "*/node_modules/*" ! -path "*/.git/*" \
+        -exec cat {} \; > "$DOC_TMP" 2>/dev/null
+
+      if [ -n "$JS_PUBLIC_SYMBOLS" ]; then
+        # Allowlist mode: check only the symbols explicitly declared as public API.
+        while IFS= read -r jssym; do
+          [ -z "$jssym" ] && continue
+          if ! grep -q "$jssym" "$DOC_TMP" 2>/dev/null; then
+            printf '%s:0\tJS public API symbol %s (declared in .karen.json) not found in any documentation file\n' "$JS_SRC" "$jssym"
+            ISSUES=$((ISSUES+1))
+          fi
+        done <<< "$JS_PUBLIC_SYMBOLS"
+      elif [ -n "$JS_PUBLIC_FILES" ]; then
+        # File-scope mode: check exports only from explicitly declared public-API files.
+        while IFS= read -r api_file; do
+          [ -z "$api_file" ] && continue
+          full_path="$ROOT/$api_file"
+          [ -f "$full_path" ] || continue
+          while IFS= read -r jssym; do
+            [ -z "$jssym" ] && continue
+            [ "${#jssym}" -le 1 ] && continue
+            [ "$jssym" = "default" ] && continue
+            if ! grep -q "$jssym" "$DOC_TMP" 2>/dev/null; then
+              printf '%s:0\tJS exported symbol %s (from public API file %s) not found in any documentation file\n' "$JS_SRC" "$jssym" "$api_file"
+              ISSUES=$((ISSUES+1))
+            fi
+          done < <(grep -h "^export " "$full_path" 2>/dev/null \
+            | sed "s/export async /export /" | sed "s/export //" \
+            | grep -oE "^(function|class|const|let) [A-Za-z][A-Za-z0-9_]*" \
+            | awk '{print $2}' | sort -u || true)
+        done <<< "$JS_PUBLIC_FILES"
+      fi
+
+      rm -f "$DOC_TMP"
+    fi
+    # If neither publicApiSymbols nor publicApiFiles is configured, skip silently.
+    # Add one of these to .karen.json to enable JS symbol coverage checking.
+  fi
+fi
+
 # --- CHECK 3: Dead links ---
 # Find all internal markdown links and verify the targets exist.
-# Uses perl to extract capture groups correctly on BSD grep (macOS).
+# Prefer perl for correct multi-match-per-line extraction; fall back to grep+sed on
+# systems where perl is absent (hardened CI, macOS Sequoia+ minimal images).
+_extract_md_links() {
+  local mdfile="$1"
+  if command -v perl &>/dev/null; then
+    perl -ne 'while (/\]\(([^)]+)\)/g) { print "$1\n" }' "$mdfile" 2>/dev/null || true
+  else
+    # Pure-bash fallback: one link per line covered; multi-link lines may miss extras.
+    grep -oE '\]\([^)]+\)' "$mdfile" 2>/dev/null | sed 's/^](\(.*\))$/\1/' || true
+  fi
+}
+
 while IFS= read -r mdfile; do
+  [ -f "$mdfile" ] || continue
   while IFS= read -r link; do
     # Strip query strings and anchors.
     target=$(printf '%s' "$link" | sed 's/#.*//' | sed 's/?.*$//')
@@ -93,10 +170,10 @@ while IFS= read -r mdfile; do
       printf '%s:0\tdead link: "%s" does not exist\n' "$mdfile" "$link"
       ISSUES=$((ISSUES+1))
     fi
-  done < <(perl -ne 'while (/\]\(([^)]+)\)/g) { print "$1\n" }' "$mdfile" 2>/dev/null \
+  done < <(_extract_md_links "$mdfile" \
     | grep -v '^https\?://' | grep -v '^http://' | grep -v '^mailto:' | grep -v '^#' || true)
-done < <(find . \( -name "README.md" -o -path './docs/*.md' -o -path './docs/**/*.md' \) \
-  -not -path './.git/*' -not -path '*/node_modules/*' -not -path '*/vendor/*' 2>/dev/null || true)
+done < <({ find . -maxdepth 1 -name "README.md" 2>/dev/null; find ./docs -name '*.md' 2>/dev/null; } \
+  | grep -v './.git/' | grep -v '/node_modules/' | grep -v '/vendor/' | sort -u || true)
 
 # --- CHECK 4: CHANGELOG gaps ---
 # If git is available, detect commits since last release tag not reflected in CHANGELOG.
@@ -143,8 +220,8 @@ fi
 
 if [ -n "$DOCTEST_FILES" ]; then
   TMPDIR_DOCTEST=$(mktemp -d)
-  # shellcheck disable=SC2064  # variable set here intentionally captured
-  trap "rm -rf '$TMPDIR_DOCTEST'; rm -f '${DOCS_TMP:-}'; _ec=$?; if [ \"\$SUMMARY_EMITTED\" -eq 0 ]; then printf 'GATE_CRASH:0\tgate crashed (exit %s)\n' \"\$_ec\"; echo 'FAIL (1 issues)'; fi" EXIT
+  # shellcheck disable=SC2064  # intentional: capture paths at trap registration time
+  trap "_ec=\$?; rm -rf '$TMPDIR_DOCTEST'; rm -f '${DOCS_TMP:-}'; if [ \"\$SUMMARY_EMITTED\" -eq 0 ]; then printf 'GATE_CRASH:0\tgate crashed (exit %s)\n' \"\$_ec\"; echo 'FAIL (1 issues)'; fi" EXIT
 
   while IFS= read -r glob_pattern; do
     [ -z "$glob_pattern" ] && continue

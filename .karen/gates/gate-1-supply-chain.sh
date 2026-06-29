@@ -30,6 +30,10 @@ if [ -f go.mod ] && command -v go &>/dev/null; then
         fi
       done <<< "$VULN_OUT"
     fi
+  else
+    # Advisory warning only — missing govulncheck disables CVE scanning but must not
+    # fail the gate. A project without govulncheck in PATH should not be blocked.
+    printf 'WARN:go.mod:0\tgovulncheck not found; Go CVE scanning disabled. Install: go install golang.org/x/vuln/cmd/govulncheck@latest\n'
   fi
 fi
 
@@ -70,7 +74,8 @@ except Exception:
         ISSUES=$((ISSUES+1))
       done <<< "$vuln_names"
     fi
-  done < <(find "$ROOT" -maxdepth 2 -name "package-lock.json" ! -path "*/node_modules/*" ! -path "*/.git/*" 2>/dev/null)
+  # depth 4 covers monorepo lockfiles at apps/<name>/package-lock.json
+  done < <(find "$ROOT" -maxdepth 4 -name "package-lock.json" ! -path "*/node_modules/*" ! -path "*/.git/*" 2>/dev/null)
 fi
 
 SUMMARY_EMITTED=1

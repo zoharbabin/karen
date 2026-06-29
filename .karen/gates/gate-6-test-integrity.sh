@@ -89,39 +89,107 @@ if [ -z "$TEST_PKG_DIR" ]; then
   exit 0
 fi
 
-# Run JS tests
+# Enforce coverage threshold for JS projects (Go uses go test -cover).
+# Run tests exactly once: either via c8 (which invokes node --test internally),
+# via Node v22+ --experimental-test-coverage, or via npm test as a last resort.
+# Never re-run tests after a coverage pass — that would double execution time and
+# risk stateful side-effects.
+THRESHOLD=$(jq -r ".coverage.threshold // 80" "$ROOT/.karen.json" 2>/dev/null || echo "80")
 TMPLOG="/tmp/karen-js-test-$$"
 cd "$TEST_PKG_DIR"
-set +e
-npm test 2>&1 | tee "$TMPLOG"
-TEST_EXIT=${PIPESTATUS[0]}
-set -e
-cd "$ROOT"
 
-if [ "$TEST_EXIT" -ne 0 ]; then
-  # Parse TAP "not ok" lines, cap at 20
-  TAP_COUNT=0
-  while IFS= read -r line; do
-    if [ "$TAP_COUNT" -ge 20 ]; then break; fi
-    # Strip leading/trailing whitespace for matching
-    trimmed=$(echo "$line" | sed 's/^[[:space:]]*//')
-    case "$trimmed" in
-      "not ok"*)
-        # Extract description after "not ok N " or "not ok "
-        desc=$(echo "$trimmed" | sed -E 's/^not ok[[:space:]]+[0-9]+[[:space:]]*//' | sed 's/^not ok //')
-        printf 'package.json:0\ttest failed — %s\n' "$desc"
-        ISSUES=$((ISSUES+1))
-        TAP_COUNT=$((TAP_COUNT+1))
-        ;;
-    esac
-  done < "$TMPLOG"
-  # If no TAP "not ok" lines parsed but tests still failed, emit a generic issue
-  if [ "$TAP_COUNT" -eq 0 ]; then
-    printf 'package.json:0\ttest suite failed — fix failing tests before proceeding\n'
+if command -v c8 >/dev/null 2>&1; then
+  # c8 runs node --test with V8 coverage in a single pass — no separate npm test needed.
+  set +e
+  c8 --check-coverage --lines "$THRESHOLD" --functions "$THRESHOLD" --branches "$THRESHOLD" \
+    node --test 2>&1 | tee "$TMPLOG"
+  C8_EXIT=${PIPESTATUS[0]}
+  set -e
+  if [ "$C8_EXIT" -ne 0 ]; then
+    # Parse TAP "not ok" lines for test failures, cap at 20.
+    TAP_COUNT=0
+    while IFS= read -r line; do
+      [ "$TAP_COUNT" -ge 20 ] && break
+      trimmed=$(echo "$line" | sed 's/^[[:space:]]*//')
+      case "$trimmed" in
+        "not ok"*)
+          desc=$(echo "$trimmed" | sed -E 's/^not ok[[:space:]]+[0-9]+[[:space:]]*//' | sed 's/^not ok //')
+          printf 'package.json:0\ttest failed — %s\n' "$desc"
+          ISSUES=$((ISSUES+1))
+          TAP_COUNT=$((TAP_COUNT+1))
+          ;;
+      esac
+    done < "$TMPLOG"
+    # If no TAP failures parsed but exit was non-zero, it may be a coverage threshold miss.
+    if [ "$TAP_COUNT" -eq 0 ]; then
+      printf 'package.json:0\tJS test coverage below threshold %s%%\n' "${THRESHOLD}"
+      ISSUES=$((ISSUES+1))
+    fi
+  fi
+else
+  NODE_MAJ=$(node --version 2>/dev/null | sed 's/v//' | cut -d. -f1)
+  if [ -n "$NODE_MAJ" ] && [ "$NODE_MAJ" -ge 22 ] 2>/dev/null; then
+    # Node v22+ has built-in coverage; runs tests and collects coverage in one pass.
+    set +e
+    node --experimental-test-coverage --test 2>&1 | tee "$TMPLOG"
+    NODE_EXIT=${PIPESTATUS[0]}
+    set -e
+    if [ "$NODE_EXIT" -ne 0 ]; then
+      TAP_COUNT=0
+      while IFS= read -r line; do
+        [ "$TAP_COUNT" -ge 20 ] && break
+        trimmed=$(echo "$line" | sed 's/^[[:space:]]*//')
+        case "$trimmed" in
+          "not ok"*)
+            desc=$(echo "$trimmed" | sed -E 's/^not ok[[:space:]]+[0-9]+[[:space:]]*//' | sed 's/^not ok //')
+            printf 'package.json:0\ttest failed — %s\n' "$desc"
+            ISSUES=$((ISSUES+1))
+            TAP_COUNT=$((TAP_COUNT+1))
+            ;;
+        esac
+      done < "$TMPLOG"
+      [ "$TAP_COUNT" -eq 0 ] && { printf 'package.json:0\ttest suite failed — fix failing tests before proceeding\n'; ISSUES=$((ISSUES+1)); }
+    fi
+    # Parse coverage summary from output.
+    ALL_LINE=$(grep -iE "^all files" "$TMPLOG" | tail -1 || true)
+    if [ -n "$ALL_LINE" ]; then
+      COV_PCT=$(echo "$ALL_LINE" | grep -oE '[0-9]+\.[0-9]+' | head -1)
+      if [ -n "$COV_PCT" ]; then
+        INT_COV=$(echo "$COV_PCT" | cut -d. -f1)
+        if [ "$INT_COV" -lt "$THRESHOLD" ] 2>/dev/null; then
+          printf 'package.json:0\tJS test coverage %s%% is below %s%% threshold\n' "$COV_PCT" "${THRESHOLD}"
+          ISSUES=$((ISSUES+1))
+        fi
+      fi
+    fi
+  else
+    # No coverage tool available — run npm test once for pass/fail, warn on coverage.
+    set +e
+    npm test 2>&1 | tee "$TMPLOG"
+    TEST_EXIT=${PIPESTATUS[0]}
+    set -e
+    if [ "$TEST_EXIT" -ne 0 ]; then
+      TAP_COUNT=0
+      while IFS= read -r line; do
+        [ "$TAP_COUNT" -ge 20 ] && break
+        trimmed=$(echo "$line" | sed 's/^[[:space:]]*//')
+        case "$trimmed" in
+          "not ok"*)
+            desc=$(echo "$trimmed" | sed -E 's/^not ok[[:space:]]+[0-9]+[[:space:]]*//' | sed 's/^not ok //')
+            printf 'package.json:0\ttest failed — %s\n' "$desc"
+            ISSUES=$((ISSUES+1))
+            TAP_COUNT=$((TAP_COUNT+1))
+            ;;
+        esac
+      done < "$TMPLOG"
+      [ "$TAP_COUNT" -eq 0 ] && { printf 'package.json:0\ttest suite failed — fix failing tests before proceeding\n'; ISSUES=$((ISSUES+1)); }
+    fi
+    printf 'package.json:0\tJS coverage threshold enforcement requires c8 (npm install -g c8) or Node.js v22+\n'
     ISSUES=$((ISSUES+1))
   fi
 fi
 rm -f "$TMPLOG"
+cd "$ROOT"
 
 # Assertion density check
 while IFS= read -r f; do

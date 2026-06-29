@@ -26,8 +26,10 @@ done < <(grep -rn --include="*.go" --exclude="*_test.go" \
 JS_FILES=()
 while IFS= read -r jsfile; do
   JS_FILES+=("$jsfile")
+# Exclude QA tooling dirs — they reference these patterns as regex literals
 done < <(find "$ROOT" -maxdepth 4 -type f \( -name "*.js" -o -name "*.mjs" -o -name "*.ts" -o -name "*.tsx" \) \
-  ! -path "*/node_modules/*" ! -path "*/.git/*" ! -path "*/dist/*" ! -path "*/build/*" ! -path "*/coverage/*" 2>/dev/null || true)
+  ! -path "*/node_modules/*" ! -path "*/.git/*" ! -path "*/dist/*" ! -path "*/build/*" ! -path "*/coverage/*" \
+  ! -path "*/tools/*" ! -path "*/scripts/*" 2>/dev/null || true)
 
 if [ "${#JS_FILES[@]}" -gt 0 ]; then
   for jsf in "${JS_FILES[@]}"; do
