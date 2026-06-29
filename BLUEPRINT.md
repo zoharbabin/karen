@@ -816,7 +816,7 @@ Her complaint list only ever grows. She never forgets.
 **Pre-commit — fast security check before you commit:**
 
 ```bash
-karen audit --gates security
+karen audit --gates gate-3-security
 ```
 
 **Full audit — PR gate and LLM sessions:**
@@ -829,7 +829,7 @@ karen audit
 
 ```bash
 karen audit --warn       # reports issues, exits 0 — for baselining
-karen audit --baseline   # snapshots current counts into .karen-baseline.json
+karen audit --baseline   # snapshots current counts into .karen/baseline.json
 karen audit              # blocks only regressions beyond the baseline
 ```
 

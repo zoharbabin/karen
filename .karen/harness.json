@@ -43,6 +43,7 @@
       "id": "gate-7-agent-context",
       "name": "agent-context",
       "scriptPath": "gates/gate-7-agent-context.sh",
+      "zeroTolerance": true,
       "order": 7
     }
   ]

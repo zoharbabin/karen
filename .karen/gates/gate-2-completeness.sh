@@ -5,7 +5,7 @@ cd "$ROOT"
 ISSUES=0
 
 while IFS=: read -r file line rest; do
-  printf '%s:%s\t%s\n' "$file" "$line" "$rest"
+  printf '%s:%s\tbroken TODO/FIXME marker — incomplete implementation in production code\n' "$file" "$line"
   ISSUES=$((ISSUES+1))
 done < <(grep -rn --include="*.go" --exclude="*_test.go" \
   -E '(//|#)[[:space:]]*(TODO|FIXME|HACK|XXX)[: ]' . 2>/dev/null | grep -v '.git' | head -50)
@@ -21,4 +21,4 @@ if [ "$ISSUES" -eq 0 ]; then
 else
   echo "FAIL ($ISSUES issues)"
 fi
-exit 0
+[ "$ISSUES" -eq 0 ]
