@@ -690,6 +690,65 @@ The SDK must never require the customer to add `unsafe-eval`, `unsafe-inline` in
 
 ---
 
+### JavaScript & TypeScript Projects
+
+*SDK and library projects written in JavaScript, TypeScript, or Node.js.*
+
+Karen's gates 1–4, 6–7 now include language-specific behavior for JavaScript and TypeScript projects. Detection is automatic: if `package.json` is present and `go.mod` is absent, Karen activates JS/TS checks alongside the standard gates.
+
+**Gate 1 (supply-chain):** Gate generates an npm branch using `npm audit` when a `package-lock.json` or `yarn.lock` is detected.
+
+**Gate 2 (completeness):** Scans for unimplemented stubs across `*.js`, `*.mjs`, `*.ts`, `*.tsx` files (excluding `node_modules/`, `dist/`, `coverage/`). Flags:
+- `throw new Error('not implemented')` in source files
+- `TODO`, `FIXME`, `HACK`, `XXX` markers in production code
+- Undocumented public exports (JSDoc or TypeScript `@public` required)
+
+**Gate 3 (security):** Applies JavaScript-specific patterns:
+- `eval()` and `Function()` constructor calls
+- `require()` with dynamic user-supplied strings
+- `child_process.exec()` without parameter array (must use `execFile`)
+
+**Gate 4 (docs-parity):** Runs markdown doctest blocks tagged `js`, `ts`, `javascript`, or `typescript` (configurable via `.karen.json` `doctest.languages`).
+
+**Gate 6 (test-integrity):** Supports Node.js coverage tools:
+- `c8` (recommended; generates LCOV reports)
+- Built-in V8 coverage via `node --experimental-coverage` (Node 22+)
+- Jest `--coverage`
+
+Set `testRunner.coverageReport` in `.karen.json` to the LCOV or JSON coverage file path. Karen parses coverage and enforces the threshold per module.
+
+**Gate 7 (agent-context):** Checks for `CLAUDE.md`, `.cursorrules`, or `.github/copilot-instructions.md` in monorepo root or per-package.
+
+**Exclusion rationale:** `node_modules/`, `dist/`, `.next/`, `build/`, `coverage/` are build artifacts or dependency trees — not project source. Scanning them would generate hundreds of false positives (stubs in dependencies, TODOs in transitive code). Gate precision requires excluding them.
+
+**Monorepo support:** Multiple `package.json` files are supported. Karen treats the root project directory as the audited scope; if gates run in a workspace root, they scan all `package.json` files and dependencies transitively. Individual workspace packages may have their own `.karen.json` for isolation, though this is uncommon for library monorepos.
+
+**Configuration profile for JS/TS SDK projects:**
+
+```json
+{
+  "project": {
+    "type": "library",
+    "language": ["javascript", "typescript"],
+    "deployment": ["browser-direct-js"],
+    "audience": "enterprise",
+    "aiPowered": true
+  },
+  "testRunner": {
+    "command": "npm test",
+    "coverageReport": "coverage/lcov.info",
+    "format": "lcov"
+  },
+  "doctest": {
+    "files": ["README.md", "docs/**/*.md"],
+    "languages": ["js", "ts"],
+    "annotation": "karen:runnable"
+  }
+}
+```
+
+---
+
 ### browser-iframe
 
 *Your product is hosted on your domain; the customer embeds via `<iframe>`.*  

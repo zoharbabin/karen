@@ -149,6 +149,18 @@ The circuit breaker detects stuck agent loops and exits with code `2`. When the 
 - **Exit code 2** is a hard block. CI pipelines must treat it as mandatory human review — not a regular failure to suppress or retry automatically.
 - After human intervention, use `karen reset` to resume. The next `karen audit` opens with `Karen is resuming. The circuit has been reset.` and treats the run as a fresh fingerprint baseline.
 
+## JavaScript & TypeScript Projects
+
+Karen's gates have built-in support for JavaScript and TypeScript projects. When `package.json` is present (and `go.mod` is absent), gates 1–4 and 6–7 activate language-specific behavior:
+
+- **Gate 1:** npm audit via `package-lock.json` discovery
+- **Gate 2:** JS/TS TODO/FIXME/HACK/XXX markers and unimplemented stubs
+- **Gate 3:** JavaScript-specific security patterns (`eval`, `Function()`, dynamic `require()`)
+- **Gate 4:** Markdown doctest blocks with `js`/`ts` language tags
+- **Gate 6:** Node.js coverage tools (`c8`, Jest, Node 22+ V8 coverage)
+
+Monorepo projects are supported; exclusions (`node_modules/`, `dist/`, `coverage/`) eliminate build artifacts and dependencies. See **BLUEPRINT.md § JavaScript & TypeScript Projects** for configuration examples and coverage enforcement details.
+
 ## Extending Karen
 
 To add a new quality check or gate type, follow the four-step process in **BLUEPRINT.md § Teaching Karen New Complaints** — the authoritative guide for extending her complaint vocabulary across projects.
