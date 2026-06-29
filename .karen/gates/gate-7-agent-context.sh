@@ -6,6 +6,9 @@ ISSUES=0
 # karen-ignore: add this comment to any line to suppress it from Karen gate scanning.
 ZT=0
 
+SUMMARY_EMITTED=0
+trap '_ec=$?; if [ "$SUMMARY_EMITTED" -eq 0 ]; then printf "GATE_CRASH:0\tgate crashed (exit %s)\n" "$_ec"; echo "FAIL (1 issues)"; fi' EXIT
+
 # Check for agent context file (CLAUDE.md, AGENTS.md, or .cursorrules).
 CONTEXT_FOUND=0
 for f in CLAUDE.md AGENTS.md .cursorrules; do
@@ -37,14 +40,14 @@ for f in CLAUDE.md AGENTS.md .cursorrules; do
   while IFS=: read -r file line rest; do
     printf '%s:%s\tpotential secret in agent context file — remove credentials\n' "$file" "$line"
     ISSUES=$((ISSUES+1))
-  done < <(grep -n -E '(api_?key|auth_?token|secret_?key|password)[[:space:]]*[:=][[:space:]]*[^$][^{]' "$f" 2>/dev/null | head -10)
+  done < <(grep -n -E '(api_?key|auth_?token|secret_?key|password)[[:space:]]*[:=][[:space:]]*[^$][^{]' "$f" 2>/dev/null | head -10 || true)
 done
 
 # Check for MCP server entries — prefer read-only where possible.
 MCP_FILES=()
 [ -f ".mcp.json" ] && MCP_FILES+=(".mcp.json")
 [ -f ".claude/settings.json" ] && MCP_FILES+=(".claude/settings.json")
-while IFS= read -r f; do MCP_FILES+=("$f"); done < <(find . -name "mcp*.json" -maxdepth 3 -not -path './.git/*' -not -name ".mcp.json" 2>/dev/null)
+while IFS= read -r f; do MCP_FILES+=("$f"); done < <(find . -name "mcp*.json" -maxdepth 3 -not -path './.git/*' -not -name ".mcp.json" 2>/dev/null || true)
 if [ "${#MCP_FILES[@]}" -gt 0 ]; then
   if grep -rqE '"write"|"delete"|"execute"' "${MCP_FILES[@]}" 2>/dev/null; then
     printf '.mcp.json:0\tMCP server has write/delete/execute permissions — prefer read-only hygiene\n'
@@ -90,20 +93,40 @@ fi
 # Check for prompt injection surface.
 # Source-level scan: find Go files that import known LLM packages, then flag unsafe concatenation.
 LLM_IMPORT_FILES=()
-while IFS= read -r f; do LLM_IMPORT_FILES+=("$f"); done < <(grep -rlE '"github\.com/anthropics|github\.com/sashabaranov/go-openai|openai|anthropic' --include="*.go" . 2>/dev/null | grep -v '\.git/')
+while IFS= read -r f; do LLM_IMPORT_FILES+=("$f"); done < <(grep -rlE '"github\.com/anthropics|github\.com/sashabaranov/go-openai|openai|anthropic' --include="*.go" . 2>/dev/null | grep -v '\.git/' || true)
 for f in "${LLM_IMPORT_FILES[@]+"${LLM_IMPORT_FILES[@]}"}"; do
   while IFS=: read -r file line rest; do
     # Skip lines with a karen-ignore comment.
     if echo "$rest" | grep -q 'karen-ignore'; then continue; fi
     printf '%s:%s\tpotential prompt injection — fmt.Sprintf or string concat in LLM client file; verify user input is sanitized before insertion\n' "$file" "$line"
     ISSUES=$((ISSUES+1))
-  done < <(grep -nE 'fmt\.Sprintf\(|[^:]=.*\+.*[^+]' "$f" 2>/dev/null | head -5)
+  done < <(grep -nE 'fmt\.Sprintf\(|[^:]=.*\+.*[^+]' "$f" 2>/dev/null | head -5 || true)
+done
+
+# Source-level scan: find JS/MJS files that import known LLM packages, then flag unsafe string concat into prompt variables.
+LLM_JS_FILES=()
+while IFS= read -r f; do LLM_JS_FILES+=("$f"); done < <(grep -rlE "(require|from)[[:space:]]*['\"]((openai|@anthropic-ai\/sdk|anthropic|langchain|@langchain))" \
+  --include="*.js" --include="*.mjs" \
+  --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist \
+  . 2>/dev/null || true)
+for f in "${LLM_JS_FILES[@]+"${LLM_JS_FILES[@]}"}"; do
+  while IFS=: read -r file line rest; do
+    # Skip lines with a karen-ignore comment.
+    if echo "$rest" | grep -q 'karen-ignore'; then continue; fi
+    printf '%s:%s\tJS LLM: potential prompt injection via string concat — verify user input is sanitized before insertion\n' "$file" "$line"
+    ISSUES=$((ISSUES+1))
+  done < <(grep -nE '(prompt|systemPrompt|userMessage|message|instruction)[[:space:]]*[+]?=[^=].*\+' "$f" 2>/dev/null | grep -v 'karen-ignore' | head -5 || true)
 done
 
 # Context-file declaration check for prompt injection policy.
+# Requires actual security policy language, not just architectural mentions of injection.
+# Pattern anchors on: sanitize/escape + (before|user|input|untrusted/external) co-occurrence,
+# or explicit "prompt inject" / "treat.*adversar" / "never raw user input" phrasing.
 INJECTION_POLICY_FOUND=0
 for f in CLAUDE.md AGENTS.md .cursorrules; do
-  if [ -f "$f" ] && grep -qiE 'inject|sanitiz|escap|untrusted.input|user.input' "$f" 2>/dev/null; then
+  if [ -f "$f" ] && grep -qiE \
+    '(sanitiz|sanitise|escap)[a-z]* (before|all|user|input|untrusted|external)|(untrusted|external|user).*(input|content).*(sanitiz|escap|validate)|(sanitiz|escap|validate).*(untrusted|external|user|input|prompt)|prompt.inject|inject.*polic|treat.*adversar|never.*(raw|inject).*(user|input|prompt)|(sanitiz|escap|validate) before (inject|insert|use|build|concatenat|append)' \
+    "$f" 2>/dev/null; then
     INJECTION_POLICY_FOUND=1; break
   fi
 done
@@ -112,12 +135,13 @@ if [ "$INJECTION_POLICY_FOUND" -eq 0 ] && [ "$CONTEXT_FOUND" -eq 1 ]; then
   ISSUES=$((ISSUES+1))
 fi
 
+SUMMARY_EMITTED=1
 if [ "$ISSUES" -eq 0 ]; then
   echo "PASS (0 issues)"
 else
-  echo "FAIL ($ISSUES issues)"
+  printf 'FAIL (%s issues)\n' "$ISSUES"
   if [ "$ZT" -eq 1 ]; then
-    echo "ZERO-TOLERANCE"
+    printf 'ZERO-TOLERANCE: Karen will not negotiate on this.\n'
   fi
 fi
 exit 0

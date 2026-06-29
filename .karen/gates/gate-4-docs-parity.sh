@@ -5,9 +5,13 @@ cd "$ROOT"
 ISSUES=0
 # karen-ignore: add this comment to any line to suppress it from Karen gate scanning.
 
+SUMMARY_EMITTED=0
+trap '_ec=$?; if [ "$SUMMARY_EMITTED" -eq 0 ]; then printf "GATE_CRASH:0\tgate crashed (exit %s)\n" "$_ec"; echo "FAIL (1 issues)"; fi' EXIT
+
 if [ ! -f README.md ]; then
   printf 'README.md:0\tREADME.md is missing\n'
   ISSUES=$((ISSUES+1))
+  SUMMARY_EMITTED=1
   echo "FAIL ($ISSUES issues)"
   exit 0
 fi
@@ -28,7 +32,7 @@ if find . -name "*.go" -not -name "*_test.go" -not -path "./.git/*" 2>/dev/null 
   # Collect all doc files into a temp file for efficient multi-symbol lookup.
   DOCS_TMP=$(mktemp)
   # shellcheck disable=SC2064  # variable set here intentionally captured
-  trap "rm -f '$DOCS_TMP'" EXIT
+  trap "rm -f '$DOCS_TMP'; _ec=$?; if [ \"\$SUMMARY_EMITTED\" -eq 0 ]; then printf 'GATE_CRASH:0\tgate crashed (exit %s)\n' \"\$_ec\"; echo 'FAIL (1 issues)'; fi" EXIT
   {
     cat README.md 2>/dev/null || true
     find . -path './docs/*.md' -o -path './docs/**/*.md' 2>/dev/null | while IFS= read -r mdf; do
@@ -44,7 +48,7 @@ if find . -name "*.go" -not -name "*_test.go" -not -path "./.git/*" 2>/dev/null 
       ISSUES=$((ISSUES+1))
     fi
   done < <(grep -rn --include="*.go" -E '^func [A-Z]|^type [A-Z]' . 2>/dev/null \
-    | grep -v '_test.go' | grep -v '.git' | head -100)
+    | grep -v '_test.go' | grep -v '.git' | head -100 || true)
 fi
 
 # --- CHECK 2: Signature drift ---
@@ -67,16 +71,16 @@ if find . -name "*.go" -not -name "*_test.go" -not -path "./.git/*" 2>/dev/null 
       fi
     fi
   done < <(grep -rn --include="*.go" -E '^func [A-Z]' . 2>/dev/null \
-    | grep -v '_test.go' | grep -v '.git' | head -100)
+    | grep -v '_test.go' | grep -v '.git' | head -100 || true)
 fi
 
 # --- CHECK 3: Dead links ---
 # Find all internal markdown links and verify the targets exist.
+# Uses perl to extract capture groups correctly on BSD grep (macOS).
 while IFS= read -r mdfile; do
-  # Extract link targets: [text](./path) or [text](path) — skip http(s):// and anchors.
   while IFS= read -r link; do
     # Strip query strings and anchors.
-    target=$(echo "$link" | sed 's/#.*//' | sed 's/?.*$//')
+    target=$(printf '%s' "$link" | sed 's/#.*//' | sed 's/?.*$//')
     [ -z "$target" ] && continue
     # Resolve relative path from the markdown file's directory.
     mddir=$(dirname "$mdfile")
@@ -89,11 +93,10 @@ while IFS= read -r mdfile; do
       printf '%s:0\tdead link: "%s" does not exist\n' "$mdfile" "$link"
       ISSUES=$((ISSUES+1))
     fi
-  done < <(grep -oE '\]\(([^)]+)\)' "$mdfile" 2>/dev/null \
-    | sed 's/^](//' | sed 's/)$//' \
-    | grep -v '^https\?://' | grep -v '^mailto:' | grep -v '^#' || true)
+  done < <(perl -ne 'while (/\]\(([^)]+)\)/g) { print "$1\n" }' "$mdfile" 2>/dev/null \
+    | grep -v '^https\?://' | grep -v '^http://' | grep -v '^mailto:' | grep -v '^#' || true)
 done < <(find . \( -name "README.md" -o -path './docs/*.md' -o -path './docs/**/*.md' \) \
-  -not -path './.git/*' -not -path '*/node_modules/*' -not -path '*/vendor/*' 2>/dev/null)
+  -not -path './.git/*' -not -path '*/node_modules/*' -not -path '*/vendor/*' 2>/dev/null || true)
 
 # --- CHECK 4: CHANGELOG gaps ---
 # If git is available, detect commits since last release tag not reflected in CHANGELOG.
@@ -141,7 +144,7 @@ fi
 if [ -n "$DOCTEST_FILES" ]; then
   TMPDIR_DOCTEST=$(mktemp -d)
   # shellcheck disable=SC2064  # variable set here intentionally captured
-  trap "rm -rf '$TMPDIR_DOCTEST'" EXIT
+  trap "rm -rf '$TMPDIR_DOCTEST'; rm -f '${DOCS_TMP:-}'; _ec=$?; if [ \"\$SUMMARY_EMITTED\" -eq 0 ]; then printf 'GATE_CRASH:0\tgate crashed (exit %s)\n' \"\$_ec\"; echo 'FAIL (1 issues)'; fi" EXIT
 
   while IFS= read -r glob_pattern; do
     [ -z "$glob_pattern" ] && continue
@@ -210,6 +213,7 @@ $rawline"
   done <<< "$DOCTEST_FILES"
 fi
 
+SUMMARY_EMITTED=1
 if [ "$ISSUES" -eq 0 ]; then
   echo "PASS (0 issues)"
 else
