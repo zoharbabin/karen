@@ -71,8 +71,15 @@ else
     if [ "$GH_RELEASES_OK" -eq 1 ]; then
       : # GitHub Releases with release notes — preferred practice, no action needed
     else
-      printf 'CHANGELOG.md:0\tno changelog — create CHANGELOG.md, publish GitHub Releases with release notes, or set "releasesManaged": true in .karen.json\n'
-      ISSUES=$((ISSUES+1))
+      # Only flag as a hard failure when the project has made at least one release (has a git tag).
+      # Pre-release projects with no tags yet get an advisory WARN — changelog is aspirational, not required.
+      _any_tag=$(git describe --tags --abbrev=0 2>/dev/null || true)
+      if [ -n "$_any_tag" ]; then
+        printf 'CHANGELOG.md:0\tno changelog — create CHANGELOG.md, publish GitHub Releases with release notes, or set "releasesManaged": true in .karen.json\n'
+        ISSUES=$((ISSUES+1))
+      else
+        printf 'WARN:CHANGELOG.md:0\tno changelog and no release tags yet — add CHANGELOG.md or GitHub Releases before the first release\n'
+      fi
     fi
   fi
 fi
