@@ -148,6 +148,7 @@ if [ ! -f go.mod ]; then
                 # ISSUE 11: extend alternation to cover TypeScript-specific export forms
                 # (abstract class, type, interface, enum, var) in addition to function/class/const/let
                 grep -h "^export " "$full_path" 2>/dev/null \
+                  | grep -v 'karen-ignore' \
                   | sed "s/export async /export /" \
                   | grep -oE "^export (abstract class|function|class|const|let|var|type|interface|enum) [A-Za-z][A-Za-z0-9_]*" \
                   | awk '{print $NF}'
@@ -155,6 +156,7 @@ if [ ! -f go.mod ]; then
                 # ISSUE 2: strip braces, split on comma, strip "as Alias" suffixes to avoid
                 #          bogus concatenated symbols like "BarasBaz"; also drop leading '{' artifact
                 grep -hE "^export[[:space:]]*\{[^}]+\}" "$full_path" 2>/dev/null \
+                  | grep -v 'karen-ignore' \
                   | grep -oE "\{[^}]+\}" \
                   | tr -d '{}' \
                   | tr ',' '\n' \
@@ -272,7 +274,7 @@ if command -v git &>/dev/null && git rev-parse --is-inside-work-tree &>/dev/null
         [ "${#_gh_stripped}" -gt 20 ] && GH_RELEASES_FRESH=1
       fi
     else
-      printf 'WARN:gh:0\tgh CLI unavailable --- GitHub Releases freshness check skipped; install gh and authenticate to enable full check\n'
+      printf 'WARN: gh CLI unavailable --- GitHub Releases freshness check skipped; install gh and authenticate to enable full check\n' >&2
     fi
 
     if [ "$GH_RELEASES_FRESH" -eq 1 ]; then

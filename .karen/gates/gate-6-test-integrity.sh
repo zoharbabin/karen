@@ -107,6 +107,9 @@ fi
 # risk stateful side-effects.
 THRESHOLD=$(jq -r ".coverage.threshold // 80" "$ROOT/.karen.json" 2>/dev/null || echo "80")
 THRESHOLD=$(echo "$THRESHOLD" | cut -d. -f1)
+# G6-FN1 glob-quoting check: package.json scripts cannot carry karen-ignore comments,
+# so allow suppression via .karen.json checks.g6-fn1-glob-quoting: false
+G6_FN1_ENABLED=$(jq -r 'if .checks["g6-fn1-glob-quoting"] == false then "false" else "true" end' "$ROOT/.karen.json" 2>/dev/null || echo "true")
 TMPLOG="/tmp/karen-js-test-$$"
 cd "$TEST_PKG_DIR"
 
@@ -116,7 +119,8 @@ if command -v c8 >/dev/null 2>&1; then
   TEST_SCRIPT=$(jq -r '.scripts.test // empty' package.json 2>/dev/null)
   # G6-FN1: detect single-quoted globs in node --test scripts (shell passes literal
   # quote chars to node, which finds zero files and exits 0 with vacuous 100% coverage).
-  if echo "$TEST_SCRIPT" | grep -qE "node[[:space:]].*--test.*'[^']*[*][^']*'"; then
+  # Suppress via .karen.json: { "checks": { "g6-fn1-glob-quoting": false } }
+  if [ "$G6_FN1_ENABLED" = "true" ] && echo "$TEST_SCRIPT" | grep -qE "node[[:space:]].*--test.*'[^']*[*][^']*'"; then
     printf 'WARN:package.json:0\tglob quoting may prevent test discovery — use double-quoted or unquoted globs for node --test file patterns\n'
   fi
   set +e
@@ -163,7 +167,8 @@ else
     # Use the project's explicit test glob if the test script invokes node --test directly.
     _test_script=$(jq -r '.scripts.test // empty' package.json 2>/dev/null || true)
     # G6-FN1: detect single-quoted globs in node --test scripts.
-    if echo "$_test_script" | grep -qE "node[[:space:]].*--test.*'[^']*[*][^']*'"; then
+    # Suppress via .karen.json: { "checks": { "g6-fn1-glob-quoting": false } }
+    if [ "$G6_FN1_ENABLED" = "true" ] && echo "$_test_script" | grep -qE "node[[:space:]].*--test.*'[^']*[*][^']*'"; then
       printf 'WARN:package.json:0\tglob quoting may prevent test discovery — use double-quoted or unquoted globs for node --test file patterns\n'
     fi
     _extra_args=""
@@ -287,7 +292,13 @@ while IFS= read -r f; do
     printf '%s:%s\tlive credential env var read in test\n' "$rel" "$lineno"
     ISSUES=$((ISSUES+1))
   done < <(grep -nE "process\.env\.([A-Z0-9_]*(KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTH)[A-Z0-9_]*|API_[A-Z0-9_]+|ADMIN_[A-Z0-9_]+)|process\.env\[|const[[:space:]]*\{[^}]*(KEY|TOKEN|SECRET|PASSWORD)" "$f" 2>/dev/null | sort -t: -k1,1n -u || true)
-done < <(find "$ROOT" -maxdepth 8 -not -path "*/node_modules/*" \( \
+done < <(find "$ROOT" -maxdepth 8 \
+  -not -path "*/node_modules/*" \
+  -not -path "*/dist/*" \
+  -not -path "*/coverage/*" \
+  -not -path "*/build/*" \
+  -not -path "*/.next/*" \
+  \( \
     -name "*.test.js" -o -name "*.spec.js" -o -name "*.test.ts" -o -name "*.spec.ts" \
     -o -path "*/test/*.js" -o -path "*/tests/*.js" -o -path "*/__tests__/*.js" \
     -o -path "*/test/*.ts" -o -path "*/tests/*.ts" -o -path "*/__tests__/*.ts" \
