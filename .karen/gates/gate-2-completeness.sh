@@ -51,6 +51,8 @@ while IFS= read -r jsfile; do
 done < <(find "$ROOT" -maxdepth 8 -type f \( -name "*.js" -o -name "*.mjs" -o -name "*.jsx" -o -name "*.ts" -o -name "*.tsx" \) \
   ! -path "*/node_modules/*" ! -path "*/.git/*" ! -path "*/dist/*" ! -path "*/build/*" ! -path "*/coverage/*" \
   ! -path "*/tools/*" ! -path "*/scripts/*" ! -path "*/vendor/*" \
+  ! -path "*/test/*" ! -path "*/tests/*" ! -path "*/__tests__/*" \
+  ! -path "*/examples/*" ! -path "*/example/*" \
   ! -name "*.test.js" ! -name "*.spec.js" ! -name "*.test.ts" ! -name "*.spec.ts" \
   ! -name "*.d.ts" ! -name "*.test.tsx" ! -name "*.spec.tsx" ! -name "*.test.mjs" ! -name "*.spec.mjs" \
   2>/dev/null || true)
@@ -91,12 +93,18 @@ if [ "${#JS_FILES[@]}" -gt 0 ]; then
       echo "$content" | grep -q 'karen-ignore' && continue
       if [ "$ISSUES" -ge 75 ]; then break; fi
       linenum_int=$((lineno))
-      if [ "$linenum_int" -gt 1 ]; then
-        preceding=$(sed -n "$((linenum_int-1))p" "$jsf" 2>/dev/null || true)
-      else
-        preceding=""
-      fi
-      echo "$preceding" | grep -qE '^\s*(\*|/\*\*|///)' && continue
+      doc_found=0
+      _check=$linenum_int
+      while [ "$((_check - 1))" -ge 1 ] && [ "$((_check - linenum_int))" -gt -5 ]; do
+        _check=$((_check - 1))
+        _lookback=$(sed -n "${_check}p" "$jsf" 2>/dev/null || true)
+        # skip blank lines
+        echo "$_lookback" | grep -qE '^[[:space:]]*$' && continue
+        # first non-blank line: check if it's a doc comment
+        echo "$_lookback" | grep -qE '^[[:space:]]*(\*|/\*\*|///)' && doc_found=1
+        break
+      done
+      [ "$doc_found" -eq 1 ] && continue
       printf '%s:%s\tJS: exported function/class lacks JSDoc comment\n' "$relfile" "$lineno"
       ISSUES=$((ISSUES+1))
     done < <(grep -n 'export[[:space:]]\+\(function\|class\|async function\)' "$jsf" 2>/dev/null || true)

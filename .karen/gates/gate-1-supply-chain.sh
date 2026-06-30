@@ -42,6 +42,16 @@ fi
 
 # --- JS supply chain ---
 if command -v npm &>/dev/null; then
+  # Warn when package.json exists without any lockfile (JS audit would silently skip otherwise)
+  while IFS= read -r pkgjson; do
+    [ -z "$pkgjson" ] && continue
+    pkgdir=$(dirname "$pkgjson")
+    if [ ! -f "$pkgdir/package-lock.json" ] && [ ! -f "$pkgdir/yarn.lock" ]; then
+      rel="${pkgjson#"$ROOT"/}"
+      printf 'WARN:%s:0\tpackage.json has no lockfile (package-lock.json or yarn.lock) — dependency versions are unpinned and npm audit will be skipped; run npm install to generate a lockfile\n' "$rel"
+    fi
+  done < <(find "$ROOT" -maxdepth 4 -name "package.json" ! -path "*/node_modules/*" ! -path "*/.git/*" 2>/dev/null || true)
+
   while IFS= read -r lockfile; do
     [ -z "$lockfile" ] && continue
     lockdir=$(dirname "$lockfile")

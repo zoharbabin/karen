@@ -161,6 +161,7 @@ if [ "$JS_FILES_EXIST" -eq 1 ]; then
       | grep -v "${ROOT}/spec/fixtures/" \
       | grep -v "${ROOT}/__snapshots__/" \
       | grep -v "${ROOT}/.cache/" \
+      | grep -v "${ROOT}/examples/" \
       | grep -v '\.min\.js:' \
       | grep -v 'karen-ignore' \
       | head -30 \
@@ -241,7 +242,16 @@ if [ "$JS_FILES_EXIST" -eq 1 ]; then
     printf '%s:%s\tJS credential-related name in console statement — avoid logging tokens, passwords, or secrets\n' "$file" "$line"
     JS_ISSUES=$((JS_ISSUES+1))
   done < <(js_grep "console\.(log|error|warn)\([^)]*\b(token|secret|password)\b" \
-    | grep -v 'redact\|\*\*\*' || true)
+    | grep -v 'redact\|\*\*\*' \
+    | grep -vE "console\.(log|error|warn)\([[:space:]]*('[^']*\b(token|secret|password)\b[^']*'|\"[^\"]*\b(token|secret|password)\b[^\"]*\")[[:space:]]*\)" \
+    || true)
+
+  # 9. postMessage with wildcard targetOrigin — cross-origin data leak
+  while IFS=: read -r file line rest; do
+    [ -z "$file" ] && continue
+    printf '%s:%s\tJS postMessage with wildcard targetOrigin ("*") — specify explicit origin to prevent cross-origin data leaks\n' "$file" "$line"
+    JS_ISSUES=$((JS_ISSUES+1))
+  done < <(js_grep '\.postMessage\([^,)]*,[[:space:]]*["'"'"']\*["'"'"']' || true)
 
   # Cap JS issues at 30 to avoid overwhelming output.
   if [ "$JS_ISSUES" -gt 30 ]; then

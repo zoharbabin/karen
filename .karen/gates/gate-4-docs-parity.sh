@@ -98,74 +98,78 @@ if [ ! -f go.mod ]; then
     [ -d "$ROOT/$d" ] && JS_SRC="$ROOT/$d" && break
   done
 
-  if [ -n "$JS_SRC" ] && [ -f "$ROOT/.karen.json" ]; then
-    # Read public API config (jq preferred; skip check entirely on fallback failure).
-    JS_PUBLIC_SYMBOLS=""
-    JS_PUBLIC_FILES=""
-    if command -v jq &>/dev/null; then
-      JS_PUBLIC_SYMBOLS=$(jq -r '(.docs.publicApiSymbols // [])[]' "$ROOT/.karen.json" 2>/dev/null || true)
-      JS_PUBLIC_FILES=$(jq -r '(.docs.publicApiFiles // [])[]' "$ROOT/.karen.json" 2>/dev/null || true)
-    fi
-
-    # Only run the check when the project has explicitly declared its public surface.
-    if [ -n "$JS_PUBLIC_SYMBOLS" ] || [ -n "$JS_PUBLIC_FILES" ]; then
-      DOC_TMP=$(mktemp)
-      # ISSUE 14: remove -maxdepth 3 to avoid missing docs at depth 4+; also exclude vendor/
-      find "$ROOT" -name "*.md" ! -path "*/node_modules/*" ! -path "*/.git/*" ! -path "*/vendor/*" \
-        -exec cat {} \; > "$DOC_TMP" 2>/dev/null
-
-      if [ -n "$JS_PUBLIC_SYMBOLS" ]; then
-        # Allowlist mode: check only the symbols explicitly declared as public API.
-        while IFS= read -r jssym; do
-          [ -z "$jssym" ] && continue
-          if ! grep -q "$jssym" "$DOC_TMP" 2>/dev/null; then
-            printf '%s:0\tJS public API symbol %s (declared in .karen.json) not found in any documentation file\n' "$JS_SRC" "$jssym"
-            ISSUES=$((ISSUES+1))
-          fi
-        done <<< "$JS_PUBLIC_SYMBOLS"
-      elif [ -n "$JS_PUBLIC_FILES" ]; then
-        # File-scope mode: check exports only from explicitly declared public-API files.
-        while IFS= read -r api_file; do
-          [ -z "$api_file" ] && continue
-          full_path="$ROOT/$api_file"
-          [ -f "$full_path" ] || continue
-          while IFS= read -r jssym; do
-            [ -z "$jssym" ] && continue
-            [ "${#jssym}" -le 1 ] && continue
-            [ "$jssym" = "default" ] && continue
-            if ! grep -q "$jssym" "$DOC_TMP" 2>/dev/null; then
-              printf '%s:0\tJS exported symbol %s (from public API file %s) not found in any documentation file\n' "$JS_SRC" "$jssym" "$api_file"
-              ISSUES=$((ISSUES+1))
-            fi
-          done < <(
-            # Capture: export function/class/const/let Foo, export async function Foo,
-            # and ESM re-exports: export { Foo, Bar } from '...' or export { Foo as default } from '...'
-            {
-              # ISSUE 11: extend alternation to cover TypeScript-specific export forms
-              # (abstract class, type, interface, enum, var) in addition to function/class/const/let
-              grep -h "^export " "$full_path" 2>/dev/null \
-                | sed "s/export async /export /" \
-                | grep -oE "^export (abstract class|function|class|const|let|var|type|interface|enum) [A-Za-z][A-Za-z0-9_]*" \
-                | awk '{print $NF}'
-              # Named re-exports: extract identifiers from export { Foo, Bar as Baz } from '...'
-              # ISSUE 2: strip braces, split on comma, strip "as Alias" suffixes to avoid
-              #          bogus concatenated symbols like "BarasBaz"; also drop leading '{' artifact
-              grep -hE "^export[[:space:]]*\{[^}]+\}" "$full_path" 2>/dev/null \
-                | grep -oE "\{[^}]+\}" \
-                | tr -d '{}' \
-                | tr ',' '\n' \
-                | sed 's/^[[:space:]]*//;s/[[:space:]]*$//;s/[[:space:]][Aa][Ss][[:space:]][A-Za-z][A-Za-z0-9_]*//' \
-                | grep -oE '^[A-Za-z][A-Za-z0-9_]+' \
-                | grep -v '^default$'
-            } | sort -u || true
-          )
-        done <<< "$JS_PUBLIC_FILES"
+  if [ -n "$JS_SRC" ]; then
+    if [ ! -f "$ROOT/.karen.json" ]; then
+      printf 'WARN:.karen.json:0\t.karen.json absent — JS public API symbol coverage check skipped; create .karen.json with docs.publicApiSymbols or docs.publicApiFiles to enable\n'
+    else
+      # Read public API config (jq preferred; skip check entirely on fallback failure).
+      JS_PUBLIC_SYMBOLS=""
+      JS_PUBLIC_FILES=""
+      if command -v jq &>/dev/null; then
+        JS_PUBLIC_SYMBOLS=$(jq -r '(.docs.publicApiSymbols // [])[]' "$ROOT/.karen.json" 2>/dev/null || true)
+        JS_PUBLIC_FILES=$(jq -r '(.docs.publicApiFiles // [])[]' "$ROOT/.karen.json" 2>/dev/null || true)
       fi
 
-      rm -f "$DOC_TMP"
+      # Only run the check when the project has explicitly declared its public surface.
+      if [ -n "$JS_PUBLIC_SYMBOLS" ] || [ -n "$JS_PUBLIC_FILES" ]; then
+        DOC_TMP=$(mktemp)
+        # ISSUE 14: remove -maxdepth 3 to avoid missing docs at depth 4+; also exclude vendor/
+        find "$ROOT" -name "*.md" ! -path "*/node_modules/*" ! -path "*/.git/*" ! -path "*/vendor/*" \
+          -exec cat {} \; > "$DOC_TMP" 2>/dev/null
+
+        if [ -n "$JS_PUBLIC_SYMBOLS" ]; then
+          # Allowlist mode: check only the symbols explicitly declared as public API.
+          while IFS= read -r jssym; do
+            [ -z "$jssym" ] && continue
+            if ! grep -q "$jssym" "$DOC_TMP" 2>/dev/null; then
+              printf '%s:0\tJS public API symbol %s (declared in .karen.json) not found in any documentation file\n' "$JS_SRC" "$jssym"
+              ISSUES=$((ISSUES+1))
+            fi
+          done <<< "$JS_PUBLIC_SYMBOLS"
+        elif [ -n "$JS_PUBLIC_FILES" ]; then
+          # File-scope mode: check exports only from explicitly declared public-API files.
+          while IFS= read -r api_file; do
+            [ -z "$api_file" ] && continue
+            full_path="$ROOT/$api_file"
+            [ -f "$full_path" ] || continue
+            while IFS= read -r jssym; do
+              [ -z "$jssym" ] && continue
+              [ "${#jssym}" -le 1 ] && continue
+              [ "$jssym" = "default" ] && continue
+              if ! grep -q "$jssym" "$DOC_TMP" 2>/dev/null; then
+                printf '%s:0\tJS exported symbol %s (from public API file %s) not found in any documentation file\n' "$JS_SRC" "$jssym" "$api_file"
+                ISSUES=$((ISSUES+1))
+              fi
+            done < <(
+              # Capture: export function/class/const/let Foo, export async function Foo,
+              # and ESM re-exports: export { Foo, Bar } from '...' or export { Foo as default } from '...'
+              {
+                # ISSUE 11: extend alternation to cover TypeScript-specific export forms
+                # (abstract class, type, interface, enum, var) in addition to function/class/const/let
+                grep -h "^export " "$full_path" 2>/dev/null \
+                  | sed "s/export async /export /" \
+                  | grep -oE "^export (abstract class|function|class|const|let|var|type|interface|enum) [A-Za-z][A-Za-z0-9_]*" \
+                  | awk '{print $NF}'
+                # Named re-exports: extract identifiers from export { Foo, Bar as Baz } from '...'
+                # ISSUE 2: strip braces, split on comma, strip "as Alias" suffixes to avoid
+                #          bogus concatenated symbols like "BarasBaz"; also drop leading '{' artifact
+                grep -hE "^export[[:space:]]*\{[^}]+\}" "$full_path" 2>/dev/null \
+                  | grep -oE "\{[^}]+\}" \
+                  | tr -d '{}' \
+                  | tr ',' '\n' \
+                  | sed 's/^[[:space:]]*//;s/[[:space:]]*$//;s/[[:space:]][Aa][Ss][[:space:]][A-Za-z][A-Za-z0-9_]*//' \
+                  | grep -oE '^[A-Za-z][A-Za-z0-9_]+' \
+                  | grep -v '^default$'
+              } | sort -u || true
+            )
+          done <<< "$JS_PUBLIC_FILES"
+        fi
+
+        rm -f "$DOC_TMP"
+      fi
+      # If neither publicApiSymbols nor publicApiFiles is configured, skip silently.
+      # Add one of these to .karen.json to enable JS symbol coverage checking.
     fi
-    # If neither publicApiSymbols nor publicApiFiles is configured, skip silently.
-    # Add one of these to .karen.json to enable JS symbol coverage checking.
   fi
 fi
 
@@ -211,11 +215,14 @@ done < <(find . -name '*.md' -not -path './.git/*' -not -path '*/node_modules/*'
 # If git is available, detect commits since last release tag not reflected in CHANGELOG.
 if command -v git &>/dev/null && git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
   last_tag=$(git describe --tags --abbrev=0 2>/dev/null || true)
-  if [ -n "$last_tag" ] && [ -f CHANGELOG.md ]; then
+  if [ -n "$last_tag" ] && [ ! -f CHANGELOG.md ]; then
+    printf 'CHANGELOG.md:0\tgit tag "%s" exists but CHANGELOG.md is absent — document changes per release\n' "$last_tag"
+    ISSUES=$((ISSUES+1))
+  elif [ -n "$last_tag" ] && [ -f CHANGELOG.md ]; then
     commit_count=$(git log "${last_tag}..HEAD" --oneline 2>/dev/null | wc -l | tr -d ' ')
     if [ "$commit_count" -gt 0 ]; then
       # Check if CHANGELOG.md was updated in any commit since the last tag.
-      if ! git log "${last_tag}..HEAD" --oneline -- CHANGELOG.md 2>/dev/null | { grep -q . || true; }; then
+      if [ -z "$(git log "${last_tag}..HEAD" --oneline -- CHANGELOG.md 2>/dev/null)" ]; then
         printf 'CHANGELOG.md:0\t%s unreleased commit(s) since tag "%s" not reflected in CHANGELOG.md\n' \
           "$commit_count" "$last_tag"
         ISSUES=$((ISSUES+1))

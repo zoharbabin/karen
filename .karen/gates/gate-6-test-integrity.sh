@@ -146,8 +146,15 @@ else
   NODE_MAJ=$(node --version 2>/dev/null | sed 's/v//' | cut -d. -f1)
   if [ -n "$NODE_MAJ" ] && [ "$NODE_MAJ" -ge 22 ] 2>/dev/null; then
     # Node v22+ has built-in coverage; runs tests and collects coverage in one pass.
+    # Use the project's explicit test glob if the test script invokes node --test directly.
+    _test_script=$(jq -r '.scripts.test // empty' package.json 2>/dev/null || true)
+    _extra_args=""
+    if echo "$_test_script" | grep -qE '^node[[:space:]].*--test'; then
+      _extra_args=$(echo "$_test_script" | grep -oE '[^ ]*(\*|\.js|\.ts)[^ ]*' | head -1 || true)
+    fi
     set +e
-    node --experimental-test-coverage --test 2>&1 | tee "$TMPLOG"
+    # shellcheck disable=SC2086  # intentional: word-split for glob expansion
+    node --experimental-test-coverage --test $_extra_args 2>&1 | tee "$TMPLOG"
     NODE_EXIT=${PIPESTATUS[0]}
     set -e
     if [ "$NODE_EXIT" -ne 0 ]; then
@@ -169,15 +176,20 @@ else
     # Parse coverage summary from output.
     # Node v22+ prefixes coverage lines with "ℹ " (U+2139 + space); drop the anchor
     # so both "all files | 92.09 | ..." and "ℹ all files | 92.09 | ..." are matched.
+    COV_PCT=""
     ALL_LINE=$(grep -iaE "(^|[[:space:]])all files" "$TMPLOG" | tail -1 || true)
     if [ -n "$ALL_LINE" ]; then
       COV_PCT=$(echo "$ALL_LINE" | grep -oE '[0-9]+\.[0-9]+' | head -1)
-      if [ -n "$COV_PCT" ]; then
-        INT_COV=$(echo "$COV_PCT" | cut -d. -f1)
-        if [ "$INT_COV" -lt "$THRESHOLD" ] 2>/dev/null; then
-          printf 'package.json:0\tJS test coverage %s%% is below %s%% threshold\n' "$COV_PCT" "${THRESHOLD}"
-          ISSUES=$((ISSUES+1))
-        fi
+    fi
+    # Fallback: bare percentage line if table-format output changed
+    if [ -z "$COV_PCT" ]; then
+      COV_PCT=$(grep -oE '[0-9]+\.[0-9]+[[:space:]]*%' "$TMPLOG" | grep -oE '^[0-9]+\.[0-9]+' | tail -1 || true)
+    fi
+    if [ -n "$COV_PCT" ]; then
+      INT_COV=$(echo "$COV_PCT" | cut -d. -f1)
+      if [ "$INT_COV" -lt "$THRESHOLD" ] 2>/dev/null; then
+        printf 'package.json:0\tJS test coverage %s%% is below %s%% threshold\n' "$COV_PCT" "${THRESHOLD}"
+        ISSUES=$((ISSUES+1))
       fi
     fi
   else
@@ -219,7 +231,11 @@ while IFS= read -r f; do
     printf '%s:0\ttest file has no assertion calls\n' "$rel"
     ISSUES=$((ISSUES+1))
   fi
-done < <(find "$ROOT" -maxdepth 8 \( -name "*.test.js" -o -name "*.spec.js" -o -name "*.test.ts" -o -name "*.spec.ts" \) -not -path "*/node_modules/*" 2>/dev/null || true)
+done < <(find "$ROOT" -maxdepth 8 -not -path "*/node_modules/*" \( \
+    -name "*.test.js" -o -name "*.spec.js" -o -name "*.test.ts" -o -name "*.spec.ts" \
+    -o -path "*/test/*.js" -o -path "*/tests/*.js" -o -path "*/__tests__/*.js" \
+    -o -path "*/test/*.ts" -o -path "*/tests/*.ts" -o -path "*/__tests__/*.ts" \
+  \) 2>/dev/null || true)
 
 # Live credential check in JS tests
 while IFS= read -r f; do
@@ -232,7 +248,11 @@ while IFS= read -r f; do
     ISSUES=$((ISSUES+1))
   done < <({ grep -nE "process\.env\.([A-Z0-9_]*(KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTH)[A-Z0-9_]*|API_[A-Z0-9_]+|ADMIN_[A-Z0-9_]+)" "$f"; \
              grep -nE "process\.env\[|const[[:space:]]*\{[^}]*(KEY|TOKEN|SECRET|PASSWORD)" "$f"; } 2>/dev/null | sort -t: -k1,1n || true)
-done < <(find "$ROOT" -maxdepth 8 \( -name "*.test.js" -o -name "*.spec.js" -o -name "*.test.ts" -o -name "*.spec.ts" \) -not -path "*/node_modules/*" 2>/dev/null || true)
+done < <(find "$ROOT" -maxdepth 8 -not -path "*/node_modules/*" \( \
+    -name "*.test.js" -o -name "*.spec.js" -o -name "*.test.ts" -o -name "*.spec.ts" \
+    -o -path "*/test/*.js" -o -path "*/tests/*.js" -o -path "*/__tests__/*.js" \
+    -o -path "*/test/*.ts" -o -path "*/tests/*.ts" -o -path "*/__tests__/*.ts" \
+  \) 2>/dev/null || true)
 
 SUMMARY_EMITTED=1
 if [ "$ISSUES" -eq 0 ]; then

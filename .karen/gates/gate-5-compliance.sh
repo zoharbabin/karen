@@ -38,10 +38,11 @@ done
 if [ "$RELEASES_MANAGED" = "true" ]; then
   : # CHANGELOG.md check suppressed — releasesManaged is true in .karen.json
 else
-  if [ ! -f CHANGELOG.md ]; then
+  CHANGELOG_FOUND=$(find . -maxdepth 2 -name "CHANGELOG.md" -not -path "./.git/*" -not -path "./vendor/*" -not -path "./node_modules/*" 2>/dev/null | head -1)
+  if [ -z "$CHANGELOG_FOUND" ]; then
     printf 'CHANGELOG.md:0\tmissing compliance artifact — create CHANGELOG.md or set "releasesManaged": true in .karen.json\n'
     ISSUES=$((ISSUES+1))
-  elif ! grep -qE '^## \[' CHANGELOG.md 2>/dev/null; then
+  elif ! grep -qE '^## \[' "$CHANGELOG_FOUND" 2>/dev/null; then
     printf 'CHANGELOG.md:0\tdoes not follow Keep a Changelog format (missing ## [version] headers)\n'
     ISSUES=$((ISSUES+1))
   fi
