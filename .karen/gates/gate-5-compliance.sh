@@ -69,7 +69,7 @@ else
       fi
     fi
     if [ "$GH_RELEASES_OK" -eq 1 ]; then
-      printf 'WARN:CHANGELOG.md:0\tno CHANGELOG.md — GitHub Releases with release notes detected (acceptable substitute); consider adding CHANGELOG.md for offline discoverability\n'
+      : # GitHub Releases with release notes — preferred practice, no action needed
     else
       printf 'CHANGELOG.md:0\tno changelog — create CHANGELOG.md, publish GitHub Releases with release notes, or set "releasesManaged": true in .karen.json\n'
       ISSUES=$((ISSUES+1))

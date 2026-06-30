@@ -264,7 +264,7 @@ if command -v git &>/dev/null && git rev-parse --is-inside-work-tree &>/dev/null
           "$commit_count" "$last_tag" "$_latest_gh_tag" "$last_tag"
         ISSUES=$((ISSUES+1))
       else
-        printf 'WARN:CHANGELOG.md:0\tno CHANGELOG.md — GitHub Releases with release notes detected (acceptable substitute)\n'
+        : # GitHub Releases in sync with latest tag — preferred practice, no action needed
       fi
     else
       # Step 3: neither CHANGELOG.md nor GitHub Releases with notes.
