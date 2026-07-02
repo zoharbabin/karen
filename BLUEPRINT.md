@@ -229,20 +229,20 @@ The LLM follows up when an answer changes what matters: "you said this runs in t
 
 Karen is analyzing your project...
 
-Karen: I can see this is a TypeScript monorepo with three apps. You've got 
+Karen: I can see this is a TypeScript monorepo with three apps. You've got
 eslint configured in the root, but no SAST tooling and no audit lockfile.
 
 Karen: What does this project do and who uses it?
 
 > It's a browser SDK for enterprise video players. Used by media companies.
 
-Karen: Got it — browser-direct deployment, enterprise audience. Does it 
+Karen: Got it — browser-direct deployment, enterprise audience. Does it
 handle any sensitive capabilities? I see microphone references in the source.
 
 > Yes, it uses the mic for voice commands. And we'll need SOC2 compliance.
 
-Karen: That'll add a PERMISSIONS-CHARTER.md requirement and SBOM generation 
-at release. I'll wire in semgrep for SAST since eslint alone won't cover 
+Karen: That'll add a PERMISSIONS-CHARTER.md requirement and SBOM generation
+at release. I'll wire in semgrep for SAST since eslint alone won't cover
 injection patterns. Do you want me to add it as a dev dependency?
 
 > Yes.
@@ -914,8 +914,8 @@ Profiles are knowledge Karen applies based on what you told her in `karen init`.
 
 ### browser-direct-js
 
-*Your code loads via `<script src>` or `npm install` into the customer's page.*  
-*There is no sandbox. You are a trusted guest in someone else's house.*  
+*Your code loads via `<script src>` or `npm install` into the customer's page.*\
+*There is no sandbox. You are a trusted guest in someone else's house.*\
 *Every violation affects the customer's entire page, not just yours.*
 
 **Additional zero-tolerance checks Karen adds:**
@@ -1034,7 +1034,7 @@ Each package gets its own gate-6 result line. A package marked `"role": "e2e-onl
 
 ### browser-iframe
 
-*Your product is hosted on your domain; the customer embeds via `<iframe>`.*  
+*Your product is hosted on your domain; the customer embeds via `<iframe>`.*\
 *The iframe boundary is a free sandbox. The threat shifts to cross-origin messaging.*
 
 **Additional checks:**
