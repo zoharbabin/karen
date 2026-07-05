@@ -8,4 +8,4 @@ index 2f409df..6463caf 100644
 +
 +// New issue (hardcoded-secret): webhook signing secret committed to source,
 +// used to sign outbound delivery-status callbacks on module load.
-+export const WEBHOOK_SIGNING_SECRET = "whsec_8f2c1a9d3e7b4f6a0c9e2d1b4f6a8c0e";
++export const WEBHOOK_SIGNING_SECRET = "FAKE-NOT-A-REAL-WEBHOOK-SECRET-8f2c1a9d3e7b4f6a0c9e2d1b4f6a8c0e";

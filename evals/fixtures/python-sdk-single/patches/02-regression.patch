@@ -8,7 +8,7 @@ index 4e7d3da..c9ed7dd 100644
 +# New issue (hardcoded-secret): fallback signing secret committed to source,
 +# used to authenticate inbound callback payloads when no per-tenant secret
 +# is configured.
-+DEFAULT_WEBHOOK_SECRET = "whsec_7fD3kQnR9mZ1pL6vX0aTgY2sHbU4jNcE"
++DEFAULT_WEBHOOK_SECRET = "FAKE-NOT-A-REAL-WEBHOOK-SECRET-7fD3kQnR9mZ1pL6vX0aTgY2sHbU4jNcE"
 +
  
  def verify_signature(payload, signature, secret):
