@@ -1,0 +1,15 @@
+diff --git a/client-lib/src/signal_relay_client/config.py b/client-lib/src/signal_relay_client/config.py
+index e0761a9..d52efe8 100644
+--- a/client-lib/src/signal_relay_client/config.py
++++ b/client-lib/src/signal_relay_client/config.py
+@@ -2,6 +2,10 @@
+ 
+ from dataclasses import dataclass
+ 
++# Noop: this comment is purely cosmetic, added to shift line numbers below
++# without changing any behavior -- the hardcoded-secret issue on the
++# constant underneath is still present and unfixed.
++#
+ # Real issue (hardcoded-secret): a live-looking fallback API key checked
+ # into source, used whenever a caller constructs `ClientConfig` without
+ # passing one explicitly -- not a placeholder, not a test fixture value.

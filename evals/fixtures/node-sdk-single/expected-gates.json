@@ -1,0 +1,46 @@
+[
+  {
+    "id": "gate-1-supply-chain",
+    "tool": "npm audit",
+    "coversCategories": [],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-2-completeness",
+    "tool": "eslint + structural stub scan",
+    "coversCategories": [],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-3-security",
+    "tool": "node",
+    "coversCategories": [
+      "global-scope-write",
+      "unremoved-listener",
+      "hardcoded-secret",
+      "credentials-include",
+      "eval-in-comment",
+      "password-variable",
+      "console-debug-guard"
+    ],
+    "zeroTolerance": true
+  },
+  {
+    "id": "gate-4-docs-parity",
+    "tool": "markdown doctest + symbol diff",
+    "coversCategories": [],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-6-test-integrity",
+    "tool": "vitest --coverage",
+    "coversCategories": [],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-7-agent-context",
+    "tool": "agent-context checklist",
+    "coversCategories": [],
+    "zeroTolerance": false
+  }
+]

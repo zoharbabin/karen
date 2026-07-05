@@ -1,0 +1,4 @@
+{
+  "fixedIssueIds": ["src/datastores/eventStore.ts:16:unregistered-personal-data-store"],
+  "expectedDelta": { "gate-5-compliance": -1 }
+}

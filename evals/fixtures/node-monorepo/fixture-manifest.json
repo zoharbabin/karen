@@ -1,0 +1,37 @@
+{
+  "languages": ["typescript"],
+  "manifests": [
+    { "path": "package.json", "language": "typescript" },
+    { "path": "sdk/package.json", "language": "typescript" },
+    { "path": "backend/package.json", "language": "typescript" },
+    { "path": "apps/teaching-avatar/package.json", "language": "typescript" },
+    { "path": "apps/support-widget/package.json", "language": "typescript" }
+  ],
+  "frameworks": ["node"],
+  "ciConfig": [".github/workflows/ci.yml"],
+  "existingTestSetup": {
+    "runner": "vitest",
+    "coverageTool": "v8",
+    "coverageReport": "coverage/lcov.info"
+  },
+  "agentContextFiles": ["CLAUDE.md"],
+  "existingGates": [
+    {
+      "id": "check-docs",
+      "command": "node tools/check-docs.mjs",
+      "outputFormat": "exit-code",
+      "coverage": [
+        { "gate": "gate-4-docs-parity", "scope": "full", "reason": "Checks every tracked markdown file's relative links resolve and every README-documented symbol matches a real export under that package's src/ — full doc<->code drift + link-rot coverage across the whole repo" },
+        { "gate": "gate-3-security", "scope": "partial", "detail": "Structural secret-shaped regex scan (sk-live-/sk_live_/AKIA patterns) over tracked files only, via `git ls-files` — misses untracked/gitignored files and any secret shape outside those three patterns", "reason": "Karen's generated gate-3 script covers the working-tree/gitignored gap and any secret shape this scan doesn't recognize" },
+        { "gate": "gate-2-completeness", "scope": "partial", "detail": "Structural stub-marker scan (`//` TODO/FIXME/HACK/XXX comments and `throw new Error('not implemented...')`) over tracked source only — does not do per-symbol doc/test coverage or check block-comment stub markers", "reason": "Karen's generated gate-2 script still needs to cover per-symbol completeness and any stub marker outside check-docs.mjs's two patterns" }
+      ]
+    }
+  ],
+  "subprojects": [
+    { "path": "sdk", "manifestPath": "sdk/package.json", "language": "typescript" },
+    { "path": "backend", "manifestPath": "backend/package.json", "language": "typescript" },
+    { "path": "apps/teaching-avatar", "manifestPath": "apps/teaching-avatar/package.json", "language": "typescript" },
+    { "path": "apps/support-widget", "manifestPath": "apps/support-widget/package.json", "language": "typescript" }
+  ],
+  "unclaimedPaths": []
+}

@@ -1,0 +1,19 @@
+{
+  "flaws": [
+    {
+      "dimension": "gateIssues",
+      "description": "backend/src/chatProxy.ts:19 stub-implementation (real, non-decoy) is never emitted by gate-2-completeness's stdout in any auditRuns entry -- a false negative.",
+      "expectedGraderFinding": "false negative on stub-implementation"
+    },
+    {
+      "dimension": "gateIssues",
+      "description": "sdk/src/utils.ts:7 eval-in-comment (decoy: historical comment only, no live eval() call) IS emitted by gate-3-security's stdout in every auditRuns entry -- a false positive.",
+      "expectedGraderFinding": "false positive on eval-in-comment (decoy)"
+    },
+    {
+      "dimension": "reconciliation",
+      "description": "init.gateScripts includes a competing full gate-4-docs-parity script, even though fixture-manifest.json's existingGates (check-docs) already marks gate-4-docs-parity as scope:\"full\" -- violates noCompetingGates.",
+      "expectedGraderFinding": "competingGatesFound includes gate-4-docs-parity"
+    }
+  ]
+}

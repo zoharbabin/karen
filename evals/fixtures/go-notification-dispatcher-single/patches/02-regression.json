@@ -1,0 +1,4 @@
+{
+  "newIssue": { "file": "internal/dispatch/priority.go", "line": 15, "category": "no-retry" },
+  "expectedDelta": { "gate-2-completeness": 1 }
+}

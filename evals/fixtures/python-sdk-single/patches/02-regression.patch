@@ -1,0 +1,15 @@
+diff --git a/src/prism_sdk/webhooks.py b/src/prism_sdk/webhooks.py
+index 4e7d3da..c9ed7dd 100644
+--- a/src/prism_sdk/webhooks.py
++++ b/src/prism_sdk/webhooks.py
+@@ -1,5 +1,10 @@
+ """Webhook signature verification for inbound Prism callbacks."""
+ 
++# New issue (hardcoded-secret): fallback signing secret committed to source,
++# used to authenticate inbound callback payloads when no per-tenant secret
++# is configured.
++DEFAULT_WEBHOOK_SECRET = "whsec_7fD3kQnR9mZ1pL6vX0aTgY2sHbU4jNcE"
++
+ 
+ def verify_signature(payload, signature, secret):
+     """Verify an inbound webhook's HMAC signature.

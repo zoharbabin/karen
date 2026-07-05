@@ -1,0 +1,6 @@
+{
+  "unchangedIssueId": "src/incident_mcp_server/tools/apply_config_patch.py:28:yaml-unsafe-load",
+  "previousLine": 28,
+  "newLine": 31,
+  "expectedDelta": {}
+}

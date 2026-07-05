@@ -1,0 +1,6 @@
+{
+  "unchangedIssueId": "src/render.ts:17:shell-injection",
+  "previousLine": 17,
+  "newLine": 20,
+  "expectedDelta": {}
+}

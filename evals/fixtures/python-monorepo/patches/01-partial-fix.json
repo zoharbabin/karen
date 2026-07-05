@@ -1,0 +1,4 @@
+{
+  "fixedIssueIds": ["backend/src/signal_relay_backend/server.py:30:shell-injection"],
+  "expectedDelta": { "gate-3-security": -1 }
+}

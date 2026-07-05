@@ -1,0 +1,633 @@
+{
+  "fixture": "node-personalization-backend-single",
+  "init": {
+    "detectProjectOutput": {
+      "languages": [
+        "typescript"
+      ],
+      "manifests": [
+        {
+          "path": "package.json",
+          "language": "typescript"
+        }
+      ],
+      "frameworks": [
+        "express"
+      ],
+      "ciConfig": [
+        ".github/workflows/ci.yml"
+      ],
+      "existingTestSetup": {
+        "runner": "vitest",
+        "coverageTool": "v8",
+        "coverageReport": "coverage/lcov.info"
+      },
+      "agentContextFiles": [
+        "CLAUDE.md"
+      ],
+      "existingGates": [],
+      "subprojects": [],
+      "unclaimedPaths": []
+    },
+    "transcript": [
+      {
+        "role": "karen",
+        "text": "what does this project do / who uses it?"
+      },
+      {
+        "role": "user",
+        "text": "Backend service for a tiered avatar personalization product. Core tier renders the avatar and handles sessions with no personal-data handling at all. An opt-in analytics tier adds usage tracking. Used by our own product teams, not sold directly to customers."
+      },
+      {
+        "role": "karen",
+        "text": "I see feature:analytics-tier and feature:personalization-tier flags in src/features.ts — which of these are actually built and reachable today?"
+      },
+      {
+        "role": "user",
+        "text": "analytics-tier is live in production. personalization-tier is flagged but the code behind it doesn't exist yet — we're still designing the preference-profile schema."
+      },
+      {
+        "role": "karen",
+        "text": "does the analytics tier's usage-event store register with the consent registry in src/consent/registry.ts the same way the user table does?"
+      },
+      {
+        "role": "user",
+        "text": "Good catch — no, actually. It should, but whoever added eventStore.ts a few months back didn't wire it in. That's a real gap, not intentional."
+      },
+      {
+        "role": "karen",
+        "text": "any compliance or regulatory requirements?"
+      },
+      {
+        "role": "user",
+        "text": "GDPR export/erasure applies once the analytics tier is on, since that's the first tier that stores personal data broadly enough to trigger it. The core tier alone has no personal-data store, so nothing applies until analytics-tier is enabled."
+      },
+      {
+        "role": "karen",
+        "text": "what coverage percentage should gate-6 enforce?"
+      },
+      {
+        "role": "user",
+        "text": "80%, same as our other TS services."
+      }
+    ],
+    "karenJson": {
+      "version": "1.0.0",
+      "project": {
+        "type": "service",
+        "language": [
+          "typescript"
+        ],
+        "deployment": [
+          "node-server"
+        ],
+        "audience": "internal",
+        "aiPowered": false,
+        "subprojects": []
+      },
+      "compliance": [
+        {
+          "standard": "gdpr",
+          "activatesWhen": "feature:analytics-tier",
+          "note": "Analytics tier is the first tier that stores personal data broadly enough to trigger export/erasure obligations — already live, so this requirement is enforced now, not forward-declared"
+        },
+        {
+          "standard": "gdpr",
+          "activatesWhen": "feature:personalization-tier",
+          "note": "personalization-tier is flagged in src/features.ts but not yet built — tracked so the team sees GDPR scope expanding the day it ships, not enforced until then"
+        }
+      ],
+      "personalDataRegistry": {
+        "path": "src/consent/registry.ts",
+        "stores": [
+          "src/datastores/userTable.ts",
+          "src/datastores/eventStore.ts"
+        ]
+      },
+      "coverage": {
+        "threshold": 80
+      },
+      "testRunner": {
+        "command": "npm test",
+        "coverageReport": "coverage/lcov.info",
+        "format": "lcov"
+      },
+      "existingGates": [],
+      "knownGaps": [],
+      "exceedsBaseline": [],
+      "exceptions": {},
+      "circuitBreaker": {
+        "threshold": 3,
+        "exitCode": 2
+      },
+      "expiryWarningDays": 7
+    },
+    "gateScripts": {
+      "gate-1-supply-chain": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nout=\"\"\nif [ -f package.json ]; then\n  audit_json=\"$(npm audit --omit=dev --json 2>/dev/null || true)\"\n  vulns=\"$(echo \"$audit_json\" | node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d);console.log(j.metadata?.vulnerabilities?.total||0)}catch(e){console.log(0)}})\")\"\n  if [ \"$vulns\" -gt 0 ]; then\n    issues=$vulns\n    out=\"package.json:1\\t$vulns known vulnerable dependencies via npm audit\"$'\\n'\n  fi\nfi\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
+      "gate-2-completeness": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nout=\"\"\nwhile IFS= read -r hit; do\n  [ -z \"$hit\" ] && continue\n  out+=\"$hit\\tstub marker or not-implemented throw\"$'\\n'\n  issues=$((issues+1))\ndone < <(grep -rnE 'TODO|FIXME|not implemented' src/ 2>/dev/null | cut -d: -f1,2 || true)\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
+      "gate-3-security": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nout=\"\"\nnode tools/scan-security-rules.mjs src/ --format=gate >> /tmp/gate3.$$ 2>/dev/null || true\nwhile IFS= read -r line; do\n  [ -z \"$line\" ] && continue\n  out+=\"$line\"$'\\n'\n  issues=$((issues+1))\ndone < /tmp/gate3.$$ 2>/dev/null || true\nrm -f /tmp/gate3.$$\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; else echo \"FAIL ($issues issues)\"; echo \"ZERO-TOLERANCE\"; fi\n[ \"$issues\" -eq 0 ] && exit 0 || exit 1\n",
+      "gate-4-docs-parity": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nout=\"\"\nif ! grep -q 'consent/registry.ts' README.md 2>/dev/null; then\n  out+=\"README.md:1\\tdata-subject-request section drifted from src/consent/registry.ts\\n\"\n  issues=$((issues+1))\nfi\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
+      "gate-5-compliance": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nout=\"\"\n# compliance-overclaim: every named reference in SECURITY.md's Controls\n# section must resolve to a real file in the repo.\nwhile IFS=$'\\t' read -r line ref; do\n  [ -z \"$ref\" ] && continue\n  if [ ! -f \"$ref\" ]; then\n    out+=\"SECURITY.md:$line\\tcompliance-overclaim: names $ref as backing evidence but that file does not exist\\n\"\n    issues=$((issues+1))\n  fi\ndone < <(node tools/scan-compliance-claims.mjs SECURITY.md)\n# unregistered-personal-data-store: every store-shaped file under\n# src/datastores/ must call register() from src/consent/registry.ts.\nwhile IFS=$'\\t' read -r line file; do\n  [ -z \"$file\" ] && continue\n  out+=\"$file:$line\\tunregistered-personal-data-store: persists personal data keyed by user but never registers with src/consent/registry.ts\\n\"\n  issues=$((issues+1))\ndone < <(node tools/scan-personal-data-stores.mjs src/datastores/ src/consent/registry.ts)\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
+      "gate-6-test-integrity": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nout=\"\"\nresult=$(npx vitest run --coverage 2>&1 || true)\nif echo \"$result\" | grep -q 'FAIL'; then\n  out+=\"test/registry.test.ts:1\\tvitest reported a failing test\\n\"\n  issues=$((issues+1))\nfi\npct=$(echo \"$result\" | grep -oE 'All files[^|]*\\|[^|]*' | grep -oE '[0-9]+\\.[0-9]+' | head -1)\nif [ -n \"$pct\" ] && awk \"BEGIN{exit !($pct < 80)}\"; then\n  out+=\"coverage/lcov.info:1\\tcoverage ${pct}% below 80% threshold\\n\"\n  issues=$((issues+1))\nfi\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
+      "gate-7-agent-context": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nif [ ! -f CLAUDE.md ]; then\n  echo -e \"CLAUDE.md\\tmissing agent context file at repo root\"\n  issues=$((issues+1))\nfi\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n"
+    }
+  },
+  "auditRuns": [
+    {
+      "trigger": "initial",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-5-compliance": {
+          "stdout": "SECURITY.md:17\tcompliance-overclaim: names src/audit/log.ts as backing evidence but that file does not exist\nsrc/datastores/sessionCache.ts:7\tunregistered-personal-data-store: persists personal data keyed by user but never registers with src/consent/registry.ts\nFAIL (2 issues)\n",
+          "exitCode": 1
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 1,
+        "timestamp": "2026-06-28T09:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-5-compliance": {
+            "count": 2,
+            "fingerprint": [
+              "fp-overclaim-auditlog",
+              "fp-unreg-sessioncache-decoy"
+            ]
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 2
+      }
+    },
+    {
+      "trigger": "01-partial-fix",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-5-compliance": {
+          "stdout": "SECURITY.md:17\tcompliance-overclaim: names src/audit/log.ts as backing evidence but that file does not exist\nFAIL (1 issues)\n",
+          "exitCode": 1
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 2,
+        "timestamp": "2026-06-28T09:10:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-5-compliance": {
+            "count": 1,
+            "fingerprint": [
+              "fp-overclaim-auditlog"
+            ]
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 1
+      }
+    },
+    {
+      "trigger": "02-regression",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-5-compliance": {
+          "stdout": "src/datastores/preferenceCache.ts:1\tunregistered-personal-data-store: persists personal data keyed by user but never registers with src/consent/registry.ts\nSECURITY.md:17\tcompliance-overclaim: names src/audit/log.ts as backing evidence but that file does not exist\nFAIL (2 issues)\n",
+          "exitCode": 1
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 3,
+        "timestamp": "2026-06-28T09:20:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-5-compliance": {
+            "count": 2,
+            "fingerprint": [
+              "fp-unreg-preferencecache",
+              "fp-overclaim-auditlog"
+            ]
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 2
+      }
+    },
+    {
+      "trigger": "03-noop-line-shift",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-5-compliance": {
+          "stdout": "src/datastores/preferenceCache.ts:1\tunregistered-personal-data-store: persists personal data keyed by user but never registers with src/consent/registry.ts\nSECURITY.md:18\tcompliance-overclaim: names src/audit/log.ts as backing evidence but that file does not exist\nFAIL (2 issues)\n",
+          "exitCode": 1
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 4,
+        "timestamp": "2026-06-28T09:30:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-5-compliance": {
+            "count": 2,
+            "fingerprint": [
+              "fp-unreg-preferencecache",
+              "fp-overclaim-auditlog"
+            ]
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 2
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-1",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-5-compliance": {
+          "stdout": "src/datastores/preferenceCache.ts:1\tunregistered-personal-data-store: persists personal data keyed by user but never registers with src/consent/registry.ts\nSECURITY.md:18\tcompliance-overclaim: names src/audit/log.ts as backing evidence but that file does not exist\nFAIL (2 issues)\n",
+          "exitCode": 1
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 5,
+        "timestamp": "2026-06-28T09:35:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-5-compliance": {
+            "count": 2,
+            "fingerprint": [
+              "fp-unreg-preferencecache",
+              "fp-overclaim-auditlog"
+            ]
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 2
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-2",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-5-compliance": {
+          "stdout": "src/datastores/preferenceCache.ts:1\tunregistered-personal-data-store: persists personal data keyed by user but never registers with src/consent/registry.ts\nSECURITY.md:18\tcompliance-overclaim: names src/audit/log.ts as backing evidence but that file does not exist\nFAIL (2 issues)\n",
+          "exitCode": 1
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 6,
+        "timestamp": "2026-06-28T09:40:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-5-compliance": {
+            "count": 2,
+            "fingerprint": [
+              "fp-unreg-preferencecache",
+              "fp-overclaim-auditlog"
+            ]
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 2
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-3",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-5-compliance": {
+          "stdout": "src/datastores/preferenceCache.ts:1\tunregistered-personal-data-store: persists personal data keyed by user but never registers with src/consent/registry.ts\nSECURITY.md:18\tcompliance-overclaim: names src/audit/log.ts as backing evidence but that file does not exist\nFAIL (2 issues)\n",
+          "exitCode": 1
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 7,
+        "timestamp": "2026-06-28T09:45:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-5-compliance": {
+            "count": 2,
+            "fingerprint": [
+              "fp-unreg-preferencecache",
+              "fp-overclaim-auditlog"
+            ]
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 2
+      }
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "languages": ["python"],
+  "manifests": [
+    { "path": "pyproject.toml", "language": "python" }
+  ],
+  "frameworks": ["fastapi"],
+  "ciConfig": [".github/workflows/ci.yml"],
+  "existingTestSetup": {
+    "runner": "pytest",
+    "coverageTool": null,
+    "coverageReport": null
+  },
+  "agentContextFiles": ["CLAUDE.md"],
+  "existingGates": [],
+  "subprojects": [],
+  "unclaimedPaths": []
+}

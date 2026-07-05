@@ -1,0 +1,613 @@
+{
+  "fixture": "node-vendored-single",
+  "init": {
+    "detectProjectOutput": {
+      "languages": [
+        "typescript"
+      ],
+      "manifests": [
+        {
+          "path": "package.json",
+          "language": "typescript"
+        }
+      ],
+      "frameworks": [
+        "node"
+      ],
+      "ciConfig": [
+        ".github/workflows/ci.yml"
+      ],
+      "existingTestSetup": {
+        "runner": "vitest",
+        "coverageTool": "v8",
+        "coverageReport": "coverage/lcov.info"
+      },
+      "agentContextFiles": [
+        "CLAUDE.md"
+      ],
+      "existingGates": [],
+      "subprojects": [],
+      "unclaimedPaths": []
+    },
+    "transcript": [
+      {
+        "role": "karen",
+        "text": "What does this project do and who uses it?"
+      },
+      {
+        "role": "user",
+        "text": "It's a Node/TypeScript SDK that fetches and renders codegen scaffolding templates from our private template registry. Used by our own internal CLI tools — not distributed to external customers, and never loaded via `<script src>` in a browser."
+      },
+      {
+        "role": "karen",
+        "text": "What's the distribution mechanism here — is this ever bundled and shipped straight into a browser page, or does it stay server/CLI-side only?"
+      },
+      {
+        "role": "user",
+        "text": "It's an npm-installed library that runs inside internal Node CLI tooling — node-server style, not browser-direct-js. It's never bundled into a page."
+      },
+      {
+        "role": "karen",
+        "text": "What's the audience, and does it handle sensitive data?"
+      },
+      {
+        "role": "user",
+        "text": "Internal only — our own developer tooling team. No PII or payment data. The registry API key it talks to is a real credential though, so treat that as sensitive."
+      },
+      {
+        "role": "karen",
+        "text": "Any compliance or regulatory requirements I should know about?"
+      },
+      {
+        "role": "user",
+        "text": "No. Internal tooling — no SOC2, HIPAA, or PCI requirement."
+      },
+      {
+        "role": "karen",
+        "text": "Is this project AI-powered, or built with / used by LLM coding agents?"
+      },
+      {
+        "role": "user",
+        "text": "It's built with Claude Code day to day, but the SDK itself doesn't call an LLM at runtime and isn't invoked by one — it's a plain template-fetching client library."
+      },
+      {
+        "role": "karen",
+        "text": "I see two minified files under vendor/ — qs-parse.min.js has a THIRD_PARTY.md entry but format-utils.min.js doesn't. Was that intentional, or did the provenance note get missed?"
+      },
+      {
+        "role": "user",
+        "text": "That was missed — format-utils.min.js should have gotten a THIRD_PARTY.md entry when it was vendored in. Please flag it; we'll backfill the entry."
+      },
+      {
+        "role": "karen",
+        "text": "What threshold should gate-6 enforce for this package?"
+      },
+      {
+        "role": "user",
+        "text": "80% is fine, same as our other internal packages."
+      }
+    ],
+    "karenJson": {
+      "version": "1.0.0",
+      "project": {
+        "type": "library",
+        "language": [
+          "typescript"
+        ],
+        "deployment": [
+          "node-server"
+        ],
+        "audience": "internal",
+        "aiPowered": false,
+        "subprojects": []
+      },
+      "compliance": [],
+      "coverage": {
+        "threshold": 80
+      },
+      "testRunner": {
+        "command": "npm test",
+        "coverageReport": "coverage/lcov.info",
+        "format": "lcov"
+      },
+      "doctest": {
+        "files": [
+          "README.md"
+        ],
+        "languages": [
+          "ts",
+          "typescript"
+        ],
+        "annotation": "karen:runnable"
+      },
+      "permissions": {},
+      "circuitBreaker": {
+        "threshold": 3,
+        "exitCode": 2
+      },
+      "expiryWarningDays": 7,
+      "existingGates": [],
+      "crossSubprojectConsistency": [],
+      "knownGaps": [],
+      "exceedsBaseline": [
+        {
+          "gate": "gate-1-supply-chain",
+          "note": "Zero runtime dependencies — the two vendored files in vendor/ replace what would otherwise be two npm dependencies, keeping the declared dependency tree empty (this strength is independent of, and does not excuse, the vendored-file provenance gap also reported on gate-1)"
+        }
+      ],
+      "exceptions": {}
+    },
+    "gateScripts": {
+      "gate-1-supply-chain": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nout=\"\"\nwhile IFS= read -r -d '' f; do\n  rel=\"${f#$root/}\"\n  base=\"$(basename \"$f\")\"\n  if ! grep -q \"$base\" \"$root/THIRD_PARTY.md\" 2>/dev/null; then\n    out+=\"$rel:1\"$'\\t'\"vendored file missing THIRD_PARTY.md provenance entry\"$'\\n'\n    issues=$((issues+1))\n  fi\ndone < <(find \"$root/vendor\" -type f -name '*.min.js' -print0 2>/dev/null)\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
+      "gate-2-completeness": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nout=\"\"\nwhile IFS=: read -r file line rest; do\n  out+=\"$file:$line\"$'\\t'\"public export throws \\\"not implemented\\\" (stub implementation)\"$'\\n'\n  issues=$((issues+1))\ndone < <(grep -rn --include='*.ts' -B2 'throw new Error(\"not implemented\")' \"$root/src\" 2>/dev/null \\\n  | awk -F- '/not implemented/{print}' | grep -oE '^[^:]+:[0-9]+' )\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
+      "gate-3-security": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\n# semgrep run against custom rules for hardcoded-secret / shell-injection /\n# eval-in-comment; output normalized to file:line\\tmessage below.\nresults=\"$(semgrep --config \"$root/.karen/rules/security.yml\" --json \"$root/src\" 2>/dev/null || echo '{\"results\":[]}')\"\nissues=0\nout=\"\"\nwhile IFS=$'\\t' read -r file line msg; do\n  [ -z \"$file\" ] && continue\n  out+=\"$file:$line\"$'\\t'\"$msg\"$'\\n'\n  issues=$((issues+1))\ndone < <(echo \"$results\" | node \"$root/.karen/gates/format-semgrep.js\")\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; echo \"ZERO-TOLERANCE\"; exit 1; fi\n",
+      "gate-4-docs-parity": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nnode \"$root/tools/doctest.mjs\" --root \"$root\" --files README.md --lang ts,typescript --annotation karen:runnable || issues=$?\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
+      "gate-6-test-integrity": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nnpm test --silent\ncoverage=\"$(node -e \"console.log(require('./coverage/coverage-summary.json').total.lines.pct)\" 2>/dev/null || echo 0)\"\nthreshold=80\nif awk \"BEGIN{exit !($coverage >= $threshold)}\"; then\n  echo \"PASS (0 issues)\"; exit 0\nelse\n  echo \"coverage/lcov.info:1\"$'\\t'\"coverage $coverage% below threshold $threshold%\"\n  echo \"FAIL (1 issues)\"; exit 1\nfi\n",
+      "gate-7-agent-context": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nout=\"\"\nif [ ! -f \"$root/CLAUDE.md\" ]; then\n  out+=\"CLAUDE.md\"$'\\t'\"missing agent context file\"$'\\n'\n  issues=$((issues+1))\nfi\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n"
+    }
+  },
+  "auditRuns": [
+    {
+      "trigger": "initial",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "vendor/format-utils.min.js:1\tvendored file missing THIRD_PARTY.md provenance entry\nFAIL (1 issues)\n",
+          "exitCode": 1
+        },
+        "gate-2-completeness": {
+          "stdout": "src/render.ts:43\tpublic export throws \"not implemented\" (stub implementation)\nFAIL (1 issues)\n",
+          "exitCode": 1
+        },
+        "gate-3-security": {
+          "stdout": "src/render.ts:17\tshell command built via string interpolation with caller-supplied path (shell injection)\nsrc/render.ts:32\tshell command via execSync flagged by textual-only scanner (no caller-supplied input actually reaches this call)\nFAIL (2 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 1,
+        "timestamp": "2026-06-30T09:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 1,
+            "fingerprint": [
+              "fp-vendored-no-provenance-format-utils.min.js"
+            ]
+          },
+          "gate-2-completeness": {
+            "count": 1,
+            "fingerprint": [
+              "fp-stub-implementation-render.ts"
+            ]
+          },
+          "gate-3-security": {
+            "count": 2,
+            "fingerprint": [
+              "fp-shell-injection-render.ts",
+              "fp-shell-injection-decoy-render.ts"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 4
+      }
+    },
+    {
+      "trigger": "01-partial-fix",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "vendor/format-utils.min.js:1\tvendored file missing THIRD_PARTY.md provenance entry\nFAIL (1 issues)\n",
+          "exitCode": 1
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "src/render.ts:17\tshell command built via string interpolation with caller-supplied path (shell injection)\nsrc/render.ts:32\tshell command via execSync flagged by textual-only scanner (no caller-supplied input actually reaches this call)\nFAIL (2 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 2,
+        "timestamp": "2026-06-30T09:10:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 1,
+            "fingerprint": [
+              "fp-vendored-no-provenance-format-utils.min.js"
+            ]
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 2,
+            "fingerprint": [
+              "fp-shell-injection-render.ts",
+              "fp-shell-injection-decoy-render.ts"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 3
+      }
+    },
+    {
+      "trigger": "02-regression",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "vendor/format-utils.min.js:1\tvendored file missing THIRD_PARTY.md provenance entry\nFAIL (1 issues)\n",
+          "exitCode": 1
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "src/render.ts:17\tshell command built via string interpolation with caller-supplied path (shell injection)\nsrc/index.ts:6\twebhook signing secret hardcoded in source\nsrc/render.ts:32\tshell command via execSync flagged by textual-only scanner (no caller-supplied input actually reaches this call)\nFAIL (3 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 3,
+        "timestamp": "2026-06-30T09:20:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 1,
+            "fingerprint": [
+              "fp-vendored-no-provenance-format-utils.min.js"
+            ]
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 3,
+            "fingerprint": [
+              "fp-shell-injection-render.ts",
+              "fp-hardcoded-secret-index.ts",
+              "fp-shell-injection-decoy-render.ts"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 4
+      }
+    },
+    {
+      "trigger": "03-noop-line-shift",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "vendor/format-utils.min.js:1\tvendored file missing THIRD_PARTY.md provenance entry\nFAIL (1 issues)\n",
+          "exitCode": 1
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "src/render.ts:20\tshell command built via string interpolation with caller-supplied path (shell injection)\nsrc/index.ts:6\twebhook signing secret hardcoded in source\nsrc/render.ts:32\tshell command via execSync flagged by textual-only scanner (no caller-supplied input actually reaches this call)\nFAIL (3 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 4,
+        "timestamp": "2026-06-30T09:30:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 1,
+            "fingerprint": [
+              "fp-vendored-no-provenance-format-utils.min.js"
+            ]
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 3,
+            "fingerprint": [
+              "fp-shell-injection-render.ts",
+              "fp-hardcoded-secret-index.ts",
+              "fp-shell-injection-decoy-render.ts"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 4
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-1",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "vendor/format-utils.min.js:1\tvendored file missing THIRD_PARTY.md provenance entry\nFAIL (1 issues)\n",
+          "exitCode": 1
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "src/render.ts:20\tshell command built via string interpolation with caller-supplied path (shell injection)\nsrc/index.ts:6\twebhook signing secret hardcoded in source\nsrc/render.ts:32\tshell command via execSync flagged by textual-only scanner (no caller-supplied input actually reaches this call)\nFAIL (3 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 5,
+        "timestamp": "2026-06-30T09:40:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 1,
+            "fingerprint": [
+              "fp-vendored-no-provenance-format-utils.min.js"
+            ]
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 3,
+            "fingerprint": [
+              "fp-shell-injection-render.ts",
+              "fp-hardcoded-secret-index.ts",
+              "fp-shell-injection-decoy-render.ts"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 4
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-2",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "vendor/format-utils.min.js:1\tvendored file missing THIRD_PARTY.md provenance entry\nFAIL (1 issues)\n",
+          "exitCode": 1
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "src/render.ts:20\tshell command built via string interpolation with caller-supplied path (shell injection)\nsrc/index.ts:6\twebhook signing secret hardcoded in source\nsrc/render.ts:32\tshell command via execSync flagged by textual-only scanner (no caller-supplied input actually reaches this call)\nFAIL (3 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 6,
+        "timestamp": "2026-06-30T09:50:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 1,
+            "fingerprint": [
+              "fp-vendored-no-provenance-format-utils.min.js"
+            ]
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 3,
+            "fingerprint": [
+              "fp-shell-injection-render.ts",
+              "fp-hardcoded-secret-index.ts",
+              "fp-shell-injection-decoy-render.ts"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 4
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-3",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "vendor/format-utils.min.js:1\tvendored file missing THIRD_PARTY.md provenance entry\nFAIL (1 issues)\n",
+          "exitCode": 1
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "src/render.ts:20\tshell command built via string interpolation with caller-supplied path (shell injection)\nsrc/index.ts:6\twebhook signing secret hardcoded in source\nsrc/render.ts:32\tshell command via execSync flagged by textual-only scanner (no caller-supplied input actually reaches this call)\nFAIL (3 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 7,
+        "timestamp": "2026-06-30T10:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 1,
+            "fingerprint": [
+              "fp-vendored-no-provenance-format-utils.min.js"
+            ]
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 3,
+            "fingerprint": [
+              "fp-shell-injection-render.ts",
+              "fp-hardcoded-secret-index.ts",
+              "fp-shell-injection-decoy-render.ts"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 4
+      }
+    }
+  ]
+}

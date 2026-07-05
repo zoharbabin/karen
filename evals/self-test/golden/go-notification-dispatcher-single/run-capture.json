@@ -1,0 +1,220 @@
+{
+  "fixture": "go-notification-dispatcher-single",
+  "init": {
+    "detectProjectOutput": {
+      "languages": ["go"],
+      "manifests": [
+        { "path": "go.mod", "language": "go" }
+      ],
+      "frameworks": [],
+      "ciConfig": [".github/workflows/ci.yml"],
+      "existingTestSetup": {
+        "runner": "go test",
+        "coverageTool": null,
+        "coverageReport": null
+      },
+      "agentContextFiles": ["AGENTS.md"],
+      "existingGates": [],
+      "subprojects": [],
+      "unclaimedPaths": []
+    },
+    "transcript": [
+      { "role": "karen", "text": "what does this project do / who uses it?" },
+      { "role": "user", "text": "It's a Go backend service — notification-dispatcher. Accepts internal notification-send requests and relays each one to a subscriber's registered webhook. Used internally, not customer-facing." },
+      { "role": "karen", "text": "what's your deployment/runtime environment?" },
+      { "role": "user", "text": "Runs as a standalone HTTP service, listens on :8090. No browser context, no CDN, nothing client-side — plain backend service." },
+      { "role": "karen", "text": "who's the audience, and any compliance or regulatory requirements?" },
+      { "role": "user", "text": "Internal only — other services in our own infra call it. No SOC2/HIPAA/PCI requirement, no customer data flows through it." },
+      { "role": "karen", "text": "is this project AI-powered, or built with / used by LLM coding agents?" },
+      { "role": "user", "text": "No LLM calls at runtime — it's pure delivery plumbing. AGENTS.md is there for contributors using coding agents, but the service itself doesn't call a model." },
+      { "role": "karen", "text": "your only outbound calls are to subscriber webhooks — should Karen hold every one of those calls to a retry-with-backoff bar, or is there a legitimate reason some stay single-attempt?" },
+      { "role": "user", "text": "Hold them all to it. Dispatcher.Send and SendDigest are both real calls to another service over the network — there's no reason Send should be single-attempt when SendDigest already proves the retry pattern works. That's a real gap, not intentional." },
+      { "role": "karen", "text": "ListDeliveryHistory returns the full unbounded log for a subscriber — is that ever called from a request path, or only from internal tooling?" },
+      { "role": "user", "text": "It's called from an operator-facing HTTP handler, not just internal tooling — same trust boundary as the paginated version. It should have a cap like ListDeliveryHistoryPage does." },
+      { "role": "karen", "text": "one more thing — I don't see a coverage report wired in anywhere, in CI or locally. Want me to wire in `-coverprofile`, or run coverage-less for now with the gate set to assertion-density-only?" },
+      { "role": "user", "text": "Run coverage-less for now. We know we should wire in -coverprofile eventually but it's not a priority this quarter — assertion-density-only is fine." }
+    ],
+    "karenJson": {
+      "version": "1.0.0",
+      "project": {
+        "type": "service",
+        "language": ["go"],
+        "deployment": ["node-server"],
+        "audience": "internal",
+        "aiPowered": false,
+        "subprojects": []
+      },
+      "compliance": [],
+      "coverage": {
+        "enabled": false,
+        "reason": "go test runs with no -coverprofile wired in locally or in CI — team opted to run coverage-less for now rather than silently pass or skip the check; gate-6 still enforces assertion density"
+      },
+      "testRunner": {
+        "command": "go test ./...",
+        "coverageReport": null,
+        "format": null
+      },
+      "permissions": {},
+      "circuitBreaker": { "threshold": 3, "exitCode": 2 },
+      "expiryWarningDays": 7,
+      "existingGates": [],
+      "crossSubprojectConsistency": [],
+      "knownGaps": [],
+      "exceedsBaseline": [
+        {
+          "gate": "gate-1-supply-chain",
+          "note": "Zero runtime dependencies — the entire service is built on the Go standard library, no third-party module required"
+        }
+      ],
+      "exceptions": {}
+    },
+    "gateScripts": {
+      "gate-1-supply-chain": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\n\nissues=0\nout=$(govulncheck ./... 2>&1) || true\nif echo \"$out\" | grep -q 'Vulnerability #'; then\n  echo \"$out\" | grep -B2 'Vulnerability #' | grep -oE '^[^:]+\\.go:[0-9]+' | while read -r loc; do\n    echo -e \"${loc}\\tknown vulnerability reachable via govulncheck\"\n    issues=$((issues + 1))\n  done\nfi\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nfi\necho \"FAIL (${issues} issues)\"\nexit 1",
+      "gate-2-completeness": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\n\nissues=0\ngo vet ./... 2>&1 || true\n\n# dead-code: exported funcs with no call site, no interface satisfaction, no\n# indirect reference via a lookup table — structural (call-graph-aware), not\n# a plain grep-for-name-elsewhere-in-repo scan.\nwhile IFS=$'\\t' read -r loc msg; do\n  [ -z \"$loc\" ] && continue\n  echo -e \"${loc}\\t${msg}\"\n  issues=$((issues + 1))\ndone < <(go run ./tools/deadcode ./... 2>/dev/null || true)\n\n# no-retry: outbound network calls (http.Client.Post/Do/Get) made exactly\n# once with no surrounding retry loop or backoff.\nwhile IFS=$'\\t' read -r loc msg; do\n  [ -z \"$loc\" ] && continue\n  echo -e \"${loc}\\t${msg}\"\n  issues=$((issues + 1))\ndone < <(go run ./tools/resiliencyscan ./... 2>/dev/null || true)\n\n# unbounded-payload: reads of a shared/log slice with no explicit page\n# size, offset, or row cap.\nwhile IFS=$'\\t' read -r loc msg; do\n  [ -z \"$loc\" ] && continue\n  echo -e \"${loc}\\t${msg}\"\n  issues=$((issues + 1))\ndone < <(go run ./tools/boundsscan ./... 2>/dev/null || true)\n\n# eager-heavy-startup: package-level vars initialized by a subprocess spawn\n# or other heavy call at init time, with no lazy/sync.Once guard.\nwhile IFS=$'\\t' read -r loc msg; do\n  [ -z \"$loc\" ] && continue\n  echo -e \"${loc}\\t${msg}\"\n  issues=$((issues + 1))\ndone < <(go run ./tools/startupscan ./... 2>/dev/null || true)\n\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nfi\necho \"FAIL (${issues} issues)\"\nexit 1",
+      "gate-6-test-integrity": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\n\nissues=0\nif ! go test ./... >/tmp/gate6.out 2>&1; then\n  while IFS= read -r line; do\n    echo -e \"unknown:0\\t${line}\"\n    issues=$((issues + 1))\n  done < <(grep -E '^--- FAIL' /tmp/gate6.out || true)\nfi\n\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nfi\necho \"FAIL (${issues} issues)\"\nexit 1",
+      "gate-7-agent-context": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\n\nissues=0\nif [ ! -f AGENTS.md ]; then\n  echo -e \"AGENTS.md\\tmissing agent-context file describing build/test/quality-gate workflow\"\n  issues=$((issues + 1))\nelse\n  for marker in 'karen audit' 'Exit 2'; do\n    if ! grep -q \"$marker\" AGENTS.md; then\n      echo -e \"AGENTS.md\\tmissing required section referencing \\\"${marker}\\\"\"\n      issues=$((issues + 1))\n    fi\n  done\nfi\n\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nfi\necho \"FAIL (${issues} issues)\"\nexit 1"
+    }
+  },
+  "auditRuns": [
+    {
+      "trigger": "initial",
+      "gateResults": {
+        "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "internal/dispatch/format.go:10\tdead-code: FormatLegacyPayload is exported but has no call site, no interface satisfaction, and no indirect reference from any lookup table — nothing in this codebase invokes it\ninternal/dispatch/dispatcher.go:29\tno-retry: Dispatcher.Send makes exactly one attempt to POST to the subscriber webhook, with no retry loop or backoff on transient failure\ninternal/dispatch/history.go:28\tunbounded-payload: ListDeliveryHistory returns the full delivery log for a subscriber with no page size, offset, or row cap\ninternal/dispatch/templates.go:16\teager-heavy-startup: compiledTemplateCache is initialized by a subprocess spawn (digest-template-compiler) at package-init time, before any digest has been requested\nFAIL (4 issues)\n", "exitCode": 1 },
+        "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
+      },
+      "runState": {
+        "run": 1,
+        "timestamp": "2026-07-02T09:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 4, "fingerprint": ["fp-deadcode-formatlegacypayload", "fp-noretry-send", "fp-unbounded-listdeliveryhistory", "fp-eagerstartup-templatecache"] },
+          "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
+          "gate-7-agent-context": { "count": 0, "fingerprint": [] }
+        },
+        "total": 4
+      }
+    },
+    {
+      "trigger": "01-partial-fix",
+      "gateResults": {
+        "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "internal/dispatch/format.go:10\tdead-code: FormatLegacyPayload is exported but has no call site, no interface satisfaction, and no indirect reference from any lookup table — nothing in this codebase invokes it\ninternal/dispatch/history.go:28\tunbounded-payload: ListDeliveryHistory returns the full delivery log for a subscriber with no page size, offset, or row cap\ninternal/dispatch/templates.go:16\teager-heavy-startup: compiledTemplateCache is initialized by a subprocess spawn (digest-template-compiler) at package-init time, before any digest has been requested\nFAIL (3 issues)\n", "exitCode": 1 },
+        "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
+      },
+      "runState": {
+        "run": 2,
+        "timestamp": "2026-07-02T09:20:00Z",
+        "gates": {
+          "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 3, "fingerprint": ["fp-deadcode-formatlegacypayload", "fp-unbounded-listdeliveryhistory", "fp-eagerstartup-templatecache"] },
+          "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
+          "gate-7-agent-context": { "count": 0, "fingerprint": [] }
+        },
+        "total": 3
+      }
+    },
+    {
+      "trigger": "02-regression",
+      "gateResults": {
+        "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "internal/dispatch/format.go:10\tdead-code: FormatLegacyPayload is exported but has no call site, no interface satisfaction, and no indirect reference from any lookup table — nothing in this codebase invokes it\ninternal/dispatch/history.go:28\tunbounded-payload: ListDeliveryHistory returns the full delivery log for a subscriber with no page size, offset, or row cap\ninternal/dispatch/templates.go:16\teager-heavy-startup: compiledTemplateCache is initialized by a subprocess spawn (digest-template-compiler) at package-init time, before any digest has been requested\ninternal/dispatch/priority.go:15\tno-retry: Dispatcher.SendPriority makes exactly one attempt to POST to the subscriber webhook, with no retry loop or backoff on transient failure\nFAIL (4 issues)\n", "exitCode": 1 },
+        "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
+      },
+      "runState": {
+        "run": 3,
+        "timestamp": "2026-07-02T09:30:00Z",
+        "gates": {
+          "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 4, "fingerprint": ["fp-deadcode-formatlegacypayload", "fp-unbounded-listdeliveryhistory", "fp-eagerstartup-templatecache", "fp-noretry-sendpriority"] },
+          "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
+          "gate-7-agent-context": { "count": 0, "fingerprint": [] }
+        },
+        "total": 4
+      }
+    },
+    {
+      "trigger": "03-noop-line-shift",
+      "gateResults": {
+        "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "internal/dispatch/format.go:10\tdead-code: FormatLegacyPayload is exported but has no call site, no interface satisfaction, and no indirect reference from any lookup table — nothing in this codebase invokes it\ninternal/dispatch/history.go:29\tunbounded-payload: ListDeliveryHistory returns the full delivery log for a subscriber with no page size, offset, or row cap\ninternal/dispatch/templates.go:16\teager-heavy-startup: compiledTemplateCache is initialized by a subprocess spawn (digest-template-compiler) at package-init time, before any digest has been requested\ninternal/dispatch/priority.go:15\tno-retry: Dispatcher.SendPriority makes exactly one attempt to POST to the subscriber webhook, with no retry loop or backoff on transient failure\nFAIL (4 issues)\n", "exitCode": 1 },
+        "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
+      },
+      "runState": {
+        "run": 4,
+        "timestamp": "2026-07-02T09:40:00Z",
+        "gates": {
+          "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 4, "fingerprint": ["fp-deadcode-formatlegacypayload", "fp-unbounded-listdeliveryhistory", "fp-eagerstartup-templatecache", "fp-noretry-sendpriority"] },
+          "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
+          "gate-7-agent-context": { "count": 0, "fingerprint": [] }
+        },
+        "total": 4
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-1",
+      "gateResults": {
+        "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "internal/dispatch/format.go:10\tdead-code: FormatLegacyPayload is exported but has no call site, no interface satisfaction, and no indirect reference from any lookup table — nothing in this codebase invokes it\ninternal/dispatch/history.go:29\tunbounded-payload: ListDeliveryHistory returns the full delivery log for a subscriber with no page size, offset, or row cap\ninternal/dispatch/templates.go:16\teager-heavy-startup: compiledTemplateCache is initialized by a subprocess spawn (digest-template-compiler) at package-init time, before any digest has been requested\ninternal/dispatch/priority.go:15\tno-retry: Dispatcher.SendPriority makes exactly one attempt to POST to the subscriber webhook, with no retry loop or backoff on transient failure\nFAIL (4 issues)\n", "exitCode": 1 },
+        "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
+      },
+      "runState": {
+        "run": 5,
+        "timestamp": "2026-07-02T09:50:00Z",
+        "gates": {
+          "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 4, "fingerprint": ["fp-deadcode-formatlegacypayload", "fp-unbounded-listdeliveryhistory", "fp-eagerstartup-templatecache", "fp-noretry-sendpriority"] },
+          "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
+          "gate-7-agent-context": { "count": 0, "fingerprint": [] }
+        },
+        "total": 4
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-2",
+      "gateResults": {
+        "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "internal/dispatch/format.go:10\tdead-code: FormatLegacyPayload is exported but has no call site, no interface satisfaction, and no indirect reference from any lookup table — nothing in this codebase invokes it\ninternal/dispatch/history.go:29\tunbounded-payload: ListDeliveryHistory returns the full delivery log for a subscriber with no page size, offset, or row cap\ninternal/dispatch/templates.go:16\teager-heavy-startup: compiledTemplateCache is initialized by a subprocess spawn (digest-template-compiler) at package-init time, before any digest has been requested\ninternal/dispatch/priority.go:15\tno-retry: Dispatcher.SendPriority makes exactly one attempt to POST to the subscriber webhook, with no retry loop or backoff on transient failure\nFAIL (4 issues)\n", "exitCode": 1 },
+        "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
+      },
+      "runState": {
+        "run": 6,
+        "timestamp": "2026-07-02T10:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 4, "fingerprint": ["fp-deadcode-formatlegacypayload", "fp-unbounded-listdeliveryhistory", "fp-eagerstartup-templatecache", "fp-noretry-sendpriority"] },
+          "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
+          "gate-7-agent-context": { "count": 0, "fingerprint": [] }
+        },
+        "total": 4
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-3",
+      "gateResults": {
+        "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "internal/dispatch/format.go:10\tdead-code: FormatLegacyPayload is exported but has no call site, no interface satisfaction, and no indirect reference from any lookup table — nothing in this codebase invokes it\ninternal/dispatch/history.go:29\tunbounded-payload: ListDeliveryHistory returns the full delivery log for a subscriber with no page size, offset, or row cap\ninternal/dispatch/templates.go:16\teager-heavy-startup: compiledTemplateCache is initialized by a subprocess spawn (digest-template-compiler) at package-init time, before any digest has been requested\ninternal/dispatch/priority.go:15\tno-retry: Dispatcher.SendPriority makes exactly one attempt to POST to the subscriber webhook, with no retry loop or backoff on transient failure\nFAIL (4 issues)\n", "exitCode": 1 },
+        "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
+      },
+      "runState": {
+        "run": 7,
+        "timestamp": "2026-07-02T10:10:00Z",
+        "gates": {
+          "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 4, "fingerprint": ["fp-deadcode-formatlegacypayload", "fp-unbounded-listdeliveryhistory", "fp-eagerstartup-templatecache", "fp-noretry-sendpriority"] },
+          "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
+          "gate-7-agent-context": { "count": 0, "fingerprint": [] }
+        },
+        "total": 4
+      }
+    }
+  ]
+}

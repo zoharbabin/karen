@@ -1,0 +1,4 @@
+{
+  "fixedIssueIds": ["mint-admin-token.sh:17:hardcoded-secret"],
+  "expectedDelta": { "gate-3-security": -1 }
+}

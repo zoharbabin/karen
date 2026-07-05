@@ -1,0 +1,14 @@
+{
+  "flaws": [
+    {
+      "dimension": "gateIssues",
+      "description": "mint-admin-token.sh:29 shell-injection (real, non-decoy) is never emitted by gate-3-security's stdout in any auditRuns entry — a false negative, with runState.gates['gate-3-security'].fingerprint/count adjusted to match the missing emission at every run.",
+      "expectedGraderFinding": "false negative on shell-injection"
+    },
+    {
+      "dimension": "gateIssues",
+      "description": "backend/internal/server/version.go:16 shell-injection (decoy) IS emitted by gate-3-security's stdout in every auditRuns entry — a false positive, with runState.gates['gate-3-security'].fingerprint/count adjusted to include the decoy at every run.",
+      "expectedGraderFinding": "false positive on shell-injection (decoy)"
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "type": "library",
+    "language": ["typescript"],
+    "deployment": ["browser-direct-js"],
+    "audience": "enterprise",
+    "aiPowered": false,
+    "subprojects": []
+  },
+  "compliance": [],
+  "coverage": { "threshold": 80 },
+  "testRunner": {
+    "command": "npm test",
+    "coverageReport": "coverage/lcov.info",
+    "format": "lcov"
+  },
+  "doctest": {
+    "files": ["README.md"],
+    "languages": ["js", "ts"],
+    "annotation": "karen:runnable"
+  },
+  "permissions": {
+    "microphone": "Optional — voice-driven lessons only, off by default; customer opts in via enableMicrophone and grants Permissions-Policy: microphone=(self)"
+  },
+  "circuitBreaker": { "threshold": 3, "exitCode": 2 },
+  "expiryWarningDays": 7,
+  "existingGates": [],
+  "crossSubprojectConsistency": [],
+  "knownGaps": [],
+  "exceedsBaseline": [
+    {
+      "gate": "gate-1-supply-chain",
+      "note": "Zero runtime dependencies — package.json's dependencies field is empty; the entire SDK is built on browser platform APIs alone"
+    }
+  ],
+  "exceptions": {}
+}

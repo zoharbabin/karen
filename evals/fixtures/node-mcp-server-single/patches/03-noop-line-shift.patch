@@ -1,0 +1,14 @@
+diff --git a/src/tools/readConfig.ts b/src/tools/readConfig.ts
+index a9d66d2..664d9ee 100644
+--- a/src/tools/readConfig.ts
++++ b/src/tools/readConfig.ts
+@@ -18,6 +18,9 @@ interface ReadConfigArgs {
+   filename: string;
+ }
+ 
++// Noop: this comment is purely cosmetic, added to shift line numbers below
++// without changing any behavior — the path-traversal issue on the join()
++// call underneath is still present and unfixed.
+ // Real issue (path-traversal): `filename` is joined directly onto configDir
+ // with no check that the resolved path stays inside configDir — a caller can
+ // pass "../../etc/shadow" (or an absolute path) and read arbitrary files.

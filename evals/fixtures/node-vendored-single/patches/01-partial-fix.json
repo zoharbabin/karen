@@ -1,0 +1,4 @@
+{
+  "fixedIssueIds": ["src/render.ts:43:stub-implementation"],
+  "expectedDelta": { "gate-2-completeness": -1 }
+}

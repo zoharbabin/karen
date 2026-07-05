@@ -1,0 +1,12 @@
+diff --git a/internal/tools/shell.go b/internal/tools/shell.go
+index 7c7819b..3b38b8c 100644
+--- a/internal/tools/shell.go
++++ b/internal/tools/shell.go
+@@ -16,6 +16,7 @@ import (
+ // a shell command string with no validation — the planted vulnerability
+ // this fixture exists to catch.
+ func RunShell(args map[string]any) (string, error) {
++	// Default to the current directory when no "dir" argument is supplied.
+ 	dir, ok := args["dir"].(string)
+ 	if !ok || dir == "" {
+ 		dir = "."

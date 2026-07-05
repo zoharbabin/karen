@@ -1,0 +1,32 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "type": "service",
+    "language": ["python"],
+    "deployment": ["python"],
+    "audience": "internal",
+    "aiPowered": false,
+    "subprojects": []
+  },
+  "compliance": [],
+  "coverage": {
+    "enabled": false,
+    "reason": "Only an E2E suite exists (Playwright driving the live FastAPI service over real HTTP against a live Redis) — there is no unit-level import of beacon_ingest.cache or beacon_ingest.config anywhere, so pytest-cov would report near-zero function-level coverage even though the request/response contract is genuinely exercised. Interview confirmed this is intentional: beacon-ingest is a thin ingestion/cache pass-through with little internal branching logic to unit-test in isolation, and the team explicitly chose not to mock Redis just to produce a coverage number. Gate-6 still enforces assertion density on the E2E suite."
+  },
+  "testRunner": {
+    "command": "pytest tests/e2e",
+    "coverageReport": null,
+    "format": null
+  },
+  "permissions": {},
+  "circuitBreaker": {
+    "threshold": 3,
+    "exitCode": 2
+  },
+  "expiryWarningDays": 7,
+  "existingGates": [],
+  "crossSubprojectConsistency": [],
+  "knownGaps": [],
+  "exceedsBaseline": [],
+  "exceptions": {}
+}

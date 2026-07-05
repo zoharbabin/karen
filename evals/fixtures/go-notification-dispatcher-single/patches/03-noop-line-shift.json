@@ -1,0 +1,5 @@
+{
+  "unaffectedIssueId": "internal/dispatch/history.go:28:unbounded-payload",
+  "note": "Inserts a blank line above the ListDeliveryHistory doc comment, shifting the unfixed unbounded-payload finding from line 28 to line 29. The fingerprint for this issue must stay identical (content-based, not file:line) and staleCount must increment, not reset.",
+  "expectedDelta": { "gate-2-completeness": 0 }
+}

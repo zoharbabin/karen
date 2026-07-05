@@ -1,0 +1,6 @@
+{
+  "unchangedIssueId": "src/prism_sdk/utils.py:15:shell-injection",
+  "previousLine": 15,
+  "newLine": 18,
+  "expectedDelta": {}
+}

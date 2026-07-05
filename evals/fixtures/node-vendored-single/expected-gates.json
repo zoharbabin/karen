@@ -1,0 +1,38 @@
+[
+  {
+    "id": "gate-1-supply-chain",
+    "tool": "npm audit + vendor provenance check",
+    "coversCategories": ["vendored-no-provenance"],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-2-completeness",
+    "tool": "eslint + structural stub scan",
+    "coversCategories": ["stub-implementation"],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-3-security",
+    "tool": "semgrep",
+    "coversCategories": ["hardcoded-secret", "shell-injection", "eval-in-comment"],
+    "zeroTolerance": true
+  },
+  {
+    "id": "gate-4-docs-parity",
+    "tool": "markdown doctest + symbol diff",
+    "coversCategories": [],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-6-test-integrity",
+    "tool": "vitest --coverage",
+    "coversCategories": [],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-7-agent-context",
+    "tool": "agent-context checklist",
+    "coversCategories": [],
+    "zeroTolerance": false
+  }
+]

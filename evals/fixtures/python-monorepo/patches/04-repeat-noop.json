@@ -1,0 +1,5 @@
+{
+  "unchangedIssueId": "client-lib/src/signal_relay_client/config.py:12:hardcoded-secret",
+  "note": "Zero-hunk empty diff, applied 3 consecutive times with no code change -- tests circuit breaker trip at threshold 3 on gate-3-security. Issue is at line 12 post-03-noop-line-shift (was line 8 before that patch).",
+  "expectedDelta": {}
+}

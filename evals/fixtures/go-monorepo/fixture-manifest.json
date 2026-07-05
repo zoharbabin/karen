@@ -1,0 +1,21 @@
+{
+  "languages": ["go"],
+  "manifests": [
+    { "path": "backend/go.mod", "language": "go" },
+    { "path": "cli/go.mod", "language": "go" }
+  ],
+  "frameworks": [],
+  "ciConfig": [".github/workflows/ci.yml"],
+  "existingTestSetup": {
+    "runner": "go test",
+    "coverageTool": "go test -coverprofile (wired in CI per module, not run locally by default)",
+    "coverageReport": "coverage.out"
+  },
+  "agentContextFiles": ["AGENTS.md"],
+  "existingGates": [],
+  "subprojects": [
+    { "path": "backend", "manifestPath": "backend/go.mod", "language": "go" },
+    { "path": "cli", "manifestPath": "cli/go.mod", "language": "go" }
+  ],
+  "unclaimedPaths": ["mint-admin-token.sh"]
+}

@@ -1,0 +1,5 @@
+{
+  "unchangedIssueId": "src/render.ts:20:shell-injection",
+  "note": "Zero-hunk empty diff, applied 3 consecutive times with no code change — tests circuit breaker trip at threshold 3 on gate-3-security. Issue is at line 20 post-03-noop-line-shift (was line 17 before that patch).",
+  "expectedDelta": {}
+}

@@ -1,0 +1,14 @@
+{
+  "flaws": [
+    {
+      "dimension": "gateIssues",
+      "description": "internal/api/webhook.go:44 shell-injection (real, non-decoy) is never emitted by gate-3-security's stdout in either the initial or 01-partial-fix auditRuns entry — a false negative on the planted vulnerability in relayAck.",
+      "expectedGraderFinding": "false negative on shell-injection at internal/api/webhook.go:44"
+    },
+    {
+      "dimension": "gateIssues",
+      "description": "internal/diag/build_info.go:17 shell-injection (decoy — hardcoded exec.Command args with no caller-controlled input) IS emitted by gate-3-security's stdout in both the initial and 01-partial-fix auditRuns entries — a false positive on a decoy that a structural (AST-based) scanner should have correctly ignored.",
+      "expectedGraderFinding": "false positive (decoyFalsePositives) on shell-injection at internal/diag/build_info.go:17"
+    }
+  ]
+}

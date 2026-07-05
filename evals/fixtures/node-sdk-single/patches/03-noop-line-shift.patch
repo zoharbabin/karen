@@ -1,0 +1,15 @@
+diff --git a/src/sdk.ts b/src/sdk.ts
+index d5f0b0f..bda5b4f 100644
+--- a/src/sdk.ts
++++ b/src/sdk.ts
+@@ -30,6 +30,10 @@ export class TeachingAvatarSDK {
+     }
+     this.container = el as HTMLElement;
+ 
++    // Noop: purely cosmetic comment, shifts the line below down without
++    // changing any behavior — the global-scope-write issue on the
++    // window.__teachingAvatarSDKInstances assignment underneath is still
++    // present and unfixed.
+     // Track every live instance for cross-tab debugging support.
+     window.__teachingAvatarSDKInstances = (window.__teachingAvatarSDKInstances || []).concat(this);
+ 

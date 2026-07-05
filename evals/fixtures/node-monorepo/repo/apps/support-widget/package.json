@@ -1,0 +1,16 @@
+{
+  "name": "@example/support-widget-app",
+  "version": "1.0.0",
+  "description": "Reference app: a support chat widget embedding @example/signal-avatar-sdk and calling the backend's chat-completion endpoint at runtime",
+  "private": true,
+  "scripts": {
+    "test:e2e": "vitest run"
+  },
+  "dependencies": {
+    "@example/signal-avatar-sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "^1.5.0",
+    "typescript": "^5.4.0"
+  }
+}

@@ -1,0 +1,43 @@
+diff --git a/cmd/server/main.go b/cmd/server/main.go
+index 765f405..c175538 100644
+--- a/cmd/server/main.go
++++ b/cmd/server/main.go
+@@ -17,6 +17,7 @@ func main() {
+ 	server.Register("run_shell", tools.RunShell)
+ 	server.Register("read_file", tools.ReadFile)
+ 	server.Register("grep_logs", tools.GrepLogs)
++	server.Register("backup_config", tools.BackupConfig)
+ 
+ 	if err := server.Serve(os.Stdin, os.Stdout); err != nil {
+ 		log.Fatalf("server exited: %v", err)
+diff --git a/internal/tools/config.go b/internal/tools/config.go
+new file mode 100644
+index 0000000..a222dd5
+--- /dev/null
++++ b/internal/tools/config.go
+@@ -0,0 +1,25 @@
++package tools
++
++import (
++	"fmt"
++	"os/exec"
++)
++
++// BackupConfig copies the server's config file to a caller-supplied
++// destination path using the system `cp` command. REGRESSION: like the
++// original run_shell handler, the caller-supplied "dest" argument is
++// spliced directly into a shell command string with no validation.
++func BackupConfig(args map[string]any) (string, error) {
++	dest, ok := args["dest"].(string)
++	if !ok || dest == "" {
++		return "", fmt.Errorf("backup_config: missing required \"dest\" argument")
++	}
++
++	cmd := exec.Command("sh", "-c", "cp ./data/config.json "+dest)
++	out, err := cmd.CombinedOutput()
++	if err != nil {
++		return "", fmt.Errorf("backup_config: %w", err)
++	}
++
++	return string(out), nil
++}

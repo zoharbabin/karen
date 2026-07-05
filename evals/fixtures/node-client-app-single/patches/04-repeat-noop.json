@@ -1,0 +1,5 @@
+{
+  "unchangedIssueId": "src/analytics.ts:27:credentials-include",
+  "note": "Zero-hunk empty diff, applied 3 consecutive times with no code change — tests circuit breaker trip at threshold 3 on gate-3-security. Issue is at line 27 post-03-noop-line-shift (was line 26 before that patch).",
+  "expectedDelta": {}
+}

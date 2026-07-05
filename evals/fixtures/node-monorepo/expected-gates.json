@@ -1,0 +1,40 @@
+[
+  {
+    "id": "gate-1-supply-chain",
+    "tool": "npm audit",
+    "coversCategories": [],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-2-completeness",
+    "tool": "eslint + structural stub scan (gap beyond check-docs.mjs's stub-marker slice)",
+    "coversCategories": ["stub-implementation"],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-3-security",
+    "tool": "node (working-tree scan scoped to the gap beyond check-docs.mjs's tracked-file secret regex)",
+    "coversCategories": [
+      "hardcoded-secret",
+      "credentials-include",
+      "unremoved-listener",
+      "missing-origin-check",
+      "password-variable",
+      "eval-in-comment",
+      "console-debug-guard"
+    ],
+    "zeroTolerance": true
+  },
+  {
+    "id": "gate-6-test-integrity",
+    "tool": "vitest --coverage (per package)",
+    "coversCategories": [],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-7-agent-context",
+    "tool": "agent-context checklist",
+    "coversCategories": [],
+    "zeroTolerance": false
+  }
+]

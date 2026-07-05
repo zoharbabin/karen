@@ -1,0 +1,6 @@
+{
+  "unchangedIssueId": "src/beacon_ingest/cache.py:28:unsafe-deserialization",
+  "previousLine": 28,
+  "newLine": 31,
+  "expectedDelta": {}
+}

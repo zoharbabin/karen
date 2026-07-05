@@ -1,0 +1,11 @@
+diff --git a/src/index.ts b/src/index.ts
+index 2f409df..6463caf 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -1,2 +1,6 @@
+ export { RegistryClient } from "./registryClient.js";
+ export { renderTemplate } from "./render.js";
++
++// New issue (hardcoded-secret): webhook signing secret committed to source,
++// used to sign outbound delivery-status callbacks on module load.
++export const WEBHOOK_SIGNING_SECRET = "whsec_8f2c1a9d3e7b4f6a0c9e2d1b4f6a8c0e";

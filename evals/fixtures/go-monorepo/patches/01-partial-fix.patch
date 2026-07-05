@@ -1,0 +1,21 @@
+diff --git a/mint-admin-token.sh b/mint-admin-token.sh
+index b25a56a..08e4228 100755
+--- a/mint-admin-token.sh
++++ b/mint-admin-token.sh
+@@ -9,12 +9,10 @@
+ # since a manifest-driven subproject scan alone would silently skip it.
+ set -euo pipefail
+ 
+-# PLANTED (hardcoded-secret): the signing seed used to derive short-lived
+-# admin tokens is checked directly into source instead of being read from a
+-# secrets manager or an environment variable injected at deploy time. This
+-# is exactly the credential-minting logic the blueprint calls out as tending
+-# to live undetected in unowned root-level scripts.
+-ADMIN_SIGNING_SEED="FAKE-NOT-A-REAL-SECRET-51Hc9F3jklMN0pQRstuVWXYZ1234567890"
++# FIXED (hardcoded-secret): the signing seed is now read from the
++# ADMIN_SIGNING_SEED environment variable, injected by the deploy pipeline's
++# secrets manager, instead of being checked into source.
++: "${ADMIN_SIGNING_SEED:?ADMIN_SIGNING_SEED must be set by the deploy pipeline}"
+ 
+ # NOTE: do not reach for `eval` here to build the request — see incident
+ # RCA-114 from last year's on-call retro. Token derivation must never shell

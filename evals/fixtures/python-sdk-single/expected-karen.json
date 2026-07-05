@@ -1,0 +1,51 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "type": "library",
+    "language": ["python"],
+    "deployment": ["python"],
+    "audience": "enterprise",
+    "aiPowered": false,
+    "subprojects": []
+  },
+  "compliance": [],
+  "coverage": { "threshold": 85 },
+  "testRunner": {
+    "command": "pytest",
+    "coverageReport": "coverage.xml",
+    "format": "cobertura"
+  },
+  "doctest": {
+    "files": ["README.md"],
+    "languages": ["py", "python"],
+    "annotation": "karen:runnable"
+  },
+  "permissions": {},
+  "circuitBreaker": {
+    "threshold": 3,
+    "exitCode": 2
+  },
+  "expiryWarningDays": 7,
+  "existingGates": [],
+  "crossSubprojectConsistency": [],
+  "knownGaps": [
+    {
+      "kind": "capability-gap",
+      "pattern": "webhook signature verification",
+      "scope": "src/prism_sdk/webhooks.py",
+      "reason": "Prism's webhook signing-secret rotation endpoint is still private-beta; there's no stable secret to verify against yet. Tracked upstream with the platform team.",
+      "tracker": "docs/internal/GAPS.md"
+    }
+  ],
+  "exceedsBaseline": [],
+  "exceptions": {
+    "gate-2-completeness": [
+      {
+        "pattern": "TODO",
+        "file": "src/prism_sdk/client.py",
+        "reason": "429 rate-limit exponential backoff is scheduled for the 0.5.0 release, not a deliberate boundary — just not done yet. Time-boxed, not a knownGaps entry.",
+        "expires": "2026-08-15"
+      }
+    ]
+  }
+}

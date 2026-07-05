@@ -1,0 +1,16 @@
+[
+  {
+    "id": "gate-3-security",
+    "tool": "node",
+    "coversCategories": [
+      "unremoved-listener",
+      "credentials-include",
+      "missing-sri",
+      "eval-in-comment",
+      "password-variable",
+      "global-scope-write",
+      "console-debug-guard"
+    ],
+    "zeroTolerance": true
+  }
+]

@@ -1,0 +1,14 @@
+{
+  "flaws": [
+    {
+      "dimension": "gateIssues",
+      "description": "src/analytics.ts:13 credentials-include (real, non-decoy) is never emitted by gate-3-security's stdout in any auditRuns entry — removed from the emitted issue set and from gate-3-security's runState.gates fingerprint/count at every run.",
+      "expectedGraderFinding": "false negative on credentials-include (recall drops below 0.9 threshold)"
+    },
+    {
+      "dimension": "gateIssues",
+      "description": "src/sdk.ts:69 console-debug-guard (decoy) IS emitted by gate-3-security's stdout in every auditRuns entry — added to the emitted issue set and to gate-3-security's runState.gates fingerprint/count at every run.",
+      "expectedGraderFinding": "false positive / decoyFalsePositives entry on console-debug-guard"
+    }
+  ]
+}

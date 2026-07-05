@@ -1,0 +1,6 @@
+{
+  "unchangedIssueId": "src/analytics.ts:26:credentials-include",
+  "previousLine": 26,
+  "newLine": 27,
+  "expectedDelta": {}
+}

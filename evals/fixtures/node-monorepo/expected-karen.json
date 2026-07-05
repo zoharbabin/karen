@@ -1,0 +1,92 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "type": "library",
+    "language": ["typescript"],
+    "deployment": ["browser-direct-js"],
+    "audience": "enterprise",
+    "aiPowered": true,
+    "subprojects": [
+      {
+        "path": "sdk",
+        "type": "library",
+        "deployment": ["browser-direct-js"],
+        "aiPowered": false,
+        "codeRole": "sdk-entry-point",
+        "reason": "Zero-dependency embeddable widget loaded directly into a customer's page — it mounts/tears down the avatar and never calls an LLM itself; the conversational model lives behind backend/"
+      },
+      {
+        "path": "backend",
+        "type": "service",
+        "deployment": ["node-server"],
+        "aiPowered": true,
+        "codeRole": "credential-holder",
+        "reason": "Holds the chat-completion API key server-side, mints short-lived session tokens, proxies chat-completion calls for both reference apps — the only subproject that calls the LLM provider"
+      },
+      {
+        "path": "apps/teaching-avatar",
+        "type": "application",
+        "deployment": ["browser-direct-js"],
+        "aiPowered": true,
+        "codeRole": "reference-app",
+        "reason": "Calls backend's chat-completion endpoint at runtime and renders model output — ai-agent runtime profile applies here but not to the SDK itself"
+      },
+      {
+        "path": "apps/support-widget",
+        "type": "application",
+        "deployment": ["browser-direct-js"],
+        "aiPowered": true,
+        "codeRole": "reference-app",
+        "reason": "Same reference-app shape as apps/teaching-avatar — a support chat widget calling backend's chat-completion endpoint at runtime"
+      }
+    ]
+  },
+  "compliance": [],
+  "coverage": { "threshold": 80 },
+  "testRunner": {
+    "command": "npm test",
+    "coverageReport": "coverage/lcov.info",
+    "format": "lcov",
+    "packages": [
+      { "path": "sdk", "command": "npm test", "coverageReport": "sdk/coverage/lcov.info", "role": "primary" },
+      { "path": "backend", "command": "npm test", "coverageReport": "backend/coverage/lcov.info", "role": "primary" },
+      { "path": "apps/teaching-avatar", "command": "npm run test:e2e", "coverageReport": null, "role": "e2e-only" },
+      { "path": "apps/support-widget", "command": "npm run test:e2e", "coverageReport": null, "role": "e2e-only" }
+    ]
+  },
+  "doctest": {
+    "files": ["README.md"],
+    "languages": ["js", "ts"],
+    "annotation": "karen:runnable"
+  },
+  "permissions": {},
+  "circuitBreaker": { "threshold": 3, "exitCode": 2 },
+  "expiryWarningDays": 7,
+  "existingGates": [
+    {
+      "id": "check-docs",
+      "command": "node tools/check-docs.mjs",
+      "outputFormat": "exit-code",
+      "coverage": [
+        { "gate": "gate-4-docs-parity", "scope": "full", "reason": "Checks every tracked markdown file's relative links resolve and every README-documented symbol matches a real export under that package's src/ — full doc<->code drift + link-rot coverage across the whole repo" },
+        { "gate": "gate-3-security", "scope": "partial", "detail": "Structural secret-shaped regex scan (sk-live-/sk_live_/AKIA patterns) over tracked files only, via `git ls-files` — misses untracked/gitignored files and any secret shape outside those three patterns", "reason": "Karen's generated gate-3 script covers the working-tree/gitignored gap and any secret shape this scan doesn't recognize" },
+        { "gate": "gate-2-completeness", "scope": "partial", "detail": "Structural stub-marker scan (`//` TODO/FIXME/HACK/XXX comments and `throw new Error('not implemented...')`) over tracked source only — does not do per-symbol doc/test coverage or check block-comment stub markers", "reason": "Karen's generated gate-2 script still needs to cover per-symbol completeness and any stub marker outside check-docs.mjs's two patterns" }
+      ]
+    }
+  ],
+  "crossSubprojectConsistency": [
+    {
+      "pattern": "server holds admin-scoped chat-completion API key, mints short-lived client session token, exposes a session/chat REST API",
+      "subprojects": ["apps/teaching-avatar", "apps/support-widget"],
+      "invariants": ["origin/CORS check present", "token scope excludes admin operations", "no secret in any response body"]
+    }
+  ],
+  "knownGaps": [],
+  "exceedsBaseline": [
+    {
+      "gate": "gate-1-supply-chain",
+      "note": "sdk/ has zero runtime dependencies — package.json's dependencies field is empty; the entire widget is built on browser platform APIs alone"
+    }
+  ],
+  "exceptions": {}
+}

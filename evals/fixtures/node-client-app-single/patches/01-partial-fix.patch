@@ -1,0 +1,14 @@
+diff --git a/src/widget.ts b/src/widget.ts
+index 2762a41..2443fac 100644
+--- a/src/widget.ts
++++ b/src/widget.ts
+@@ -88,8 +88,7 @@ export class ChatWidget {
+    */
+   destroy(): void {
+     window.removeEventListener('resize', this.onResize);
+-    // BUG: the visibilitychange listener registered in the constructor is
+-    // never removed here — it leaks for the lifetime of the page.
++    document.removeEventListener('visibilitychange', this.onVisibilityChange);
+     this.stream?.getTracks().forEach((track) => track.stop());
+     this.stream = null;
+     this.container.replaceChildren();

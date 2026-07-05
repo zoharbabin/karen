@@ -1,0 +1,39 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "type": "library",
+    "language": ["typescript"],
+    "deployment": ["node-server"],
+    "audience": "internal",
+    "aiPowered": false,
+    "subprojects": []
+  },
+  "compliance": [],
+  "coverage": { "threshold": 80 },
+  "testRunner": {
+    "command": "npm test",
+    "coverageReport": "coverage/lcov.info",
+    "format": "lcov"
+  },
+  "doctest": {
+    "files": ["README.md"],
+    "languages": ["ts", "typescript"],
+    "annotation": "karen:runnable"
+  },
+  "permissions": {},
+  "circuitBreaker": {
+    "threshold": 3,
+    "exitCode": 2
+  },
+  "expiryWarningDays": 7,
+  "existingGates": [],
+  "crossSubprojectConsistency": [],
+  "knownGaps": [],
+  "exceedsBaseline": [
+    {
+      "gate": "gate-1-supply-chain",
+      "note": "Zero runtime dependencies — the two vendored files in vendor/ replace what would otherwise be two npm dependencies, keeping the declared dependency tree empty (this strength is independent of, and does not excuse, the vendored-file provenance gap also reported on gate-1)"
+    }
+  ],
+  "exceptions": {}
+}

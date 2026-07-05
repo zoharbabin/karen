@@ -1,0 +1,21 @@
+{
+  "name": "@example/signal-avatar-sdk",
+  "version": "2.1.0",
+  "description": "Embeddable teaching-avatar widget SDK — loads via <script src> or npm install directly into a customer's page",
+  "main": "dist/sdk.js",
+  "types": "dist/sdk.d.ts",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run --coverage",
+    "lint": "eslint src"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^1.5.0",
+    "@vitest/coverage-v8": "^1.5.0",
+    "jsdom": "^24.0.0",
+    "eslint": "^8.57.0"
+  }
+}

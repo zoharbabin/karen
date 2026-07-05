@@ -1,0 +1,29 @@
+diff --git a/backend/src/signal_relay_backend/server.py b/backend/src/signal_relay_backend/server.py
+index 42e556e..a922104 100644
+--- a/backend/src/signal_relay_backend/server.py
++++ b/backend/src/signal_relay_backend/server.py
+@@ -1,5 +1,6 @@
+ """HTTP entrypoints for the Signal Relay ingestion service."""
+ 
++import shlex
+ import subprocess
+ 
+ from fastapi import FastAPI, HTTPException
+@@ -22,12 +23,13 @@ async def submit_telemetry(payload: dict):
+ async def run_diagnostics(payload: dict):
+     """Run an operator-requested diagnostic probe against the ingest host.
+ 
+-    `probe` is a shell fragment supplied by the calling operator tool --
+-    built as a single string and handed to the shell so operators can
+-    compose ad-hoc probes (e.g. "ping -c 3 host && traceroute host").
++    Fixed: `probe` is now parsed into an argv list with `shlex.split` and
++    passed to `subprocess.run` with `shell=False`, so operator input can no
++    longer reach a shell for interpretation -- only `diag-tool`'s own
++    argument parsing sees it.
+     """
+     probe = payload.get("probe", "")
+-    result = subprocess.run(f"diag-tool --check {probe}", shell=True, capture_output=True)
++    result = subprocess.run(["diag-tool", "--check", *shlex.split(probe)], shell=False, capture_output=True)
+     return {"stdout": result.stdout.decode("utf-8", errors="replace")}
+ 
+ 

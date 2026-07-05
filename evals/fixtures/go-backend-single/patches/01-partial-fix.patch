@@ -1,0 +1,29 @@
+diff --git a/internal/api/purge.go b/internal/api/purge.go
+index b73fbfd..8b1e804 100644
+--- a/internal/api/purge.go
++++ b/internal/api/purge.go
+@@ -9,12 +9,9 @@ import (
+ // PurgeHandler removes cached delivery logs matching a caller-supplied
+ // pattern, via DELETE /webhooks/purge?pattern=....
+ //
+-// PLANTED VULNERABILITY (shell-injection, real): the "pattern" query
+-// parameter is entirely caller-controlled and is spliced directly into a
+-// shell command string with no validation or quoting — a second instance
+-// of the same vulnerability class as relayAck, in a different handler, so
+-// a fix applied to one and not the other is a meaningfully distinct state
+-// a gate must still catch.
++// Fixed: the "pattern" query parameter is now passed as a discrete argv
++// element to `rm` directly — no shell is invoked, so there is no command
++// string for the pattern to escape.
+ func PurgeHandler(w http.ResponseWriter, r *http.Request) {
+ 	pattern := r.URL.Query().Get("pattern")
+ 	if pattern == "" {
+@@ -31,7 +28,7 @@ func PurgeHandler(w http.ResponseWriter, r *http.Request) {
+ }
+ 
+ func purgeLogs(pattern string) error {
+-	cmd := exec.Command("sh", "-c", "rm -f ./data/logs/"+pattern)
++	cmd := exec.Command("rm", "-f", "./data/logs/"+pattern)
+ 	out, err := cmd.CombinedOutput()
+ 	if err != nil {
+ 		return fmt.Errorf("purgeLogs: %w (%s)", err, out)

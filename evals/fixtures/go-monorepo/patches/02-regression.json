@@ -1,0 +1,4 @@
+{
+  "newIssue": { "file": "cli/internal/config/config.go", "line": 19, "category": "hardcoded-secret" },
+  "expectedDelta": { "gate-3-security": 1 }
+}

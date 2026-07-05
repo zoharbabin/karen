@@ -1,0 +1,10 @@
+[
+  { "file": "src/incident_mcp_server/config.py", "line": 21, "category": "hardcoded-secret", "isDecoy": false },
+  { "file": "src/incident_mcp_server/config.py", "line": 17, "category": "hardcoded-secret", "isDecoy": true },
+  { "file": "src/incident_mcp_server/tools/run_diagnostic_command.py", "line": 32, "category": "shell-injection", "isDecoy": false },
+  { "file": "src/incident_mcp_server/tools/run_diagnostic_command.py", "line": 23, "category": "shell-injection", "isDecoy": true },
+  { "file": "src/incident_mcp_server/tools/apply_config_patch.py", "line": 28, "category": "yaml-unsafe-load", "isDecoy": false },
+  { "file": "src/incident_mcp_server/tools/apply_config_patch.py", "line": 39, "category": "yaml-unsafe-load", "isDecoy": true },
+  { "file": "src/incident_mcp_server/tools/notify.py", "line": 17, "category": "stub-implementation", "isDecoy": false },
+  { "file": "src/incident_mcp_server/tools/notify.py", "line": 10, "category": "stub-implementation", "isDecoy": true }
+]

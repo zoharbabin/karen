@@ -1,0 +1,599 @@
+{
+  "fixture": "node-sdk-single",
+  "init": {
+    "detectProjectOutput": {
+      "languages": [
+        "typescript"
+      ],
+      "manifests": [
+        {
+          "path": "package.json",
+          "language": "typescript"
+        }
+      ],
+      "frameworks": [
+        "node"
+      ],
+      "ciConfig": [
+        ".github/workflows/ci.yml"
+      ],
+      "existingTestSetup": {
+        "runner": "vitest",
+        "coverageTool": "v8",
+        "coverageReport": "coverage/lcov.info"
+      },
+      "agentContextFiles": [
+        "CLAUDE.md"
+      ],
+      "existingGates": [],
+      "subprojects": [],
+      "unclaimedPaths": []
+    },
+    "transcript": [
+      {
+        "role": "karen",
+        "text": "What does this project do, and who uses it?"
+      },
+      {
+        "role": "user",
+        "text": "Browser SDK for an AI teaching avatar, used by edtech customers to embed a conversational avatar directly into their own lesson pages."
+      },
+      {
+        "role": "karen",
+        "text": "What's the deployment model, and where does this actually run once it's on the customer's page?"
+      },
+      {
+        "role": "user",
+        "text": "It loads via `<script src>` from our CDN or `npm install` directly into the customer's page — browser-direct-js, no iframe, no sandbox. Same as the README shows."
+      },
+      {
+        "role": "karen",
+        "text": "Who's the audience, and are there any compliance or regulatory requirements to account for?"
+      },
+      {
+        "role": "user",
+        "text": "Enterprise edtech customers embed this in their own lesson pages. No SOC2/HIPAA/PCI requirement today — no payment or health data ever touches this SDK."
+      },
+      {
+        "role": "karen",
+        "text": "Is this project AI-powered, or built with, or used by, LLM coding agents?"
+      },
+      {
+        "role": "user",
+        "text": "It's built with Claude Code day to day, but the SDK package itself doesn't call an LLM at runtime — it mounts and tears down the avatar widget and streams the mic when enabled. The actual conversational model runs on our backend, outside this package."
+      },
+      {
+        "role": "karen",
+        "text": "I see a getUserMedia call gated behind enableMicrophone — is microphone access required or optional, and what's the Permissions-Policy expectation?"
+      },
+      {
+        "role": "user",
+        "text": "Optional. Off by default. Lessons with voice commands set `enableMicrophone: true`, and the host page has to grant `Permissions-Policy: microphone=(self)` for it to work."
+      },
+      {
+        "role": "karen",
+        "text": "What minimum percentage of the codebase needs to be exercised before you're satisfied — what bar should Karen enforce?"
+      },
+      {
+        "role": "user",
+        "text": "80%, matching what CLAUDE.md already says as the stopping criterion."
+      }
+    ],
+    "karenJson": {
+      "version": "1.0.0",
+      "project": {
+        "type": "library",
+        "language": [
+          "typescript"
+        ],
+        "deployment": [
+          "browser-direct-js"
+        ],
+        "audience": "enterprise",
+        "aiPowered": false,
+        "subprojects": []
+      },
+      "compliance": [],
+      "coverage": {
+        "threshold": 80
+      },
+      "testRunner": {
+        "command": "npm test",
+        "coverageReport": "coverage/lcov.info",
+        "format": "lcov"
+      },
+      "doctest": {
+        "files": [
+          "README.md"
+        ],
+        "languages": [
+          "js",
+          "ts"
+        ],
+        "annotation": "karen:runnable"
+      },
+      "permissions": {
+        "microphone": "Optional — voice-driven lessons only, off by default; customer opts in via enableMicrophone and grants Permissions-Policy: microphone=(self)"
+      },
+      "circuitBreaker": {
+        "threshold": 3,
+        "exitCode": 2
+      },
+      "expiryWarningDays": 7,
+      "existingGates": [],
+      "crossSubprojectConsistency": [],
+      "knownGaps": [],
+      "exceedsBaseline": [
+        {
+          "gate": "gate-1-supply-chain",
+          "note": "Zero runtime dependencies — package.json's dependencies field is empty; the entire SDK is built on browser platform APIs alone"
+        }
+      ],
+      "exceptions": {}
+    },
+    "gateScripts": {
+      "gate-1-supply-chain": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nout=\"\"\nif [ -f package.json ]; then\n  audit_json=\"$(npm audit --omit=dev --json 2>/dev/null || true)\"\n  vulns=\"$(echo \"$audit_json\" | node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d);console.log(j.metadata?.vulnerabilities?.total||0)}catch(e){console.log(0)}})\")\"\n  if [ \"$vulns\" -gt 0 ]; then\n    issues=$vulns\n    out=\"package.json:1\\t$vulns known vulnerable dependenc$([ \"$vulns\" = 1 ] && echo y || echo ies) via npm audit\"$'\\n'\n  fi\nfi\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
+      "gate-2-completeness": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nout=\"\"\nwhile IFS= read -r hit; do\n  file=\"${hit%%:*}\"\n  rest=\"${hit#*:}\"\n  line=\"${rest%%:*}\"\n  out+=\"$file:$line\\tstub or TODO left in shipped source\"$'\\n'\n  issues=$((issues+1))\ndone < <(grep -rnE 'TODO|FIXME|not implemented' src/ 2>/dev/null || true)\nnpx --no-install eslint src/ --format unix >/dev/null 2>&1 || true\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
+      "gate-3-security": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nout=\"\"\n# global-scope-write: assignment to window.*/globalThis.* outside constructor opt-in\nwhile IFS= read -r hit; do\n  file=\"${hit%%:*}\"; line=\"${hit#*:}\"; line=\"${line%%:*}\"\n  out+=\"$file:$line\\tglobal write to window/globalThis outside constructor opt-in config\"$'\\n'\n  issues=$((issues+1))\ndone < <(node tools/scan-global-writes.mjs src/ 2>/dev/null || true)\n# unremoved-listener, hardcoded-secret, credentials-include, eval-in-comment,\n# password-variable, console-debug-guard all use the same structural AST scan\nnode tools/scan-security-rules.mjs src/ --format=gate >> /tmp/gate3.$$ 2>/dev/null || true\nwhile IFS= read -r line; do\n  [ -z \"$line\" ] && continue\n  out+=\"$line\"$'\\n'\n  issues=$((issues+1))\ndone < /tmp/gate3.$$ 2>/dev/null || true\nrm -f /tmp/gate3.$$\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; else echo \"FAIL ($issues issues)\"; echo \"ZERO-TOLERANCE\"; fi\n[ \"$issues\" -eq 0 ] && exit 0 || exit 1\n",
+      "gate-4-docs-parity": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nout=\"\"\nwhile IFS= read -r hit; do\n  out+=\"$hit\\tREADME.md code block failed to execute against current exports\"$'\\n'\n  issues=$((issues+1))\ndone < <(node tools/doctest.mjs README.md --languages=js,ts --annotation=karen:runnable 2>/dev/null | grep -E '^FAIL' || true)\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
+      "gate-6-test-integrity": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nout=\"\"\nnpx --no-install vitest run --coverage --reporter=json > /tmp/vitest.$$ 2>/dev/null || true\npct=\"$(node -e \"try{const r=require('/tmp/vitest.\\$\\$');console.log(Math.round((r.coverageMap?.total?.lines?.pct)||100))}catch(e){console.log(100)}\" 2>/dev/null || echo 100)\"\nrm -f /tmp/vitest.$$\nif [ \"${pct:-100}\" -lt 80 ]; then\n  out+=\"coverage/lcov.info:1\\tline coverage $pct% below the 80% threshold in .karen.json\"$'\\n'\n  issues=1\nfi\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
+      "gate-7-agent-context": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nout=\"\"\nfor f in CLAUDE.md; do\n  if [ ! -f \"$f\" ]; then\n    out+=\"$f:0\\tagent context file missing from repo root\"$'\\n'\n    issues=$((issues+1))\n    continue\n  fi\n  grep -q \"Stopping criteria\" \"$f\" || { out+=\"$f:1\\tmissing a stopping-criteria section\"$'\\n'; issues=$((issues+1)); }\ndone\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n"
+    }
+  },
+  "auditRuns": [
+    {
+      "trigger": "initial",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "src/sdk.ts:34\tglobal write to window.__teachingAvatarSDKInstances outside constructor's own opt-in config — violates CLAUDE.md's no-window-write rule\nsrc/sdk.ts:37\taddEventListener('resize', ...) registered with no matching removeEventListener in destroy() — leaked listener across mount/destroy cycles\nsrc/analytics.ts:8\thardcoded API key committed to source — static bearer token for the telemetry beacon endpoint\nsrc/analytics.ts:13\tfetch call sets credentials: 'include' — violates CLAUDE.md's no-credentials-include rule\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 1,
+        "timestamp": "2026-06-27T20:00:00.000Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 4,
+            "fingerprint": [
+              "fp-global-scope-write-sdk",
+              "fp-unremoved-listener-sdk",
+              "fp-hardcoded-secret-analytics",
+              "fp-credentials-include-analytics"
+            ]
+          }
+        },
+        "total": 4
+      }
+    },
+    {
+      "trigger": "01-partial-fix",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "src/sdk.ts:34\tglobal write to window.__teachingAvatarSDKInstances outside constructor's own opt-in config — violates CLAUDE.md's no-window-write rule\nsrc/analytics.ts:8\thardcoded API key committed to source — static bearer token for the telemetry beacon endpoint\nsrc/analytics.ts:13\tfetch call sets credentials: 'include' — violates CLAUDE.md's no-credentials-include rule\nFAIL (3 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 2,
+        "timestamp": "2026-06-27T21:00:00.000Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 3,
+            "fingerprint": [
+              "fp-global-scope-write-sdk",
+              "fp-hardcoded-secret-analytics",
+              "fp-credentials-include-analytics"
+            ]
+          }
+        },
+        "total": 3
+      }
+    },
+    {
+      "trigger": "02-regression",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "src/sdk.ts:34\tglobal write to window.__teachingAvatarSDKInstances outside constructor's own opt-in config — violates CLAUDE.md's no-window-write rule\nsrc/analytics.ts:8\thardcoded API key committed to source — static bearer token for the telemetry beacon endpoint\nsrc/analytics.ts:13\tfetch call sets credentials: 'include' — violates CLAUDE.md's no-credentials-include rule\nsrc/storage.ts:8\thardcoded encryption key committed to source — static key used to obscure a stored preference value\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 3,
+        "timestamp": "2026-06-27T22:00:00.000Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 4,
+            "fingerprint": [
+              "fp-global-scope-write-sdk",
+              "fp-hardcoded-secret-analytics",
+              "fp-credentials-include-analytics",
+              "fp-hardcoded-secret-storage"
+            ]
+          }
+        },
+        "total": 4
+      }
+    },
+    {
+      "trigger": "03-noop-line-shift",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "src/sdk.ts:38\tglobal write to window.__teachingAvatarSDKInstances outside constructor's own opt-in config — violates CLAUDE.md's no-window-write rule\nsrc/analytics.ts:8\thardcoded API key committed to source — static bearer token for the telemetry beacon endpoint\nsrc/analytics.ts:13\tfetch call sets credentials: 'include' — violates CLAUDE.md's no-credentials-include rule\nsrc/storage.ts:8\thardcoded encryption key committed to source — static key used to obscure a stored preference value\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 4,
+        "timestamp": "2026-06-27T23:00:00.000Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 4,
+            "fingerprint": [
+              "fp-global-scope-write-sdk",
+              "fp-hardcoded-secret-analytics",
+              "fp-credentials-include-analytics",
+              "fp-hardcoded-secret-storage"
+            ]
+          }
+        },
+        "total": 4
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-1",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "src/sdk.ts:38\tglobal write to window.__teachingAvatarSDKInstances outside constructor's own opt-in config — violates CLAUDE.md's no-window-write rule\nsrc/analytics.ts:8\thardcoded API key committed to source — static bearer token for the telemetry beacon endpoint\nsrc/analytics.ts:13\tfetch call sets credentials: 'include' — violates CLAUDE.md's no-credentials-include rule\nsrc/storage.ts:8\thardcoded encryption key committed to source — static key used to obscure a stored preference value\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 5,
+        "timestamp": "2026-06-28T00:00:00.000Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 4,
+            "fingerprint": [
+              "fp-global-scope-write-sdk",
+              "fp-hardcoded-secret-analytics",
+              "fp-credentials-include-analytics",
+              "fp-hardcoded-secret-storage"
+            ]
+          }
+        },
+        "total": 4
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-2",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "src/sdk.ts:38\tglobal write to window.__teachingAvatarSDKInstances outside constructor's own opt-in config — violates CLAUDE.md's no-window-write rule\nsrc/analytics.ts:8\thardcoded API key committed to source — static bearer token for the telemetry beacon endpoint\nsrc/analytics.ts:13\tfetch call sets credentials: 'include' — violates CLAUDE.md's no-credentials-include rule\nsrc/storage.ts:8\thardcoded encryption key committed to source — static key used to obscure a stored preference value\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 6,
+        "timestamp": "2026-06-28T01:00:00.000Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 4,
+            "fingerprint": [
+              "fp-global-scope-write-sdk",
+              "fp-hardcoded-secret-analytics",
+              "fp-credentials-include-analytics",
+              "fp-hardcoded-secret-storage"
+            ]
+          }
+        },
+        "total": 4
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-3",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "src/sdk.ts:38\tglobal write to window.__teachingAvatarSDKInstances outside constructor's own opt-in config — violates CLAUDE.md's no-window-write rule\nsrc/analytics.ts:8\thardcoded API key committed to source — static bearer token for the telemetry beacon endpoint\nsrc/analytics.ts:13\tfetch call sets credentials: 'include' — violates CLAUDE.md's no-credentials-include rule\nsrc/storage.ts:8\thardcoded encryption key committed to source — static key used to obscure a stored preference value\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 7,
+        "timestamp": "2026-06-28T02:00:00.000Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 4,
+            "fingerprint": [
+              "fp-global-scope-write-sdk",
+              "fp-hardcoded-secret-analytics",
+              "fp-credentials-include-analytics",
+              "fp-hardcoded-secret-storage"
+            ]
+          }
+        },
+        "total": 4
+      }
+    }
+  ]
+}

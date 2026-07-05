@@ -1,0 +1,4 @@
+{
+  "fixedIssueIds": ["internal/dispatch/dispatcher.go:29:no-retry"],
+  "expectedDelta": { "gate-2-completeness": -1 }
+}

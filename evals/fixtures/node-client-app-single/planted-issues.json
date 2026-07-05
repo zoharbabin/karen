@@ -1,0 +1,9 @@
+[
+  { "file": "src/widget.ts", "line": 50, "category": "unremoved-listener", "isDecoy": false },
+  { "file": "src/analytics.ts", "line": 26, "category": "credentials-include", "isDecoy": false },
+  { "file": "README.md", "line": 10, "category": "missing-sri", "isDecoy": false },
+  { "file": "src/analytics.ts", "line": 6, "category": "eval-in-comment", "isDecoy": true },
+  { "file": "src/analytics.ts", "line": 17, "category": "password-variable", "isDecoy": true },
+  { "file": "src/widget.ts", "line": 42, "category": "global-scope-write", "isDecoy": true },
+  { "file": "src/widget.ts", "line": 71, "category": "console-debug-guard", "isDecoy": true }
+]

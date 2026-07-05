@@ -1,0 +1,4 @@
+{
+  "note": "Empty diff — zero hunks. Applied 3 consecutive times with no source change, to exercise the circuit breaker: staleCount increments on gate-5-compliance each run (fingerprint unchanged) and trips (exit 2) on the 3rd application, per BLUEPRINT.md's default threshold of 3.",
+  "expectedDelta": { "gate-5-compliance": 0 }
+}

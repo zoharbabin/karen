@@ -1,0 +1,14 @@
+diff --git a/src/prism_sdk/utils.py b/src/prism_sdk/utils.py
+index 05c665c..cc3083e 100644
+--- a/src/prism_sdk/utils.py
++++ b/src/prism_sdk/utils.py
+@@ -11,6 +11,9 @@ def convert_audio(input_path, output_format):
+     the command as a single shell string lets either argument break out of
+     the intended command.
+     """
++    # Noop: this comment is purely cosmetic, added to shift line numbers
++    # below without changing any behavior — the shell-injection issue on
++    # the subprocess.run() call underneath is still present and unfixed.
+     command = f"ffmpeg -i {input_path} -f {output_format} -"
+     return subprocess.run(command, shell=True, capture_output=True, check=True)
+ 

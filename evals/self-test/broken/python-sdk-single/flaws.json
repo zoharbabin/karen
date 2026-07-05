@@ -1,0 +1,24 @@
+{
+  "flaws": [
+    {
+      "dimension": "gateIssues",
+      "description": "src/prism_sdk/config.py:16 yaml-unsafe-load (real, non-decoy) is never emitted by gate-3-security's stdout in any auditRuns entry — removed from the issue lines and from runState.gates['gate-3-security'].fingerprint/count at every run",
+      "expectedGraderFinding": "false negative on yaml-unsafe-load"
+    },
+    {
+      "dimension": "gateIssues",
+      "description": "src/prism_sdk/config.py:9 eval-in-comment (decoy) IS emitted by gate-3-security's stdout in every auditRuns entry — added to the issue lines and to runState.gates['gate-3-security'].fingerprint/count at every run",
+      "expectedGraderFinding": "false positive on eval-in-comment"
+    },
+    {
+      "dimension": "knownGaps",
+      "description": "init.karenJson.knownGaps and init.karenJson.exceptions are swapped: the tracker-backed, no-expiry webhook-signature-verification gap (pattern 'webhook signature verification', scope src/prism_sdk/webhooks.py) is placed under exceptions with a fabricated expiry, and the dated 429-backoff TODO exception (pattern 'TODO', file src/prism_sdk/client.py, expires 2026-08-15) is placed under knownGaps instead",
+      "expectedGraderFinding": "swapsDetected entries for both 'knownGap-in-exceptions' (pattern 'webhook signature verification') and 'exception-in-knownGaps' (pattern 'TODO')"
+    },
+    {
+      "dimension": "karenJson",
+      "description": "Same swap as the knownGaps flaw above (init.karenJson.knownGaps and init.karenJson.exceptions contents exchanged) — score-karen-json.js independently reads the same two arrays for its arrayFieldMetrics.knownGaps/exceptions f1 check, so this one root cause also fails that grader's set-membership comparison, not just score-known-gaps.js's swap detector",
+      "expectedGraderFinding": "arrayFieldMetrics.knownGaps and arrayFieldMetrics.exceptions both show f1=0 (falsePositives/falseNegatives on both keys), scalarMatchRate stays 1"
+    }
+  ]
+}

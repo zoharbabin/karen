@@ -1,0 +1,24 @@
+diff --git a/src/datastores/preferenceCache.ts b/src/datastores/preferenceCache.ts
+new file mode 100644
+index 0000000..26ff769
+--- /dev/null
++++ b/src/datastores/preferenceCache.ts
+@@ -0,0 +1,18 @@
++// REGRESSION: an early, unreviewed slice of the not-yet-shipped
++// personalization tier — stores a per-user display-name preference but
++// never registers with src/consent/registry.ts. Same violation class as
++// eventStore.ts before its fix: a new personal-data store added without
++// wiring into the registry.
++class PreferenceCache {
++  private prefs = new Map<string, { displayName: string }>();
++
++  setDisplayName(userId: string, displayName: string): void {
++    this.prefs.set(userId, { displayName });
++  }
++
++  getDisplayName(userId: string): string | undefined {
++    return this.prefs.get(userId)?.displayName;
++  }
++}
++
++export const preferenceCache = new PreferenceCache();

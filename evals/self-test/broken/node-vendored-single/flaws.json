@@ -1,0 +1,14 @@
+{
+  "flaws": [
+    {
+      "dimension": "gateIssues",
+      "description": "src/registryClient.ts:8 hardcoded-secret (real, non-decoy) is never emitted by gate-3-security's stdout in any auditRuns entry — a false negative, with runState.gates['gate-3-security'].fingerprint/count adjusted to match the missing emission at every run.",
+      "expectedGraderFinding": "false negative on hardcoded-secret"
+    },
+    {
+      "dimension": "gateIssues",
+      "description": "src/render.ts:32 shell-injection (decoy) IS emitted by gate-3-security's stdout in every auditRuns entry — a false positive, with runState.gates['gate-3-security'].fingerprint/count adjusted to include the decoy at every run.",
+      "expectedGraderFinding": "false positive on shell-injection (decoy)"
+    }
+  ]
+}

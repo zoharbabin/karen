@@ -1,0 +1,32 @@
+[
+  {
+    "id": "gate-1-supply-chain",
+    "tool": "govulncheck (once per go.mod: backend/, cli/)",
+    "coversCategories": [],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-2-completeness",
+    "tool": "go vet + structural stub scan (backend/, cli/, and mint-admin-token.sh as the root-utility pseudo-subproject)",
+    "coversCategories": [],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-3-security",
+    "tool": "gosec + working-tree secret scan (backend/, cli/, and mint-admin-token.sh)",
+    "coversCategories": ["hardcoded-secret", "shell-injection"],
+    "zeroTolerance": true
+  },
+  {
+    "id": "gate-6-test-integrity",
+    "tool": "go test -coverprofile (per module: backend/, cli/)",
+    "coversCategories": [],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-7-agent-context",
+    "tool": "agent-context checklist (root AGENTS.md)",
+    "coversCategories": [],
+    "zeroTolerance": false
+  }
+]

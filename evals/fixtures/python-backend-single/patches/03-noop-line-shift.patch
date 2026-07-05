@@ -1,0 +1,14 @@
+diff --git a/src/beacon_ingest/cache.py b/src/beacon_ingest/cache.py
+index 02ce4f7..bf12d69 100644
+--- a/src/beacon_ingest/cache.py
++++ b/src/beacon_ingest/cache.py
+@@ -25,6 +25,9 @@ def load_cached_job(job_id):
+     raw = redis.get(f"job:{job_id}")
+     if raw is None:
+         return None
++    # Noop: this comment is purely cosmetic, added to shift line numbers
++    # below without changing any behavior -- the pickle.loads call on the
++    # next line is still present and unfixed.
+     return pickle.loads(raw)
+ 
+ 

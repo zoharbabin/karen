@@ -613,6 +613,15 @@ GATE 1  supply-chain    Karen is satisfied.  (0 issues)
 
 This is reassessed on every `karen init`/`karen upgrade`, the same as `existingGates` coverage — a strength that regresses (a new dependency added, a compliance doc that stops being maintained) should stop being reported the next time the harness is regenerated, not linger as a stale compliment.
 
+**A regressed strength is reported once, not silently dropped.** Removing an `exceedsBaseline` entry with no trace would read identically to "this was never checked" — a team that earned the strength has no way to tell "we lost it" from "Karen never noticed it." The `karen upgrade` run that first detects the loss (dependency added where there were none, compliance doc no longer present or no longer naming the control it used to) prints a one-time regression note on that gate's result, then removes the entry from `.karen.json`:
+
+```
+GATE 1  supply-chain    Karen is satisfied.  (0 issues)
+  Strength lost: zero runtime dependencies (lodash added since last check).
+```
+
+This note appears exactly once, on the `karen upgrade` run where the regression is first detected — it is not persisted or repeated on subsequent runs, since by then it's simply the absence of a strength, not new information.
+
 ---
 
 ### Documentation Fidelity
@@ -645,6 +654,44 @@ Every project needs these. Karen checks presence and minimum content.
 | Provenance attestation | Enabled in publish config for distributed packages |
 
 For compliance profiles, Karen adds regime-specific artifact requirements to the harness — audit log config for SOC2, PHI handling docs for HIPAA, cardholder data flow docs for PCI-DSS, FIPS config for FedRAMP.
+
+**Presence and content are not the same thing as accuracy — a compliance doc can pass every check above and still overclaim.** A `SECURITY.md` that maps controls to a dozen named standards, a slide deck asserting broad framework alignment, a README claiming a certification the project doesn't hold — none of that is caught by checking that the artifact exists and contains the right sections. Karen does not attempt to verify regulatory claims herself; that's a legal/audit judgment, not a static check. What she can and does check is narrower and mechanical: does the compliance doc name a specific file, function, or test as backing a specific claim, and does that reference still exist? A claim with no named reference at all, or one whose named reference has since been deleted or renamed, is a finding — `Karen notes SECURITY.md claims "encryption at rest" but names no implementing file`. This is the same drift Documentation Fidelity (above) catches for API docs, applied to compliance claims specifically, because a stale or unfounded compliance claim is a worse failure mode than a stale code example — it's the thing a customer or auditor is most likely to act on directly.
+
+**Compliance artifacts describe what the *project* provides, not what a deploying organization is automatically entitled to claim.** A project's controls can satisfy the technical prerequisites for SOC2 or GDPR without the project itself constituting compliance — actually reaching a named standard usually also requires organizational process the code can't attest to: a signed BAA, an operator's own audit logging retention policy, a legal review of data flows. Karen's compliance gate does not claim to certify a standard; it checks that the project's own docs are honest about this boundary — naming, for standards it claims alignment with, which parts are controls the code provides versus which parts remain the deploying operator's responsibility. A compliance doc that reads as "install this and you're SOC2 compliant" with no such split is itself a finding, separate from whether the underlying controls are technically sound.
+
+---
+
+#### Personal-Data Registry Pattern
+
+A project that stores personal data in exactly one place can handle a GDPR/CCPA export or erasure request with a single, auditable query. A project that stores it in several places — a primary user table, an analytics store, a cache, a conversation-memory store — can't, unless something ties those stores together. **Karen's compliance gate checks for a specific structural pattern, not just a policy statement:** does every personal-data store in the project register itself with a single registry (or an equivalent fan-out mechanism) that a data-subject request walks to reach all of them, or does each store handle export/erasure ad hoc, independently, with no shared place that guarantees none was missed?
+
+This is the same "structural over textual" principle Security & Trust Boundaries applies to secrets and injection, applied to data-subject rights: a `SECURITY.md` that says "we honor erasure requests" is a textual claim; a registry that every new personal-data store must join *before its owner can call it done* — enforced by a test, not a comment — is the structural version. During `karen init`, if the interview or `probe_tools` surfaces more than one personal-data store (a new one is easy to miss — it's often added months after the registry was built, by someone who never read the doc that explains why the registry exists), Karen asks whether a registry pattern already exists and, if so, checks every store she can find against it:
+
+```
+GATE 5  compliance
+  src/analytics/eventStore.ts:14  writes rows keyed by (tenant, user) but never
+    registers with src/consent/registry.ts — an erasure request would miss this store
+  FAIL (1 issues)
+```
+
+A project with only one personal-data store, or no personal data at all, never triggers this check — it exists for the specific shape where fan-out can silently drop a store, not as a mandate that every project build a registry it has no use for.
+
+---
+
+#### Tiered, Feature-Gated Compliance
+
+A static profile picked once at `karen init` — "this project is SOC2-scoped" — assumes the whole project carries one compliance posture for its whole life. That's often false: a product can ship a free core tier with no personal-data handling at all, then an opt-in analytics tier, then a personalization tier that stores far more — where each tier upward *earns* new compliance obligations the tier below never triggers. Flattening that into one root-level `compliance` array either over-requires artifacts the free tier has no reason to carry, or under-requires them the moment personalization ships.
+
+`compliance[]` entries may be a plain string (`"soc2"` — applies unconditionally, the existing behavior) or an object naming the feature flag that activates it:
+
+```json
+"compliance": [
+  "soc2",
+  { "standard": "gdpr", "activatesWhen": "feature:analytics-tier", "note": "Only the analytics tier and above touch personal data broadly enough to trigger export/erasure obligations" }
+]
+```
+
+Karen only adds a tier-gated standard's artifact requirements to the harness once the interview confirms the gating feature is actually built and reachable — a `activatesWhen` entry for a feature that doesn't exist yet is a forward-declared requirement, tracked but not yet enforced, surfaced in the `karen init` summary so the team sees it coming rather than being surprised by a new gate failure the day the feature ships. This is reassessed on every `karen init`/`karen upgrade` the same as `exceedsBaseline` — a feature flag removed or a tier retired drops its gated compliance requirements with it, rather than leaving a stale artifact check enforced against a capability that no longer exists.
 
 ---
 
@@ -688,6 +735,8 @@ If your project is AI-powered or used with LLM coding agents, Karen adds a gate 
 
 **The stopping-criteria check is not Karen-specific.** A project may already have its own deterministic quality gate — a docs-CI script, a lint-and-test command, a custom verifier — wired into its agent context file as the stopping condition. Karen's gate checks for *the property*, not for literal references to `karen audit`: does the agent context file name a specific, runnable command whose exit code defines done? `Run: node tools/check-docs.mjs — done when it exits 0` satisfies this exactly as well as `Run: karen audit`. If Karen herself is layered onto a project with an existing stopping criterion, she should either wire that command in as an `existingGates` entry (see `.karen.json` schema) and let it continue to anchor the stopping condition, or fold it into her own audit — never require the project to switch its stopping language to hers.
 
+**A context file's claimed audience must match which files actually exist.** `CLAUDE.md` that opens with "rules the AI writes by, for Claude / Copilot / Cursor" is making a claim about reaching agent ecosystems that read different filenames — Cursor reads `.cursorrules` (or `.cursor/rules/`), Copilot reads `.github/copilot-instructions.md`, and neither exists just because `CLAUDE.md` says it's meant for them. Karen's gate flags this specific mismatch as its own finding, distinct from "no agent context file present at all": a project can pass the base Agent context file check (something exists) while still failing this one (what exists doesn't cover what it claims to cover).
+
 ---
 
 ### Code Structure & Elegance
@@ -702,8 +751,38 @@ Structural issues invisible to linters but that compound over time.
 | Functions exceeding single responsibility | Large functions test many things implicitly |
 | Magic numbers and strings | No context for what the value means or when it changes |
 | Implicit coupling | Modules sharing state through globals or ambient context |
+| Dead/unreachable code | Unused exports, unreachable branches, and functions with no remaining caller — finished code nobody deletes, distinct from the unfinished-code signals in [Code Completeness](#code-completeness) |
 
 Severity is calibrated to project type: stricter for libraries and SDKs distributed to others; advisory for internal scripts and one-off tooling.
+
+**Dead-code detection uses the project's own tooling, not a Karen-invented reachability analysis.** The gate wires in whatever the language already has — `ts-prune`/`knip` for TypeScript, `vulture` for Python, `deadcode`/`unused` via `go vet`/`staticcheck` for Go — the same "orchestration, not reimplementation" principle as every other gate. Where no such tool is configured, `probe_tools` reports the gap and Karen recommends one during `karen init` rather than silently skipping the check.
+
+---
+
+### Resiliency
+
+Code that assumes the network never fails is code that fails in production the first time it does.
+
+| Pattern | Why it matters |
+|---|---|
+| Network I/O with no retry | A transient failure (DNS blip, reset connection, brief upstream outage) surfaces as a hard user-facing error instead of resolving itself |
+| Retry with no backoff or no attempt cap | Immediate or unbounded retries amplify load on a struggling downstream instead of easing it — the retry storm becomes the outage |
+| No fallback or degraded path on a dependency failure | One downstream failure takes down the entire request instead of degrading to a partial or cached response |
+
+Severity is calibrated to project type: a backend service's outbound calls to other services are held to this bar; a CLI tool making one request at invocation time, or an SDK that just wraps a fetch call and lets the caller decide retry policy, isn't penalized for not owning a concern that belongs to its caller. Karen decides which network calls this applies to during `karen init` — the project's own architecture, not a blanket rule, determines what "the network fails" means for that codebase.
+
+---
+
+### Performance & Resource Bounds
+
+Unbounded resource use is invisible in a demo and fatal at scale.
+
+| Check | Pass condition |
+|---|---|
+| Unbounded payload/collection size | Every externally-influenced read (file upload, DB query, paginated API response) has an explicit size, row, or byte cap |
+| Eager heavy imports or startup cost | Expensive imports, subprocess spawns, or network calls made at module load time are deferred until the feature that needs them actually runs — a caller who never uses the feature shouldn't pay its startup cost |
+
+Which of these apply depends on project type — a request-handling backend is held to explicit payload caps; a one-shot CLI script usually isn't. Karen decides during `karen init`.
 
 ---
 
@@ -802,7 +881,14 @@ The manifest Karen writes after `karen init`. Captures what she learned and what
       }
     ]
   },
-  "compliance": ["soc2"],
+  "compliance": [
+    "soc2",
+    { "standard": "gdpr", "activatesWhen": "feature:analytics-tier", "note": "Only the analytics tier and above touch personal data broadly enough to trigger export/erasure obligations" }
+  ],
+  "personalDataRegistry": {
+    "path": "src/consent/registry.ts",
+    "stores": ["src/db/userTable.ts", "src/analytics/eventStore.ts"]
+  },
   "coverage": { "threshold": 80 },
   "testRunner": {
     "command": "npm test",
@@ -875,6 +961,10 @@ The manifest Karen writes after `karen init`. Captures what she learned and what
 **`project.subprojects` overrides the root profile for a poly-repo with mixed risk surfaces.** A single global `type`/`deployment`/`audience`/`aiPowered` assumes the whole repo carries one risk profile. That's false the moment a repo mixes, say, a zero-dependency enterprise library with a demo app that calls an LLM at runtime and a throwaway internal CLI tool — three different answers to "does this need SOC2 artifacts," "does the ai-agent runtime profile apply," "how strict should code-structure severity be." Each entry in `subprojects` is scoped by `path` and overrides only the fields it sets; anything it omits inherits the root profile. This is what lets Gate 3's security scan add the OWASP LLM checks to `apps/teaching-avatar` specifically without forcing every other subproject through the same runtime-AI checklist, and what lets Gate 5 hold only the SOC2-scoped subproject to SBOM/audit-log requirements instead of the whole repo. During `karen init`, once `detect_project` reports multiple manifests, the agent asks the profile questions (type, deployment, audience, AI-powered) once per subproject that looks structurally independent (own manifest, own lifecycle) rather than assuming the first answer applies everywhere — the same principle as the per-gate scoping in [Poly-repo & Monorepo Structure](#poly-repo--monorepo-structure), applied to the profile that drives *which* checks exist, not just *where* they run.
 
 **`subprojects[].codeRole`** answers "what kind of code is this, independent of type/deployment/audience" — `reference-app`, `debug-tool`, `root-utility`, or a project-specific label the interview settles on. (Distinct from `testRunner.packages[].role`, which is about coverage-reporting role — `primary`/`e2e-only` — not about what the subproject's code is for.) It's what lets a security zero-tolerance check flex per subproject (see [browser-direct-js](#browser-direct-js)) without touching the check's rationale for every other subproject. **`subprojects[].agentActions.scope`** (`least-privilege` vs. `maximal`, each with a `reason`) tells Gate 3's excessive-agency check which bar applies to that subproject's tool-calling surface — a customer-facing app is held to a narrow allow-list, an internal "everything-agent" test harness is expected to be broad and is checked against a different, explicitly-declared bar instead of the customer-facing one.
+
+**`compliance[]` entries are either unconditional (a plain string) or feature-gated (an object with `activatesWhen`)** — see [Tiered, Feature-Gated Compliance](#tiered-feature-gated-compliance). A gated entry's artifact requirements only join the harness once the named feature is confirmed built; until then it's tracked and surfaced in the `karen init` summary but not yet enforced.
+
+**`personalDataRegistry`** names the registry (or fan-out mechanism) every personal-data store is expected to join — see [Personal-Data Registry Pattern](#personal-data-registry-pattern). `path` is the registry's own source file; `stores` is Karen's best-effort list of personal-data stores found during `detect_project`/interview, checked each run against the registry to catch a new store that never joined. Omitted entirely for projects with at most one personal-data store, where fan-out has nothing to miss.
 
 **Exceptions are first-class, not workarounds.** Every exception needs a reason and an expiry date. Karen reports expired exceptions as gate failures.
 
@@ -1091,6 +1181,8 @@ This profile covers two distinct things — a project can be either, or both, an
 | Supply chain (LLM03) | Model/weights/prompt-template provenance — distinct from Karen's standard dependency audit, which still applies in parallel |
 
 A project is `aiPowered: true` in `.karen.json` if *either* condition holds. The interview asks both questions separately — "is this built with AI coding agents?" and "does this product call an LLM or run agentic behavior at runtime?" — because a project can be one without the other, and the checks that follow are different in each case.
+
+**A tool-provider server — an MCP server, a plugin, a webhook handler invoked by someone else's agent loop — is `aiPowered: true` even though it never itself calls an LLM.** This is a third case the two questions above can miss if read too literally: the project doesn't call an LLM, and it wasn't necessarily built by a coding agent either, yet its runtime is still driven by tool-call arguments an LLM decided to send. The threat model is the same one the runtime-AI branch exists for — LLM01 (a connecting model's tool-call arguments are untrusted input reaching this server exactly like a network request), LLM06/ASI excessive agency (the server executes actions an agent initiated, whether or not that agent lives in this process) — so exempting it because "we never call the model ourselves" would silently drop coverage from the exact tool-call surface (`run_shell_command`, `apply_config_patch`, or equivalent) that needs it most. During `karen init`, if `detect_project` finds an MCP SDK dependency, a plugin manifest, or another tool-provider shape, the interview asks the runtime-AI question as "are you invoked by an LLM's tool-calling loop, even if you never call one yourself?" — not just "do you call an LLM" — precisely so a plain tool-provider doesn't get waved through as `aiPowered: false` by a literal reading of the first two questions.
 
 **The excessive-agency bar is not one-size-fits-all across a repo with multiple tool-calling surfaces.** A repo can legitimately contain both a customer-facing app with a deliberately narrow, least-privilege tool-call allow-list and an internal test harness whose entire purpose is exercising the *maximal* tool surface for QA — checking both against the same bar either fails the harness for doing its job or passes the customer-facing app on a bar too loose to mean anything. Each `project.subprojects` entry with `aiPowered: true` carries an `agentActions.scope` field — `least-privilege` or `maximal` — with a `reason`, set during the interview per subproject rather than once globally (see [Configuration](#configuration-karenjson)). Gate 3 checks a `least-privilege`-scoped subproject against "every agent-initiated action has an explicit allow-list entry or human-in-the-loop checkpoint" and checks a `maximal`-scoped subproject against a looser, explicitly-declared bar — e.g. "every action the harness exercises is logged and reviewable" rather than "the surface is minimal." Declaring `maximal` does not exempt a subproject from the *other* OWASP checks in the table above — prompt injection, output handling, and unbounded consumption still apply at full strength regardless of `agentActions.scope`; only the excessive-agency bar itself flexes.
 

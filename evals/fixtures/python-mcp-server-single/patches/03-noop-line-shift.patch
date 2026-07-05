@@ -1,0 +1,14 @@
+diff --git a/src/incident_mcp_server/tools/apply_config_patch.py b/src/incident_mcp_server/tools/apply_config_patch.py
+index 1a409a1..f273f0f 100644
+--- a/src/incident_mcp_server/tools/apply_config_patch.py
++++ b/src/incident_mcp_server/tools/apply_config_patch.py
+@@ -18,6 +18,9 @@ APPLY_CONFIG_PATCH_TOOL = {
+ 
+ 
+ def handle_apply_config_patch(arguments: dict) -> dict:
++    # Noop: this comment is purely cosmetic, added to shift line numbers
++    # below without changing any behavior — the yaml-unsafe-load issue on
++    # the yaml.load() call underneath is still present and unfixed.
+     # Real issue (yaml-unsafe-load): `patch_yaml` is a tool-call argument —
+     # attacker-controlled if the connecting LLM client is compromised or
+     # prompt-injected — parsed with the default `yaml.load` loader, which can

@@ -1,0 +1,624 @@
+{
+  "fixture": "python-sdk-single",
+  "init": {
+    "detectProjectOutput": {
+      "languages": [
+        "python"
+      ],
+      "manifests": [
+        {
+          "path": "pyproject.toml",
+          "language": "python"
+        }
+      ],
+      "frameworks": [],
+      "ciConfig": [
+        ".github/workflows/ci.yml"
+      ],
+      "existingTestSetup": {
+        "runner": "pytest",
+        "coverageTool": "pytest-cov",
+        "coverageReport": "coverage.xml"
+      },
+      "agentContextFiles": [
+        "CLAUDE.md"
+      ],
+      "existingGates": [],
+      "subprojects": [],
+      "unclaimedPaths": []
+    },
+    "transcript": [
+      {
+        "role": "karen",
+        "text": "What does this project do, who uses it, and where does it run day to day?"
+      },
+      {
+        "role": "user",
+        "text": "It's prism-sdk — a Python client library for the Prism transcription platform. Data engineering teams install it from PyPI to submit audio for transcription, manage webhooks, and export finished transcripts. Not a service, not browser-facing. Plain pip-installed library, runs inside whatever Python process imports it — batch jobs, notebooks, internal services. No browser, no CDN."
+      },
+      {
+        "role": "karen",
+        "text": "What's the audience and distribution scope, and does it handle sensitive data?"
+      },
+      {
+        "role": "user",
+        "text": "External — any data engineering team that installs it from PyPI. The `api_key` it sends as a bearer token is a real production credential once a customer sets one."
+      },
+      {
+        "role": "karen",
+        "text": "Any compliance or regulatory requirements?"
+      },
+      {
+        "role": "user",
+        "text": "No. It's a client library — no SOC2, HIPAA, or PCI requirement of its own."
+      },
+      {
+        "role": "karen",
+        "text": "Is this project AI-powered, or built with / used by LLM coding agents?"
+      },
+      {
+        "role": "user",
+        "text": "Built with Claude Code day to day (see CLAUDE.md), but the SDK itself never calls an LLM and isn't invoked by one — it's a plain HTTP transcription client."
+      },
+      {
+        "role": "karen",
+        "text": "I see `docs/internal/GAPS.md` already tracks the missing webhook signature verification as a capability-gap. Want me to treat entries there as knownGaps automatically going forward, or ask you per-stub?"
+      },
+      {
+        "role": "user",
+        "text": "Treat GAPS.md entries as knownGaps automatically — that's exactly why we maintain the file. Only ask us directly for stubs that aren't listed there yet."
+      },
+      {
+        "role": "karen",
+        "text": "`client.py`'s `transcribe()` has a dated TODO about 429 backoff referencing an exception expiring 2026-08-15 — is that still an active, time-boxed item, or should it become a permanent knownGaps entry instead?"
+      },
+      {
+        "role": "user",
+        "text": "Still active and still time-boxed — we're shipping the backoff in 0.5.0, targeting mid-August. Keep it as an exception with that expiry, not a knownGaps entry; it's not a deliberate boundary, it's just not done yet."
+      },
+      {
+        "role": "karen",
+        "text": "`client.py` also has a `password` constructor parameter that isn't a credential-scanner false alarm — can you confirm what it's for?"
+      },
+      {
+        "role": "user",
+        "text": "Right, that's for customers who want failed-job notifications relayed through their own SMTP server — we pass it straight through to their mail transport, never persist or log it. Not a hardcoded secret, just a pass-through parameter with an unfortunate but accurate name."
+      },
+      {
+        "role": "karen",
+        "text": "pyproject.toml already sets `--cov-fail-under=85` — should I lock 85% in as your enforced threshold?"
+      },
+      {
+        "role": "user",
+        "text": "85% — that's what `--cov-fail-under` is already set to in pyproject.toml, keep it there."
+      }
+    ],
+    "karenJson": {
+      "version": "1.0.0",
+      "project": {
+        "type": "library",
+        "language": [
+          "python"
+        ],
+        "deployment": [
+          "python"
+        ],
+        "audience": "enterprise",
+        "aiPowered": false,
+        "subprojects": []
+      },
+      "compliance": [],
+      "coverage": {
+        "threshold": 85
+      },
+      "testRunner": {
+        "command": "pytest",
+        "coverageReport": "coverage.xml",
+        "format": "cobertura"
+      },
+      "doctest": {
+        "files": [
+          "README.md"
+        ],
+        "languages": [
+          "py",
+          "python"
+        ],
+        "annotation": "karen:runnable"
+      },
+      "permissions": {},
+      "circuitBreaker": {
+        "threshold": 3,
+        "exitCode": 2
+      },
+      "expiryWarningDays": 7,
+      "existingGates": [],
+      "crossSubprojectConsistency": [],
+      "knownGaps": [
+        {
+          "kind": "capability-gap",
+          "pattern": "TODO",
+          "scope": "src/prism_sdk/client.py",
+          "reason": "429 rate-limit exponential backoff is scheduled for the 0.5.0 release, not a deliberate boundary — just not done yet. Time-boxed, not a knownGaps entry.",
+          "tracker": "docs/internal/GAPS.md"
+        }
+      ],
+      "exceedsBaseline": [],
+      "exceptions": {
+        "gate-2-completeness": [
+          {
+            "pattern": "webhook signature verification",
+            "file": "src/prism_sdk/webhooks.py",
+            "reason": "Prism's webhook signing-secret rotation endpoint is still private-beta; there's no stable secret to verify against yet. Tracked upstream with the platform team.",
+            "expires": "2026-08-15"
+          }
+        ]
+      }
+    },
+    "gateScripts": {
+      "gate-1-supply-chain": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nout=\"\"\nwhile IFS= read -r line; do\n  out+=\"$line\"$'\\n'\n  issues=$((issues+1))\ndone < <(pip-audit --format json 2>/dev/null | python3 -c '\nimport json,sys\ndata=json.load(sys.stdin)\nfor dep in data.get(\"dependencies\", []):\n    for v in dep.get(\"vulns\", []):\n        print(f\"pyproject.toml\\t{dep[\\\"name\\\"]} {v[\\\"id\\\"]} has a known vulnerability\")\n' || true)\nprintf \"%s\" \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
+      "gate-2-completeness": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nwhile IFS=: read -r file line rest; do\n  # Structural stub scan: bare NotImplementedError raises not covered by\n  # a knownGaps entry are flagged; decoy no-op branches with an explicit\n  # \"decoy:\" comment are intentionally excluded.\n  echo -e \"${file}:${line}\\t${rest# }\"\n  issues=$((issues+1))\ndone < <(grep -rn \"raise NotImplementedError\" src/ | grep -v \"webhooks.py\")\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
+      "gate-3-security": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nwhile IFS= read -r line; do\n  echo -e \"$line\"\n  issues=$((issues+1))\ndone < <(bandit -r src/ -f custom --msg-template '{relpath}:{line}\\t{test_id} {msg}' 2>/dev/null || true)\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nelse\n  echo \"FAIL ($issues issues)\"\n  echo \"ZERO-TOLERANCE\"\n  exit 1\nfi\n",
+      "gate-4-docs-parity": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nwhile IFS= read -r line; do\n  echo -e \"$line\"\n  issues=$((issues+1))\ndone < <(python3 tools/doctest_check.py README.md --annotation \"karen:runnable\" 2>/dev/null || true)\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
+      "gate-6-test-integrity": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nout=$(pytest --cov=prism_sdk --cov-report=xml --cov-fail-under=85 -q 2>&1) || true\nif echo \"$out\" | grep -q \"FAILED\\|Coverage failure\"; then\n  while IFS= read -r l; do\n    echo -e \"tests\\t$l\"\n    issues=$((issues+1))\n  done < <(echo \"$out\" | grep \"FAILED\\|Coverage failure\")\nfi\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
+      "gate-7-agent-context": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nif [ ! -f CLAUDE.md ]; then\n  echo -e \"CLAUDE.md\\tmissing agent context file\"\n  issues=$((issues+1))\nfi\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n"
+    }
+  },
+  "auditRuns": [
+    {
+      "trigger": "initial",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "src/prism_sdk/exporter.py:6\texport_to_srt() raises NotImplementedError — stub implementation\nFAIL (1 issues)\n",
+          "exitCode": 1
+        },
+        "gate-3-security": {
+          "stdout": "src/prism_sdk/client.py:9\tDEFAULT_API_KEY is a live-looking credential committed to source\nsrc/prism_sdk/utils.py:15\tconvert_audio() builds a shell command by string interpolation with shell=True — caller-supplied input can break out of the intended command\nsrc/prism_sdk/config.py:9\teval() call found in comment — flagged by textual scanner\nFAIL (3 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 1,
+        "timestamp": "2026-06-27T20:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 1,
+            "fingerprint": [
+              "fp-stub-implementation-exporter"
+            ]
+          },
+          "gate-3-security": {
+            "count": 3,
+            "fingerprint": [
+              "fp-hardcoded-secret-client",
+              "fp-shell-injection-utils",
+              "fp-eval-in-comment-config-decoy"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 4
+      }
+    },
+    {
+      "trigger": "01-partial-fix",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "src/prism_sdk/client.py:9\tDEFAULT_API_KEY is a live-looking credential committed to source\nsrc/prism_sdk/utils.py:15\tconvert_audio() builds a shell command by string interpolation with shell=True — caller-supplied input can break out of the intended command\nsrc/prism_sdk/config.py:9\teval() call found in comment — flagged by textual scanner\nFAIL (3 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 2,
+        "timestamp": "2026-06-27T20:15:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 3,
+            "fingerprint": [
+              "fp-hardcoded-secret-client",
+              "fp-shell-injection-utils",
+              "fp-eval-in-comment-config-decoy"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 3
+      }
+    },
+    {
+      "trigger": "02-regression",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "src/prism_sdk/client.py:9\tDEFAULT_API_KEY is a live-looking credential committed to source\nsrc/prism_sdk/utils.py:15\tconvert_audio() builds a shell command by string interpolation with shell=True — caller-supplied input can break out of the intended command\nsrc/prism_sdk/webhooks.py:6\tDEFAULT_WEBHOOK_SECRET is a fallback signing secret committed to source\nsrc/prism_sdk/config.py:9\teval() call found in comment — flagged by textual scanner\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 3,
+        "timestamp": "2026-06-27T20:30:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 4,
+            "fingerprint": [
+              "fp-hardcoded-secret-client",
+              "fp-shell-injection-utils",
+              "fp-hardcoded-secret-webhooks",
+              "fp-eval-in-comment-config-decoy"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 4
+      }
+    },
+    {
+      "trigger": "03-noop-line-shift",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "src/prism_sdk/client.py:9\tDEFAULT_API_KEY is a live-looking credential committed to source\nsrc/prism_sdk/utils.py:18\tconvert_audio() builds a shell command by string interpolation with shell=True — caller-supplied input can break out of the intended command\nsrc/prism_sdk/webhooks.py:6\tDEFAULT_WEBHOOK_SECRET is a fallback signing secret committed to source\nsrc/prism_sdk/config.py:9\teval() call found in comment — flagged by textual scanner\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 4,
+        "timestamp": "2026-06-27T20:45:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 4,
+            "fingerprint": [
+              "fp-hardcoded-secret-client",
+              "fp-shell-injection-utils",
+              "fp-hardcoded-secret-webhooks",
+              "fp-eval-in-comment-config-decoy"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 4
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-1",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "src/prism_sdk/client.py:9\tDEFAULT_API_KEY is a live-looking credential committed to source\nsrc/prism_sdk/utils.py:18\tconvert_audio() builds a shell command by string interpolation with shell=True — caller-supplied input can break out of the intended command\nsrc/prism_sdk/webhooks.py:6\tDEFAULT_WEBHOOK_SECRET is a fallback signing secret committed to source\nsrc/prism_sdk/config.py:9\teval() call found in comment — flagged by textual scanner\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 5,
+        "timestamp": "2026-06-27T21:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 4,
+            "fingerprint": [
+              "fp-hardcoded-secret-client",
+              "fp-shell-injection-utils",
+              "fp-hardcoded-secret-webhooks",
+              "fp-eval-in-comment-config-decoy"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 4
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-2",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "src/prism_sdk/client.py:9\tDEFAULT_API_KEY is a live-looking credential committed to source\nsrc/prism_sdk/utils.py:18\tconvert_audio() builds a shell command by string interpolation with shell=True — caller-supplied input can break out of the intended command\nsrc/prism_sdk/webhooks.py:6\tDEFAULT_WEBHOOK_SECRET is a fallback signing secret committed to source\nsrc/prism_sdk/config.py:9\teval() call found in comment — flagged by textual scanner\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 6,
+        "timestamp": "2026-06-27T21:15:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 4,
+            "fingerprint": [
+              "fp-hardcoded-secret-client",
+              "fp-shell-injection-utils",
+              "fp-hardcoded-secret-webhooks",
+              "fp-eval-in-comment-config-decoy"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 4
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-3",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "src/prism_sdk/client.py:9\tDEFAULT_API_KEY is a live-looking credential committed to source\nsrc/prism_sdk/utils.py:18\tconvert_audio() builds a shell command by string interpolation with shell=True — caller-supplied input can break out of the intended command\nsrc/prism_sdk/webhooks.py:6\tDEFAULT_WEBHOOK_SECRET is a fallback signing secret committed to source\nsrc/prism_sdk/config.py:9\teval() call found in comment — flagged by textual scanner\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 7,
+        "timestamp": "2026-06-27T21:30:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 4,
+            "fingerprint": [
+              "fp-hardcoded-secret-client",
+              "fp-shell-injection-utils",
+              "fp-hardcoded-secret-webhooks",
+              "fp-eval-in-comment-config-decoy"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 4
+      }
+    }
+  ]
+}

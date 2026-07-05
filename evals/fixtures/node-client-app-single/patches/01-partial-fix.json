@@ -1,0 +1,4 @@
+{
+  "fixedIssueIds": ["src/widget.ts:50:unremoved-listener"],
+  "expectedDelta": { "gate-3-security": -1 }
+}

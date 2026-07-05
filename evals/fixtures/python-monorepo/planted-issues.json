@@ -1,0 +1,14 @@
+[
+  { "file": "backend/src/signal_relay_backend/server.py", "line": 30, "category": "shell-injection", "isDecoy": false },
+  { "file": "backend/src/signal_relay_backend/server.py", "line": 43, "category": "shell-injection", "isDecoy": true },
+  { "file": "backend/src/signal_relay_backend/cache.py", "line": 22, "category": "unsafe-deserialization", "isDecoy": false },
+  { "file": "backend/src/signal_relay_backend/cache.py", "line": 34, "category": "unsafe-deserialization", "isDecoy": true },
+  { "file": "backend/src/signal_relay_backend/config.py", "line": 16, "category": "unsafe-yaml-load", "isDecoy": false },
+  { "file": "backend/src/signal_relay_backend/config.py", "line": 27, "category": "unsafe-yaml-load", "isDecoy": true },
+  { "file": "backend/src/signal_relay_backend/audit_log.py", "line": 16, "category": "hardcoded-secret", "isDecoy": false },
+  { "file": "backend/src/signal_relay_backend/audit_log.py", "line": 39, "category": "hardcoded-secret", "isDecoy": true },
+  { "file": "client-lib/src/signal_relay_client/filters.py", "line": 17, "category": "dynamic-code-execution", "isDecoy": false },
+  { "file": "client-lib/src/signal_relay_client/filters.py", "line": 31, "category": "dynamic-code-execution", "isDecoy": true },
+  { "file": "client-lib/src/signal_relay_client/config.py", "line": 8, "category": "hardcoded-secret", "isDecoy": false },
+  { "file": "client-lib/src/signal_relay_client/config.py", "line": 29, "category": "hardcoded-secret", "isDecoy": true }
+]

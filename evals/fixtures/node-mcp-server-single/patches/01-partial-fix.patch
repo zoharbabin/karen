@@ -1,0 +1,17 @@
+diff --git a/src/tools/notify.ts b/src/tools/notify.ts
+index bb6905e..2518590 100644
+--- a/src/tools/notify.ts
++++ b/src/tools/notify.ts
+@@ -10,9 +10,7 @@ export function logNotifyStatus(channel: string): void {
+   console.log(`Paging ${channel}: escalation handler is implemented and active`);
+ }
+ 
+-// Real issue (stub-implementation): exported, reachable from a tool handler
+-// path, but never implemented — throws instead of paging anyone. Any runbook
+-// step that depends on this silently fails to notify a human.
+-export function pageOnCall(_channel: string, _message: string): void {
+-  throw new Error("not implemented");
++// Fixed: pageOnCall now actually pages instead of throwing.
++export function pageOnCall(channel: string, message: string): void {
++  console.log(`Paging ${channel}: ${message}`);
+ }

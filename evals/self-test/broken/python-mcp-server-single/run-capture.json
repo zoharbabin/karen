@@ -1,0 +1,611 @@
+{
+  "fixture": "python-mcp-server-single",
+  "init": {
+    "detectProjectOutput": {
+      "languages": [
+        "python"
+      ],
+      "manifests": [
+        {
+          "path": "pyproject.toml",
+          "language": "python"
+        }
+      ],
+      "frameworks": [],
+      "ciConfig": [
+        ".github/workflows/ci.yml"
+      ],
+      "existingTestSetup": {
+        "runner": "pytest",
+        "coverageTool": "pytest-cov",
+        "coverageReport": "coverage.xml"
+      },
+      "agentContextFiles": [
+        "CLAUDE.md"
+      ],
+      "existingGates": [],
+      "subprojects": [],
+      "unclaimedPaths": []
+    },
+    "transcript": [
+      {
+        "role": "karen",
+        "text": "What does this project do, and who uses it?"
+      },
+      {
+        "role": "user",
+        "text": "Internal MCP server for incident response \u2014 exposes `apply_config_patch` and `run_diagnostic_command` tools to a connected LLM client during incidents. Used by our on-call engineers, invoked through their MCP-enabled agent client, not by external customers."
+      },
+      {
+        "role": "karen",
+        "text": "What's the deployment setup \u2014 where does this run, and is there any public network exposure?"
+      },
+      {
+        "role": "user",
+        "text": "It's launched as a long-lived stdio subprocess by whatever MCP client connects to it \u2014 usually Claude Desktop or an internal agent framework \u2014 running on an internal ops host. It's never deployed to a browser and never exposes a public network endpoint."
+      },
+      {
+        "role": "karen",
+        "text": "Here, a connected LLM client calls in and drives everything end-to-end, but this process never calls out to an LLM itself. Is this project AI-powered, or built with / used by LLM coding agents, for the excessive-agency and prompt-injection checks \u2014 or should I treat it as plain backend code with no LLM angle at all?"
+      },
+      {
+        "role": "user",
+        "text": "Both, in different ways. It's built with Claude Code day to day. At runtime, it's the reverse of a normal AI app: an LLM client calls into this server over MCP to run tools \u2014 this process never calls an LLM itself, never renders model output, and has no conversational surface. It just executes the tool calls the connecting LLM asks for, including `run_diagnostic_command` and `apply_config_patch`."
+      },
+      {
+        "role": "karen",
+        "text": "Given that, I'll mark this aiPowered: true so the excessive-agency and injection checks apply to both handlers. Speaking of `run_diagnostic_command`: does it need a narrow allow-list, or is broad shell access intentional here?"
+      },
+      {
+        "role": "user",
+        "text": "Intentional \u2014 on-call engineers need to run arbitrary diagnostic and remediation commands during an incident; a fixed allow-list would defeat the point of the tool. We do want every call logged so it's reviewable after the fact, but we don't want it gated to a fixed command list."
+      },
+      {
+        "role": "karen",
+        "text": "Understood \u2014 I'll record that action's scope as maximal with a logging requirement, not a least-privilege allow-list. Separately: `apply_config_patch` merges a caller-supplied YAML patch straight into the running config. What's the sensitivity of the config surface reachable through that patch \u2014 what's actually in there in production, and is any of it sensitive?"
+      },
+      {
+        "role": "user",
+        "text": "Internal only \u2014 SRE and on-call engineers. No PII, no payment data. But `apply_config_patch` writes into the live incident-response config, and `run_diagnostic_command` can read anything the host process can read, so treat both tool surfaces as sensitive even though there's no formal PII/PCI classification."
+      },
+      {
+        "role": "karen",
+        "text": "Got it, treating both surfaces as sensitive. Any compliance or regulatory requirements I should hold this to \u2014 SOC2, HIPAA, PCI, anything like that?"
+      },
+      {
+        "role": "user",
+        "text": "No. This is internal tooling only \u2014 no SOC2, HIPAA, or PCI requirement."
+      },
+      {
+        "role": "karen",
+        "text": "Last one \u2014 what minimum pass percentage should this repo enforce, same bar as your other internal services or different?"
+      },
+      {
+        "role": "user",
+        "text": "80% is fine, same as our other internal services."
+      }
+    ],
+    "karenJson": {
+      "version": "1.0.0",
+      "project": {
+        "type": "mcp-server",
+        "language": [
+          "python"
+        ],
+        "deployment": [
+          "mcp-stdio"
+        ],
+        "audience": "internal",
+        "aiPowered": true,
+        "aiPoweredReason": "BLUEPRINT.md's ai-agent profile is satisfied by EITHER condition, not just the 'calls an LLM at runtime' one \u2014 this server is invoked by an LLM's tool-calling loop, runs agentic tool-call handlers (apply_config_patch, run_diagnostic_command), and exposes a conversational-adjacent surface (a connecting LLM client drives it end to end) even though it never itself makes an outbound call to an LLM API. Python is the most common real-world MCP server language, so this classification must follow the exact same principled call as the Node and Go MCP-server fixtures, not a language-specific carve-out: the blueprint's own excessive-agency check (LLM06/ASI 01-02) is specifically about 'agent-initiated actions... with no gate/allow-list/human-in-the-loop checkpoint before they take effect' \u2014 that threat class exists precisely because *some* agent (here, the connecting LLM client) is initiating the actions this server executes. Classifying this as aiPowered: false because the server has no outbound LLM call would silently exempt run_diagnostic_command and apply_config_patch from the excessive-agency, unbounded-consumption, and prompt-injection checks that are exactly the checks this project needs most \u2014 an MCP tool-call handler fed by an LLM's tool-call arguments (patch_yaml, command) is the textbook case for LLM01 (prompt injection reaching a tool-call context) and LLM06 (excessive agency), regardless of which side of the MCP connection issues the LLM call itself. Decided deliberately per EVALS-PLAN.md section 10's open question: aiPowered=true for a plain MCP server with no LLM calls of its own, held to parity with fixtures 3 (node-mcp-server-single) and 7 (go-mcp-server-single).",
+        "agentActions": {
+          "scope": "maximal",
+          "reason": "Interview confirmed run_diagnostic_command is intentionally broad \u2014 on-call engineers need arbitrary diagnostic/remediation shell access during incidents; a fixed allow-list would defeat the tool's purpose. Bar is 'every call logged and reviewable,' not 'minimal surface' \u2014 declared once at the project level since this is a single-package repo with no subprojects to scope it to."
+        },
+        "subprojects": []
+      },
+      "compliance": [],
+      "coverage": {
+        "threshold": 80
+      },
+      "testRunner": {
+        "command": "pytest",
+        "coverageReport": "coverage.xml",
+        "format": "cobertura"
+      },
+      "doctest": {
+        "files": [
+          "README.md"
+        ],
+        "languages": [
+          "py",
+          "python"
+        ],
+        "annotation": "karen:runnable"
+      },
+      "permissions": {},
+      "circuitBreaker": {
+        "threshold": 3,
+        "exitCode": 2
+      },
+      "expiryWarningDays": 7,
+      "existingGates": [],
+      "crossSubprojectConsistency": [],
+      "knownGaps": [],
+      "exceedsBaseline": [],
+      "exceptions": {}
+    },
+    "gateScripts": {
+      "gate-1-supply-chain": "#!/usr/bin/env bash\n# gate-1-supply-chain: pip-audit for known-vulnerable dependencies.\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nreport=\"$(pip-audit --strict --format json 2>/dev/null || true)\"\nif [ -n \"$report\" ]; then\n  while IFS=$'\\t' read -r pkg version vuln; do\n    [ -z \"$pkg\" ] && continue\n    echo -e \"pyproject.toml\\t${pkg} ${version}: ${vuln}\"\n    issues=$((issues + 1))\n  done < <(echo \"$report\" | python3 -c '\nimport json, sys\ndata = json.load(sys.stdin)\nfor dep in data.get(\"dependencies\", []):\n    for v in dep.get(\"vulns\", []):\n        print(f\"{dep[\\\"name\\\"]}\\t{dep[\\\"version\\\"]}\\t{v[\\\"id\\\"]}\")\n')\nfi\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL (${issues} issues)\"; exit 1; fi\n",
+      "gate-2-completeness": "#!/usr/bin/env bash\n# gate-2-completeness: ruff + structural stub scan (functions that only\n# raise NotImplementedError, reachable from a tool handler path).\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nwhile IFS=: read -r file line rest; do\n  [ -z \"$file\" ] && continue\n  body=\"$(sed -n \"${line},+1p\" \"$file\")\"\n  if echo \"$body\" | grep -q 'raise NotImplementedError'; then\n    echo -e \"${file}:${line}\\texported function is unimplemented \u2014 raises instead of doing its job\"\n    issues=$((issues + 1))\n  fi\ndone < <(grep -rn '^def ' src --include='*.py')\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL (${issues} issues)\"; exit 1; fi\n",
+      "gate-3-security": "#!/usr/bin/env bash\n# gate-3-security: bandit structural scan for hardcoded secrets, shell\n# injection, and unsafe yaml.load. Zero-tolerance \u2014 any finding fails the gate.\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nwhile IFS=$'\\t' read -r file line msg; do\n  [ -z \"$file\" ] && continue\n  echo -e \"${file}:${line}\\t${msg}\"\n  issues=$((issues + 1))\ndone < <(bandit -r src -f json 2>/dev/null | python3 -c '\nimport json, sys\ndata = json.load(sys.stdin)\nfor r in data.get(\"results\", []):\n    print(f\"{r[\\\"filename\\\"]}\\t{r[\\\"line_number\\\"]}\\t{r[\\\"issue_text\\\"]}\")\n')\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"; exit 0\nelse\n  echo \"FAIL (${issues} issues)\"\n  echo \"ZERO-TOLERANCE\"\n  exit 1\nfi\n",
+      "gate-4-docs-parity": "#!/usr/bin/env bash\n# gate-4-docs-parity: markdown doctest (README code blocks tagged\n# karen:runnable) + symbol diff between README/SECURITY.md and src/.\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nfor doc in README.md SECURITY.md; do\n  [ -f \"$doc\" ] || continue\n  while read -r symbol; do\n    [ -z \"$symbol\" ] && continue\n    grep -rq \"def ${symbol}(\" src 2>/dev/null || {\n      echo -e \"${doc}\\tdocumented symbol '${symbol}' no longer exists in src/\"\n      issues=$((issues + 1))\n    }\n  done < <(grep -oE '`[a-z_]+\\(' \"$doc\" | tr -d '`(')\ndone\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL (${issues} issues)\"; exit 1; fi\n",
+      "gate-6-test-integrity": "#!/usr/bin/env bash\n# gate-6-test-integrity: pytest --cov, enforce the configured coverage\n# threshold from .karen.json.\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\npytest --cov=incident_mcp_server --cov-report=xml -q > /tmp/pytest-out.txt 2>&1 || true\npct=\"$(python3 -c '\nimport xml.etree.ElementTree as ET\ntry:\n    root = ET.parse(\"coverage.xml\").getroot()\n    print(float(root.get(\"line-rate\", \"0\")) * 100)\nexcept Exception:\n    print(0)\n')\"\nthreshold=80\nif awk \"BEGIN{exit !($pct < $threshold)}\"; then\n  echo -e \"coverage.xml:1\\tline coverage ${pct}% is below the ${threshold}% threshold\"\n  issues=$((issues + 1))\nfi\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL (${issues} issues)\"; exit 1; fi\n",
+      "gate-7-agent-context": "#!/usr/bin/env bash\n# gate-7-agent-context: checklist over CLAUDE.md \u2014 must state the quality\n# gate command, the stopping condition, and model-selection guidance.\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nfile=\"CLAUDE.md\"\nif [ ! -f \"$file\" ]; then\n  echo -e \"${file}:1\\tagent context file is missing\"\n  echo \"FAIL (1 issues)\"\n  exit 1\nfi\ngrep -qi \"karen audit\" \"$file\" || { echo -e \"${file}:1\\tmissing the karen audit quality-gate command\"; issues=$((issues + 1)); }\ngrep -qi \"exit 2\" \"$file\" || { echo -e \"${file}:1\\tmissing the circuit-breaker escalation (exit 2) stopping rule\"; issues=$((issues + 1)); }\ngrep -qi \"model\" \"$file\" || { echo -e \"${file}:1\\tmissing model-selection guidance\"; issues=$((issues + 1)); }\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL (${issues} issues)\"; exit 1; fi\n"
+    }
+  },
+  "auditRuns": [
+    {
+      "trigger": "initial",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "src/incident_mcp_server/tools/notify.py:17\texported function is unimplemented \u2014 raises instead of paging anyone\nFAIL (1 issues)\n",
+          "exitCode": 1
+        },
+        "gate-3-security": {
+          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/tools/apply_config_patch.py:28\tyaml.load with default Loader on untrusted tool-call input \u2014 arbitrary object construction / code execution\nsrc/incident_mcp_server/config.py:17\thardcoded fallback token found in default config constant \u2014 potential credential leak\nFAIL (3 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 1,
+        "timestamp": "2026-06-28T14:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 1,
+            "fingerprint": [
+              "fp-stub-implementation-notify-py"
+            ]
+          },
+          "gate-3-security": {
+            "count": 3,
+            "fingerprint": [
+              "fp-hardcoded-secret-config-py",
+              "fp-yaml-unsafe-load-applyconfigpatch-py",
+              "fp-hardcoded-secret-decoy-config-py"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 4,
+        "exitCode": 1
+      }
+    },
+    {
+      "trigger": "01-partial-fix",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/tools/apply_config_patch.py:28\tyaml.load with default Loader on untrusted tool-call input \u2014 arbitrary object construction / code execution\nsrc/incident_mcp_server/config.py:17\thardcoded fallback token found in default config constant \u2014 potential credential leak\nFAIL (3 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 2,
+        "timestamp": "2026-06-28T14:15:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 3,
+            "fingerprint": [
+              "fp-hardcoded-secret-config-py",
+              "fp-yaml-unsafe-load-applyconfigpatch-py",
+              "fp-hardcoded-secret-decoy-config-py"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 3,
+        "exitCode": 1
+      }
+    },
+    {
+      "trigger": "02-regression",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/tools/apply_config_patch.py:28\tyaml.load with default Loader on untrusted tool-call input \u2014 arbitrary object construction / code execution\nsrc/incident_mcp_server/server.py:21\thardcoded crash-reporter token committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/config.py:17\thardcoded fallback token found in default config constant \u2014 potential credential leak\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 3,
+        "timestamp": "2026-06-28T14:30:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 4,
+            "fingerprint": [
+              "fp-hardcoded-secret-config-py",
+              "fp-yaml-unsafe-load-applyconfigpatch-py",
+              "fp-hardcoded-secret-server-py",
+              "fp-hardcoded-secret-decoy-config-py"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 4,
+        "exitCode": 1
+      }
+    },
+    {
+      "trigger": "03-noop-line-shift",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/tools/apply_config_patch.py:31\tyaml.load with default Loader on untrusted tool-call input \u2014 arbitrary object construction / code execution\nsrc/incident_mcp_server/server.py:21\thardcoded crash-reporter token committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/config.py:17\thardcoded fallback token found in default config constant \u2014 potential credential leak\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 4,
+        "timestamp": "2026-06-28T14:45:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 4,
+            "fingerprint": [
+              "fp-hardcoded-secret-config-py",
+              "fp-yaml-unsafe-load-applyconfigpatch-py",
+              "fp-hardcoded-secret-server-py",
+              "fp-hardcoded-secret-decoy-config-py"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 4,
+        "exitCode": 1
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-1",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/tools/apply_config_patch.py:31\tyaml.load with default Loader on untrusted tool-call input \u2014 arbitrary object construction / code execution\nsrc/incident_mcp_server/server.py:21\thardcoded crash-reporter token committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/config.py:17\thardcoded fallback token found in default config constant \u2014 potential credential leak\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 5,
+        "timestamp": "2026-06-28T15:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 4,
+            "fingerprint": [
+              "fp-hardcoded-secret-config-py",
+              "fp-yaml-unsafe-load-applyconfigpatch-py",
+              "fp-hardcoded-secret-server-py",
+              "fp-hardcoded-secret-decoy-config-py"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 4,
+        "exitCode": 1
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-2",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/tools/apply_config_patch.py:31\tyaml.load with default Loader on untrusted tool-call input \u2014 arbitrary object construction / code execution\nsrc/incident_mcp_server/server.py:21\thardcoded crash-reporter token committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/config.py:17\thardcoded fallback token found in default config constant \u2014 potential credential leak\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 6,
+        "timestamp": "2026-06-28T15:15:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 4,
+            "fingerprint": [
+              "fp-hardcoded-secret-config-py",
+              "fp-yaml-unsafe-load-applyconfigpatch-py",
+              "fp-hardcoded-secret-server-py",
+              "fp-hardcoded-secret-decoy-config-py"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 4,
+        "exitCode": 1
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-3",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/tools/apply_config_patch.py:31\tyaml.load with default Loader on untrusted tool-call input \u2014 arbitrary object construction / code execution\nsrc/incident_mcp_server/server.py:21\thardcoded crash-reporter token committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/config.py:17\thardcoded fallback token found in default config constant \u2014 potential credential leak\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 7,
+        "timestamp": "2026-06-28T15:30:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 4,
+            "fingerprint": [
+              "fp-hardcoded-secret-config-py",
+              "fp-yaml-unsafe-load-applyconfigpatch-py",
+              "fp-hardcoded-secret-server-py",
+              "fp-hardcoded-secret-decoy-config-py"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 4,
+        "exitCode": 2
+      }
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+{
+  "fixedIssueIds": ["src/tools/notify.ts:17:stub-implementation"],
+  "expectedDelta": { "gate-2-completeness": -1 }
+}

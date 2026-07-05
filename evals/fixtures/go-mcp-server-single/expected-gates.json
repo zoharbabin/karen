@@ -1,0 +1,32 @@
+[
+  {
+    "id": "gate-1-supply-chain",
+    "tool": "govulncheck",
+    "coversCategories": [],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-2-completeness",
+    "tool": "go vet",
+    "coversCategories": [],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-3-security",
+    "tool": "gosec",
+    "coversCategories": ["shell-injection"],
+    "zeroTolerance": true
+  },
+  {
+    "id": "gate-6-test-integrity",
+    "tool": "go test",
+    "coversCategories": [],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-7-agent-context",
+    "tool": "custom",
+    "coversCategories": [],
+    "zeroTolerance": false
+  }
+]

@@ -1,0 +1,4 @@
+{
+  "fixedIssueIds": ["src/incident_mcp_server/tools/notify.py:17:stub-implementation"],
+  "expectedDelta": { "gate-2-completeness": -1 }
+}

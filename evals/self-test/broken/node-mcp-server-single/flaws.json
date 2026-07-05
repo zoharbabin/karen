@@ -1,0 +1,14 @@
+{
+  "flaws": [
+    {
+      "dimension": "gateIssues",
+      "description": "src/tools/runShellCommand.ts:29 shell-injection (real, non-decoy) is never emitted by gate-3-security's stdout across every auditRuns entry where it should appear (initial, 01-partial-fix, 02-regression, 03-noop-line-shift, 04-repeat-noop-1/2/3) — gate-3-security's count/fingerprint were adjusted down to match.",
+      "expectedGraderFinding": "false negative on shell-injection (src/tools/runShellCommand.ts:29) — score-gate-issues.js overall.recall drops below the 0.9 pass threshold"
+    },
+    {
+      "dimension": "gateIssues",
+      "description": "src/utils/config.ts:13 hardcoded-secret (decoy) IS emitted by gate-3-security's stdout across every auditRuns entry — gate-3-security's count/fingerprint were adjusted up to match.",
+      "expectedGraderFinding": "false positive / decoyFalsePositives entry on hardcoded-secret (src/utils/config.ts:13) — score-gate-issues.js reports a non-empty decoyFalsePositives list, which is a hard fail"
+    }
+  ]
+}

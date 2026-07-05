@@ -1,0 +1,21 @@
+{
+  "languages": ["python"],
+  "manifests": [
+    { "path": "backend/pyproject.toml", "language": "python" },
+    { "path": "client-lib/pyproject.toml", "language": "python" }
+  ],
+  "frameworks": ["fastapi"],
+  "ciConfig": [".github/workflows/ci.yml"],
+  "existingTestSetup": {
+    "runner": "pytest",
+    "coverageTool": "pytest-cov",
+    "coverageReport": "coverage.xml"
+  },
+  "agentContextFiles": ["AGENTS.md"],
+  "existingGates": [],
+  "subprojects": [
+    { "path": "backend", "manifestPath": "backend/pyproject.toml", "language": "python" },
+    { "path": "client-lib", "manifestPath": "client-lib/pyproject.toml", "language": "python" }
+  ],
+  "unclaimedPaths": []
+}

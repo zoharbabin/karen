@@ -1,0 +1,5 @@
+{
+  "unaffectedIssueId": "mint-admin-token.sh:29:shell-injection",
+  "note": "Inserts a one-line audit-logging comment above mint-admin-token.sh's shell-injection call. The issue's canonical identity is mint-admin-token.sh:29:shell-injection per planted-issues.json (its line in the pristine repo); by the time this patch applies (after 01-partial-fix and 02-regression), the call has already drifted to line 27 and this patch shifts it again to line 28. The fingerprint for this issue must stay identical across all of that drift (content-based, not file:line) and staleCount must increment, not reset.",
+  "expectedDelta": { "gate-3-security": 0 }
+}

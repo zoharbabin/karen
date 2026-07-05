@@ -1,0 +1,17 @@
+{
+  "languages": ["go"],
+  "manifests": [
+    { "path": "go.mod", "language": "go" }
+  ],
+  "frameworks": [],
+  "ciConfig": [".github/workflows/ci.yml"],
+  "existingTestSetup": {
+    "runner": "go test",
+    "coverageTool": "go test -coverprofile (wired in CI, not run locally by default)",
+    "coverageReport": "coverage.out"
+  },
+  "agentContextFiles": ["AGENTS.md"],
+  "existingGates": [],
+  "subprojects": [],
+  "unclaimedPaths": []
+}

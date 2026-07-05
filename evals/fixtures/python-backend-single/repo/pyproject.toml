@@ -1,0 +1,30 @@
+[project]
+name = "beacon-ingest"
+version = "1.2.0"
+description = "Internal telemetry ingestion backend service for the Beacon platform."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Proprietary" }
+dependencies = [
+    "fastapi>=0.111",
+    "uvicorn>=0.30",
+    "redis>=5.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+e2e = [
+    "playwright>=1.45",
+    "pytest>=8.2",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]

@@ -1,0 +1,5 @@
+{
+  "unchangedIssueId": "src/tools/readConfig.ts:29:path-traversal",
+  "note": "Zero-hunk empty diff, applied 3 consecutive times with no code change — tests circuit breaker trip at threshold 3 on gate-3-security. Issue is at line 29 post-03-noop-line-shift (was line 26 before that patch).",
+  "expectedDelta": {}
+}

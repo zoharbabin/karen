@@ -1,0 +1,12 @@
+diff --git a/SECURITY.md b/SECURITY.md
+index db7e8b0..1b90662 100644
+--- a/SECURITY.md
++++ b/SECURITY.md
+@@ -13,6 +13,7 @@ issue. We aim to acknowledge reports within 2 business days.
+ - **Data-subject export/erasure.** Every registered personal-data store
+   is reachable from a single fan-out — see `src/consent/registry.ts`'s
+   `exportDataSubject`/`eraseDataSubject`.
++
+ - **Audit logging.** All admin actions are recorded to an append-only
+   audit log; see `src/audit/log.ts`.
+ 

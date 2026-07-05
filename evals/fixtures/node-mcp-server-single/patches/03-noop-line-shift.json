@@ -1,0 +1,6 @@
+{
+  "unchangedIssueId": "src/tools/readConfig.ts:26:path-traversal",
+  "previousLine": 26,
+  "newLine": 29,
+  "expectedDelta": {}
+}

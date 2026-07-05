@@ -1,0 +1,4 @@
+{
+  "newIssue": { "file": "src/storage.ts", "line": 8, "category": "hardcoded-secret" },
+  "expectedDelta": { "gate-3-security": 1 }
+}

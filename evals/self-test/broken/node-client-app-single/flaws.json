@@ -1,0 +1,14 @@
+{
+  "flaws": [
+    {
+      "dimension": "gateIssues",
+      "description": "README.md:10 missing-sri (real, non-decoy) is never emitted by gate-3-security's stdout in any auditRuns entry",
+      "expectedGraderFinding": "false negative on missing-sri"
+    },
+    {
+      "dimension": "gateIssues",
+      "description": "src/analytics.ts:6 eval-in-comment (decoy) IS emitted by gate-3-security's stdout in every auditRuns entry",
+      "expectedGraderFinding": "false positive (decoyFalsePositives) on eval-in-comment"
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+[
+  {
+    "file": "internal/dispatch/format.go",
+    "line": 10,
+    "category": "dead-code",
+    "isDecoy": false
+  },
+  {
+    "file": "internal/dispatch/registry.go",
+    "line": 20,
+    "category": "dead-code",
+    "isDecoy": true
+  },
+  {
+    "file": "internal/dispatch/dispatcher.go",
+    "line": 29,
+    "category": "no-retry",
+    "isDecoy": false
+  },
+  {
+    "file": "internal/dispatch/digest.go",
+    "line": 21,
+    "category": "no-retry",
+    "isDecoy": true
+  },
+  {
+    "file": "internal/dispatch/history.go",
+    "line": 28,
+    "category": "unbounded-payload",
+    "isDecoy": false
+  },
+  {
+    "file": "internal/dispatch/history_paged.go",
+    "line": 13,
+    "category": "unbounded-payload",
+    "isDecoy": true
+  },
+  {
+    "file": "internal/dispatch/templates.go",
+    "line": 16,
+    "category": "eager-heavy-startup",
+    "isDecoy": false
+  },
+  {
+    "file": "internal/dispatch/attachments.go",
+    "line": 26,
+    "category": "eager-heavy-startup",
+    "isDecoy": true
+  }
+]

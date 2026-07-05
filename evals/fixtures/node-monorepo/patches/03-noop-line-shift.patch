@@ -1,0 +1,12 @@
+diff --git a/backend/src/server.ts b/backend/src/server.ts
+index e574f82..139f82e 100644
+--- a/backend/src/server.ts
++++ b/backend/src/server.ts
+@@ -8,6 +8,7 @@ import http from 'http';
+ import { mintSessionToken, isValidSessionToken } from './tokens';
+ import { proxyChatCompletion } from './chatProxy';
+ 
++// NOTE: this file predates the /chat proxy route below; kept minimal.
+ // PLANTED (hardcoded-secret): the upstream chat-completion provider's API
+ // key is checked directly into source instead of being read from an
+ // environment variable or secrets manager at process start.

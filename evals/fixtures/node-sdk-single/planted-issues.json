@@ -1,0 +1,9 @@
+[
+  { "file": "src/sdk.ts", "line": 34, "category": "global-scope-write", "isDecoy": false },
+  { "file": "src/sdk.ts", "line": 37, "category": "unremoved-listener", "isDecoy": false },
+  { "file": "src/analytics.ts", "line": 8, "category": "hardcoded-secret", "isDecoy": false },
+  { "file": "src/analytics.ts", "line": 13, "category": "credentials-include", "isDecoy": false },
+  { "file": "src/utils.ts", "line": 7, "category": "eval-in-comment", "isDecoy": true },
+  { "file": "src/labels.ts", "line": 9, "category": "password-variable", "isDecoy": true },
+  { "file": "src/sdk.ts", "line": 69, "category": "console-debug-guard", "isDecoy": true }
+]

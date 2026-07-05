@@ -1,0 +1,4 @@
+{
+  "newIssue": { "file": "src/beacon_ingest/server.py", "line": 57, "category": "shell-injection" },
+  "expectedDelta": { "gate-3-security": 1 }
+}

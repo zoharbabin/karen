@@ -1,0 +1,26 @@
+[
+  {
+    "file": "internal/api/webhook.go",
+    "line": 44,
+    "category": "shell-injection",
+    "isDecoy": false
+  },
+  {
+    "file": "internal/api/purge.go",
+    "line": 34,
+    "category": "shell-injection",
+    "isDecoy": false
+  },
+  {
+    "file": "internal/diag/build_info.go",
+    "line": 17,
+    "category": "shell-injection",
+    "isDecoy": true
+  },
+  {
+    "file": "internal/diag/ping.go",
+    "line": 12,
+    "category": "shell-injection",
+    "isDecoy": true
+  }
+]

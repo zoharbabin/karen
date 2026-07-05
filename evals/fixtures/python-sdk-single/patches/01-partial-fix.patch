@@ -1,0 +1,19 @@
+diff --git a/src/prism_sdk/exporter.py b/src/prism_sdk/exporter.py
+index 167e371..366302f 100644
+--- a/src/prism_sdk/exporter.py
++++ b/src/prism_sdk/exporter.py
+@@ -3,7 +3,13 @@
+ 
+ def export_to_srt(transcript):
+     """Export a transcript to the SRT subtitle format."""
+-    raise NotImplementedError("SRT export is not implemented yet")
++    lines = []
++    for i, segment in enumerate(transcript["segments"], start=1):
++        lines.append(str(i))
++        lines.append(segment.get("timecode", "00:00:00,000 --> 00:00:00,000"))
++        lines.append(segment["text"])
++        lines.append("")
++    return "\n".join(lines)
+ 
+ 
+ def export_to_txt(transcript):

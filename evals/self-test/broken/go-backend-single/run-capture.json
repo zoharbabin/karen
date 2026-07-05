@@ -1,0 +1,121 @@
+{
+  "fixture": "go-backend-single",
+  "init": {
+    "detectProjectOutput": {
+      "languages": ["go"],
+      "manifests": [
+        { "path": "go.mod", "language": "go" }
+      ],
+      "frameworks": [],
+      "ciConfig": [".github/workflows/ci.yml"],
+      "existingTestSetup": {
+        "runner": "go test",
+        "coverageTool": null,
+        "coverageReport": null
+      },
+      "agentContextFiles": ["AGENTS.md"],
+      "existingGates": [],
+      "subprojects": [],
+      "unclaimedPaths": []
+    },
+    "transcript": [
+      { "role": "karen", "text": "What does this project do, and who uses it?" },
+      { "role": "user", "text": "It's a Go backend service — webhook-relay. Accepts inbound webhook deliveries over HTTP and relays a delivery acknowledgment back to the sender's callback URL. Used internally, not customer-facing." },
+      { "role": "karen", "text": "Got it. What's your deployment and runtime environment — any browser or CDN involvement?" },
+      { "role": "user", "text": "Runs as a standalone HTTP service, listens on :8080. No browser context, no CDN, nothing client-side — plain backend service." },
+      { "role": "karen", "text": "Who's the audience, and any compliance or regulatory requirements — SOC2, HIPAA, PCI, anything like that?" },
+      { "role": "user", "text": "Internal only — other services in our own infra call it. No SOC2/HIPAA/PCI requirement, no customer data flows through it." },
+      { "role": "karen", "text": "Since this relays webhook payloads and callback acknowledgments — does the service itself call an LLM at runtime, or is it agentic in any way, beyond AGENTS.md being there for contributors?" },
+      { "role": "user", "text": "No LLM calls at runtime — it's pure HTTP relay plumbing. AGENTS.md is there for contributors using coding agents, but the service itself doesn't call a model." },
+      { "role": "karen", "text": "One more thing — I don't see a coverage report wired in anywhere, in CI or locally. Want me to wire in `-coverprofile`, or run coverage-less for now with the gate set to assertion-density-only?" },
+      { "role": "user", "text": "Run coverage-less for now. We know we should wire in -coverprofile eventually but it's not a priority this quarter — assertion-density-only is fine." }
+    ],
+    "karenJson": {
+      "version": "1.0.0",
+      "project": {
+        "type": "service",
+        "language": ["go"],
+        "deployment": ["node-server"],
+        "audience": "internal",
+        "aiPowered": false,
+        "subprojects": []
+      },
+      "compliance": [],
+      "coverage": {
+        "enabled": false,
+        "reason": "go test runs with no -coverprofile wired in locally or in CI — team opted to run coverage-less for now rather than silently pass or skip the check; gate-6 still enforces assertion density"
+      },
+      "testRunner": {
+        "command": "go test ./...",
+        "coverageReport": null,
+        "format": null
+      },
+      "permissions": {},
+      "circuitBreaker": { "threshold": 3, "exitCode": 2 },
+      "expiryWarningDays": 7,
+      "existingGates": [],
+      "crossSubprojectConsistency": [],
+      "knownGaps": [],
+      "exceedsBaseline": [
+        {
+          "gate": "gate-1-supply-chain",
+          "note": "Zero runtime dependencies — the entire service is built on the Go standard library, no third-party module required"
+        }
+      ],
+      "exceptions": {}
+    },
+    "gateScripts": {
+      "gate-1-supply-chain": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\n\n# Zero runtime dependencies exceeds baseline — govulncheck still runs in\n# case that ever changes, but go.mod has no require block today.\nissues=0\nout=$(govulncheck ./... 2>&1) || true\nif echo \"$out\" | grep -q 'Vulnerability #'; then\n  echo \"$out\" | grep -B2 'Vulnerability #' | grep -oE '^[^:]+\\.go:[0-9]+' | while read -r loc; do\n    echo -e \"${loc}\\tknown vulnerability reachable via govulncheck\"\n    issues=$((issues + 1))\n  done\nfi\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nfi\necho \"FAIL (${issues} issues)\"\nexit 1",
+      "gate-2-completeness": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\n\nissues=0\nfindings=$(mktemp)\ngo vet ./... 2>>\"$findings\" || true\n\n# Structural stub scan: exported funcs whose only body statement panics or\n# returns a bare \"not implemented\" error.\nwhile IFS=: read -r file line _; do\n  echo -e \"${file}:${line}\\tstub implementation left in exported function\"\n  issues=$((issues + 1))\ndone < <(grep -rn --include='*.go' -B1 'panic(\"not implemented\")' . | grep -oE '^[^ ]+\\.go-[0-9]+' | tr '-' ':' || true)\n\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nfi\necho \"FAIL (${issues} issues)\"\nexit 1",
+      "gate-3-security": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\n\n# gosec G204 (subprocess launched with variable) catches sh -c string-\n# concatenation shell-injection structurally, via AST — not a text grep, so\n# it does not fire on exec.Command calls with hardcoded literal args.\nissues=0\nfindings=$(mktemp)\ngosec -fmt=json -out=\"$findings\" -quiet ./... || true\n\nwhile IFS=$'\\t' read -r file line msg; do\n  echo -e \"${file}:${line}\\t${msg}\"\n  issues=$((issues + 1))\ndone < <(jq -r '.Issues[] | select(.rule_id==\"G204\") | \"\\(.file):\\(.line)\\t\\(.details)\"' \"$findings\" 2>/dev/null || true)\n\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nfi\necho \"FAIL (${issues} issues)\"\necho \"ZERO-TOLERANCE\"\nexit 1",
+      "gate-6-test-integrity": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\n\n# No coverage instrumentation wired in (team decision, .karen.json\n# coverage.enabled=false) — enforce assertion density per exported handler\n# instead of a coverage percentage.\nissues=0\nif ! go test ./... >/tmp/gate6.out 2>&1; then\n  while IFS= read -r line; do\n    echo -e \"unknown:0\\t${line}\"\n    issues=$((issues + 1))\n  done < <(grep -E '^--- FAIL' /tmp/gate6.out || true)\nfi\n\nwhile IFS=: read -r file _; do\n  base=\"${file%.go}\"\n  if [ ! -f \"${base}_test.go\" ]; then\n    echo -e \"${file}\\texported handler has no matching _test.go file\"\n    issues=$((issues + 1))\n  fi\ndone < <(grep -rln --include='*.go' -E '^func [A-Z][A-Za-z0-9]*Handler\\(' . | grep -v _test.go || true)\n\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nfi\necho \"FAIL (${issues} issues)\"\nexit 1",
+      "gate-7-agent-context": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\n\nissues=0\nif [ ! -f AGENTS.md ]; then\n  echo -e \"AGENTS.md\\tmissing agent-context file describing build/test/quality-gate workflow\"\n  issues=$((issues + 1))\nelse\n  for marker in 'karen audit' 'Exit 2'; do\n    if ! grep -q \"$marker\" AGENTS.md; then\n      echo -e \"AGENTS.md\\tmissing required section referencing \\\"${marker}\\\"\"\n      issues=$((issues + 1))\n    fi\n  done\nfi\n\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nfi\necho \"FAIL (${issues} issues)\"\nexit 1"
+    }
+  },
+  "auditRuns": [
+    {
+      "trigger": "initial",
+      "gateResults": {
+        "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-3-security": { "stdout": "internal/api/purge.go:34\tshell command built from unsanitized 'pattern' query parameter — arbitrary command execution via crafted pattern\ninternal/diag/build_info.go:17\texec.Command call site flagged by shell-injection heuristic\nFAIL (2 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
+        "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
+      },
+      "runState": {
+        "run": 1,
+        "timestamp": "2026-06-15T09:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 0, "fingerprint": [] },
+          "gate-3-security": { "count": 2, "fingerprint": ["fp-shell-injection-purge", "fp-shell-injection-buildinfo-decoy"] },
+          "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
+          "gate-7-agent-context": { "count": 0, "fingerprint": [] }
+        },
+        "total": 2
+      }
+    },
+    {
+      "trigger": "01-partial-fix",
+      "gateResults": {
+        "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-3-security": { "stdout": "internal/diag/build_info.go:17\texec.Command call site flagged by shell-injection heuristic\nFAIL (1 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
+        "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
+      },
+      "runState": {
+        "run": 2,
+        "timestamp": "2026-06-15T09:20:00Z",
+        "gates": {
+          "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 0, "fingerprint": [] },
+          "gate-3-security": { "count": 1, "fingerprint": ["fp-shell-injection-buildinfo-decoy"] },
+          "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
+          "gate-7-agent-context": { "count": 0, "fingerprint": [] }
+        },
+        "total": 1
+      }
+    }
+  ]
+}

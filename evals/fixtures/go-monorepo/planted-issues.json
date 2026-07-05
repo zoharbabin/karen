@@ -1,0 +1,6 @@
+[
+  { "file": "mint-admin-token.sh", "line": 17, "category": "hardcoded-secret", "isDecoy": false },
+  { "file": "mint-admin-token.sh", "line": 29, "category": "shell-injection", "isDecoy": false },
+  { "file": "backend/internal/server/version.go", "line": 16, "category": "shell-injection", "isDecoy": true },
+  { "file": "cli/internal/config/validate.go", "line": 9, "category": "hardcoded-secret", "isDecoy": true }
+]

@@ -1,0 +1,20 @@
+[
+  {
+    "file": "internal/tools/shell.go",
+    "line": 28,
+    "category": "shell-injection",
+    "isDecoy": false
+  },
+  {
+    "file": "internal/tools/grep.go",
+    "line": 28,
+    "category": "shell-injection",
+    "isDecoy": false
+  },
+  {
+    "file": "internal/tools/read_file.go",
+    "line": 55,
+    "category": "shell-injection",
+    "isDecoy": true
+  }
+]

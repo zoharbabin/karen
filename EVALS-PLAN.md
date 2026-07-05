@@ -33,7 +33,7 @@ This also matches the explicit project instruction already in this repo's `CLAUD
 **Repo shapes:** single-package and monorepo/poly-repo (BLUEPRINT.md §"Poly-repo & Monorepo Structure").
 **Project types:** MCP server, backend service, client-side app, SDK/library.
 
-A full cross product (3 languages × 2 shapes × 4 types = 24) over-tests combinations that don't occur in practice (a Go browser client, a Python client-side app) and under-tests the blueprint mechanics that actually differentiate implementations. Instead, **12 fixtures** cover every language, every repo shape, and every project type at least once, chosen so each fixture also stresses a specific blueprint mechanic that a shallow implementation would get wrong:
+A full cross product (3 languages × 2 shapes × 4 types = 24) over-tests combinations that don't occur in practice (a Go browser client, a Python client-side app) and under-tests the blueprint mechanics that actually differentiate implementations. Instead, **14 fixtures** cover every language, every repo shape, and every project type at least once, chosen so each fixture also stresses a specific blueprint mechanic that a shallow implementation would get wrong:
 
 | # | Fixture | Lang | Shape | Type | Blueprint mechanic stressed |
 |---|---|---|---|---|---|
@@ -49,6 +49,8 @@ A full cross product (3 languages × 2 shapes × 4 types = 24) over-tests combin
 | 10 | `python-backend-single` | Python | single | backend service | `subprocess(shell=True)`, `pickle.loads`, `yaml.load` without `SafeLoader`; E2E-only test suite branch |
 | 11 | `python-mcp-server-single` | Python | single | MCP server | Python is the most common real-world MCP server language — parity check against fixtures 3 and 7 |
 | 12 | `python-monorepo` | Python | mono | backend + client-lib | Multiple `pyproject.toml`, one subproject SOC2-scoped and others not (§"subprojects overrides the root profile") |
+| 13 | `node-personalization-backend-single` | Node/TS | single | backend service | Compliance Artifacts overclaim check, Personal-Data Registry Pattern, tiered feature-gated compliance (§"Tiered, Feature-Gated Compliance") — a store that never registers, a `SECURITY.md` claim with no backing file, and a `compliance[]` entry that only activates behind an unshipped feature flag |
+| 14 | `go-notification-dispatcher-single` | Go | single | backend service | Dead-code-as-named-check (§"Code Structure & Elegance"), Resiliency (§"Resiliency" — no-retry on an outbound webhook call), Performance & Resource Bounds (§"Performance & Resource Bounds" — unbounded-payload read, eager-heavy-startup subprocess spawn) |
 
 Every fixture also plants **decoys** — patterns that look like violations but structurally aren't (`eval` inside a comment, a variable named `password` that isn't a credential, `pass` as a Python keyword vs. a stub) — because false-positive rate on decoys is the direct, measurable proxy for the blueprint's "structural over textual" requirement (§"Gate design principle — structural over textual (Principle 5)").
 
@@ -123,7 +125,7 @@ Two of the three interview checks are actually deterministic, not qualitative, a
 - **Follow-up quality** ("did Karen's next question meaningfully adapt to an answer that changed what matters," e.g. BLUEPRINT.md's mic/camera example) — this is genuinely qualitative and uses an **LLM judge**.
 
 For the judged sub-part, mitigate the two best-documented judge failure modes:
-- **Position bias** — Zheng et al. [6] show swap-consistency testing and declaring a tie on disagreement as the standard mitigation; not directly applicable here since there's no pairwise comparison, but the same paper's **reference-guided grading** (giving the judge the fixture's ground truth as a reference, not just the transcript) is directly applicable and cuts adversarial-verbosity failure rate from 91.3% to 8.7% in their tests [6].
+- **Position bias** — Zheng et al. [6] show swap-consistency testing and declaring a tie on disagreement as the standard mitigation; not directly applicable here since there's no pairwise comparison, but the same paper's **reference-guided grading** (giving the judge the fixture's ground truth as a reference, not just the transcript) is directly applicable — in their math-grading experiment, adding a reference answer cuts judge failure count from 70% (default prompt) to 15% (reference-guided) [6].
 - **Verbosity bias** — the judge prompt scores against the answer-key reference, not "how thorough does this sound."
 - Run the judge **3 times per fixture and average**, flagging disagreement rather than silently smoothing it — repetition-count practice for LLM evals ranges from OpenAI's 5-run τ-bench reporting [7] to Terminal-Bench 2.0's 5-run minimum with 95% CIs [8] up to the ≥10-seed floor argued for small benchmarks by Madaan et al. [9]. **3 runs is a v1 starting point for cost, explicitly under-powered per [9] — scale to 5–10 once the harness is stable enough to justify the spend**, matching this project's general approach of testing broadly first and tightening rigor once a specific implementation is a serious candidate (see §7).
 
@@ -136,6 +138,8 @@ Deterministic diff against `expected-karen.json`. Scalar fields (`project.type`,
 This is the benchmark's central dimension and follows the most directly relevant established precedent: the **OWASP Benchmark Project** [10], which scores static analyzers by running them against thousands of test cases each deliberately containing either a real exploitable pattern (true positive) or a safe look-alike (false positive), pre-labeled per category in a ground-truth CSV, with per-category TP/FP scorecards computed from the tool's actual output.
 
 Karen's gates get the identical treatment: run the generated gate script against `repo/`, diff its emitted `FILE:LINE` lines against `planted-issues.json`. An emitted line matching a real (non-decoy) planted issue is a TP; matching a decoy is an FP — this is the direct, measurable proxy for the blueprint's "structural over textual" requirement, since every decoy exists specifically to trip up a regex-only implementation.
+
+This category mechanism is generic — it grades whatever categories a fixture's `planted-issues.json` declares, with no dimension-specific code. Fixture 13 exercises two categories this way that no earlier fixture stressed: `compliance-overclaim` (a compliance doc names a claim with no backing file or reference, per BLUEPRINT.md §"Compliance Artifacts") and `unregistered-personal-data-store` (a personal-data store never joins the consent registry, per BLUEPRINT.md §"Personal-Data Registry Pattern"). Fixture 14 exercises four more: `dead-code` (an exported function with no call site, no interface satisfaction, and no indirect lookup-table reference, per BLUEPRINT.md §"Code Structure & Elegance"), `no-retry` (an outbound network call made once with no retry/backoff, per BLUEPRINT.md §"Resiliency"), `unbounded-payload` and `eager-heavy-startup` (an unbounded in-memory-log read and a subprocess spawned at package-init time, both per BLUEPRINT.md §"Performance & Resource Bounds"). None of the six needed a new grading script.
 
 ### 4.5 Gate contract conformance
 
@@ -217,6 +221,8 @@ evals/
     python-backend-single/
     python-mcp-server-single/
     python-monorepo/
+    node-personalization-backend-single/
+    go-notification-dispatcher-single/
   grading/                          # plain Node, zero dependencies
     score-detection.js              # §4.1
     score-interview.js              # §4.2 deterministic sub-parts
@@ -244,7 +250,7 @@ All grading and runner code is plain Node.js with no external dependencies — c
 
 ## 9. Rollout Plan
 
-1. **Build the 12 fixtures** (repo trees, planted issues + decoys, ground truth files, answer keys, patches).
+1. **Build the 14 fixtures** (repo trees, planted issues + decoys, ground truth files, answer keys, patches).
 2. **Build the grading scripts**, validate each against hand-authored golden/broken pairs (§6) — the benchmark must pass its own self-test before touching Karen.
 3. **Build the runner** (`fixture-workflow.js`) — dry-run it against the `self-test/golden` outputs (bypassing real agent execution) to confirm the pipeline plumbing works end to end.
 4. Only then: build the Karen skill using the "no dedicated tool scripts" approach described in §1, point the runner at it, and start a multi-day testing phase across several real projects — using this benchmark alongside that ad hoc real-project testing, not instead of it.
@@ -254,9 +260,11 @@ All grading and runner code is plain Node.js with no external dependencies — c
 
 ## 10. Open Questions / Risks
 
-- **Judge cost at k=3–10 across 12 fixtures** is not free — each judged run is a full LLM call. Track actual token spend during the first exploratory week before committing to k=10 for every dimension; §4.2's judge sub-part is the only dimension that needs it at all.
+- **Judge cost at k=3–10 across 14 fixtures** is not free — each judged run is a full LLM call. Track actual token spend during the first exploratory week before committing to k=10 for every dimension; §4.2's judge sub-part is the only dimension that needs it at all.
 - **Fixture realism** — hand-authored fixtures risk not matching what real repos actually look like. The multi-day, multi-project real-world testing phase described in §1 and §9 is the correction mechanism for this, not something the benchmark can fix on its own; consider promoting a real project's anonymized structure into a 13th fixture if the hand-authored ones prove too clean.
-- **MCP-server `aiPowered` classification (fixtures 3, 7, 11)** is a genuinely ambiguous blueprint corner — an MCP server is invoked by an LLM but doesn't itself call one. `expected-karen.json` for these fixtures should be decided deliberately, not defaulted, since it's a real interpretive question the interview step should reason through, not one the benchmark should silently paper over.
+- **MCP-server `aiPowered` classification (fixtures 3, 7, 11) — resolved.** An MCP server is invoked by an LLM's tool-calling loop but doesn't itself call one; BLUEPRINT.md's ai-agent profile now names this explicitly as a third case (see "A tool-provider server..." under [ai-agent](./BLUEPRINT.md#ai-agent)) — `aiPowered: true` even with no outbound LLM call, because the excessive-agency and prompt-injection threat classes apply to the tool-call surface regardless of which side of the connection issues the LLM call. All three fixtures' `expected-karen.json` now agree (fixture 7's `go-mcp-server-single` was previously the one inconsistent case, still `aiPowered: false` with no rationale while 3 and 11 had already been corrected to `true` — fixed after cross-referencing a real Go MCP server, `web-researcher-mcp`, with the identical shape and the same classification in its own security docs). Corresponding self-test golden/broken samples for fixture 7 were updated to match; all 168 self-test checks across the 12 fixtures still pass.
+- **Compliance-claim-to-reference drift and the personal-data-registry gap — resolved.** Fixture 13 (`node-personalization-backend-single`) now plants both a `compliance-overclaim` decoy pair (a `SECURITY.md` claim naming a still-existing file vs. one naming `src/audit/log.ts`, which doesn't exist) and an `unregistered-personal-data-store` decoy pair (a TTL'd session-token cache that correctly never registers vs. a usage-event store that should but doesn't), graded via §4.4's existing category mechanism with no new grading script. Still open: the new Agent Context Engineering claimed-audience check (see [Agent Context Engineering](./BLUEPRINT.md#agent-context-engineering)) — a `CLAUDE.md` that claims multi-agent-ecosystem coverage without the corresponding `.cursorrules`/`copilot-instructions.md` files actually existing — has no fixture yet.
+- **Dead-code-as-named-check, Resiliency, and Performance & Resource Bounds coverage — resolved.** These three BLUEPRINT.md mechanics (added under Code Structure & Elegance, and as two new top-level sections) had no fixture stressing them. Fixture 14 (`go-notification-dispatcher-single`) now plants four real/decoy pairs: `dead-code` (an exported legacy formatter with no call site vs. a decoy reached indirectly through a `formatters` lookup table — the exact structural-vs-textual distinction Principle 5 exists to catch), `no-retry` (a single-attempt outbound webhook call vs. a decoy already wrapped in retry+backoff), `unbounded-payload` (an uncapped in-memory delivery-log read vs. a decoy with an explicit page-size cap), and `eager-heavy-startup` (a subprocess spawned at package-init time vs. a decoy lazily built behind `sync.Once`) — all graded via §4.4's existing category mechanism, no new grading script. Self-test golden scores maximum across all 10 applicable dimensions; self-test broken reproduces exactly one false negative (`format.go:10`, the real dead-code issue) and one false positive (`registry.go:20`, the dead-code decoy), matching `flaws.json`.
 
 ---
 

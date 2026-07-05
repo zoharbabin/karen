@@ -1,0 +1,31 @@
+diff --git a/internal/dispatch/priority.go b/internal/dispatch/priority.go
+new file mode 100644
+index 0000000..9a1be00
+--- /dev/null
++++ b/internal/dispatch/priority.go
+@@ -0,0 +1,25 @@
++package dispatch
++
++import (
++	"fmt"
++	"strings"
++)
++
++// SendPriority posts a priority (interrupt-class) notification straight
++// to the subscriber's webhook, bypassing the normal digest queue for
++// low-latency delivery.
++//
++// REGRESSION: a second outbound call added after the initial fix to
++// Dispatcher.Send — makes exactly one attempt, no retry, no backoff.
++// Same violation class as Send before its fix.
++func (d *Dispatcher) SendPriority(webhookURL, message string) error {
++	resp, err := d.client.Post(webhookURL, "text/plain", strings.NewReader(message))
++	if err != nil {
++		return fmt.Errorf("sendPriority: %w", err)
++	}
++	defer resp.Body.Close()
++	if resp.StatusCode >= 300 {
++		return fmt.Errorf("sendPriority: subscriber returned status %d", resp.StatusCode)
++	}
++	return nil
++}

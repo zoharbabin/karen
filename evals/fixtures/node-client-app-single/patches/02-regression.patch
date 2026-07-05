@@ -1,0 +1,15 @@
+diff --git a/src/widget.ts b/src/widget.ts
+index 2443fac..7781472 100644
+--- a/src/widget.ts
++++ b/src/widget.ts
+@@ -52,6 +52,10 @@ export class ChatWidget {
+     if (config.enableMicrophone) {
+       void this.requestMicrophone();
+     }
++
++    // Periodically pings the host page to confirm the widget is still
++    // mounted. New in this change; no cleanup reference is kept.
++    setInterval(() => this.reflow(), 30000);
+   }
+ 
+   /**

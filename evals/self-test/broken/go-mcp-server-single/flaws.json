@@ -1,0 +1,14 @@
+{
+  "flaws": [
+    {
+      "dimension": "gateIssues",
+      "description": "internal/tools/shell.go:28 shell-injection (real, non-decoy) is never emitted by gate-3-security's stdout in any auditRuns entry — a false negative.",
+      "expectedGraderFinding": "false negative on shell-injection (internal/tools/shell.go)"
+    },
+    {
+      "dimension": "gateIssues",
+      "description": "internal/tools/read_file.go:55 shell-injection (decoy: exec.Command call with only hardcoded literal arguments, no caller input reaches it) IS emitted by gate-3-security's stdout in every auditRuns entry — a false positive.",
+      "expectedGraderFinding": "false positive on shell-injection (decoy, internal/tools/read_file.go)"
+    }
+  ]
+}

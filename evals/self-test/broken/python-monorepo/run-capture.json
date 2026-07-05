@@ -1,0 +1,707 @@
+{
+  "fixture": "python-monorepo",
+  "init": {
+    "detectProjectOutput": {
+      "languages": [
+        "python"
+      ],
+      "manifests": [
+        {
+          "path": "backend/pyproject.toml",
+          "language": "python"
+        },
+        {
+          "path": "client-lib/pyproject.toml",
+          "language": "python"
+        }
+      ],
+      "frameworks": [
+        "fastapi"
+      ],
+      "ciConfig": [
+        ".github/workflows/ci.yml"
+      ],
+      "existingTestSetup": {
+        "runner": "pytest",
+        "coverageTool": "pytest-cov",
+        "coverageReport": "coverage.xml"
+      },
+      "agentContextFiles": [
+        "AGENTS.md"
+      ],
+      "existingGates": [],
+      "subprojects": [
+        {
+          "path": "backend",
+          "manifestPath": "backend/pyproject.toml",
+          "language": "python"
+        },
+        {
+          "path": "client-lib",
+          "manifestPath": "client-lib/pyproject.toml",
+          "language": "python"
+        }
+      ],
+      "unclaimedPaths": []
+    },
+    "transcript": [
+      {
+        "role": "karen",
+        "text": "What does this project do, and who relies on it?"
+      },
+      {
+        "role": "user",
+        "text": "Signal Relay is our telemetry platform. backend/ is the ingestion service customers' agents send telemetry to. client-lib/ is the Python SDK our other internal services use to call it — not distributed to external customers."
+      },
+      {
+        "role": "karen",
+        "text": "What's the deployment model and runtime environment for backend and for client-lib?"
+      },
+      {
+        "role": "user",
+        "text": "Both are plain Python — backend/ runs as a FastAPI service behind our internal load balancer, client-lib/ is installed as a library into other internal Python services. Neither is browser-facing."
+      },
+      {
+        "role": "karen",
+        "text": "I see backend/docs/compliance/SOC2-CONTROLS.md with a control mapping, and the root SECURITY.md gestures at a scoping split — is client-lib in the same SOC2 scope, or is that split intentional?"
+      },
+      {
+        "role": "user",
+        "text": "Backend-only. backend/ holds customer telemetry and the audit-log evidence trail, so it's SOC2-scoped. client-lib/ is just an HTTP wrapper — it doesn't store or process customer data itself, so it isn't in SOC2 scope. Don't apply the SBOM/audit-log requirements to client-lib/."
+      },
+      {
+        "role": "karen",
+        "text": "What's the audience, and does backend or client-lib handle sensitive data like customer telemetry?"
+      },
+      {
+        "role": "user",
+        "text": "Internal only — both subprojects are used by our own engineering org, not external customers. backend/ handles customer telemetry data in transit and at rest, which is why it's SOC2-scoped. client-lib/ just forwards requests; it doesn't persist anything."
+      },
+      {
+        "role": "karen",
+        "text": "Is this project AI-powered, or built with, or used by, LLM coding agents — for backend and for client-lib specifically?"
+      },
+      {
+        "role": "user",
+        "text": "Built day to day with Claude Code, but neither subproject calls an LLM at runtime or is itself invoked by one — plain telemetry ingestion and a plain HTTP client."
+      },
+      {
+        "role": "karen",
+        "text": "What minimum threshold should Karen enforce for backend and for client-lib?"
+      },
+      {
+        "role": "user",
+        "text": "80% for both subprojects, same as our other internal services."
+      },
+      {
+        "role": "karen",
+        "text": "Got it. backend gets the SOC2 artifact and audit-log checks scoped to it alone; client-lib stays out of that scope. Generating the harness now."
+      }
+    ],
+    "karenJson": {
+      "version": "1.0.0",
+      "project": {
+        "type": "service",
+        "language": [
+          "python"
+        ],
+        "deployment": [
+          "python"
+        ],
+        "audience": "internal",
+        "aiPowered": false,
+        "subprojects": [
+          {
+            "path": "backend",
+            "type": "service",
+            "deployment": [
+              "python"
+            ],
+            "compliance": [
+              "soc2"
+            ],
+            "reason": "Ingests customer telemetry and holds the tamper-evident audit-log/SBOM evidence trail described in backend/docs/compliance/SOC2-CONTROLS.md — SOC2-scoped on its own, independent of the repo root profile"
+          },
+          {
+            "path": "client-lib",
+            "type": "library",
+            "deployment": [
+              "python"
+            ],
+            "compliance": [],
+            "reason": "Thin HTTP client SDK forwarded to backend/ over HTTPS — holds no customer data itself and carries none of backend's SOC2 artifact requirements; explicitly not compliance-scoped despite sharing a repo with a subproject that is"
+          }
+        ]
+      },
+      "compliance": [],
+      "coverage": {
+        "threshold": 80
+      },
+      "testRunner": {
+        "command": "pytest --cov --cov-report=xml",
+        "coverageReport": "coverage.xml",
+        "format": "cobertura",
+        "packages": [
+          {
+            "path": "backend",
+            "command": "pytest --cov=signal_relay_backend --cov-report=xml",
+            "coverageReport": "backend/coverage.xml",
+            "role": "primary"
+          },
+          {
+            "path": "client-lib",
+            "command": "pytest --cov=signal_relay_client --cov-report=xml",
+            "coverageReport": "client-lib/coverage.xml",
+            "role": "primary"
+          }
+        ]
+      },
+      "permissions": {},
+      "circuitBreaker": {
+        "threshold": 3,
+        "exitCode": 2
+      },
+      "expiryWarningDays": 7,
+      "existingGates": [],
+      "crossSubprojectConsistency": [],
+      "knownGaps": [],
+      "exceedsBaseline": [],
+      "exceptions": {}
+    },
+    "gateScripts": {
+      "gate-1-supply-chain": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nout=\"\"\nfor mod in backend client-lib; do\n  report=\"$(cd \"$root/$mod\" && pip-audit --format json 2>/dev/null || true)\"\n  while IFS=$'\\t' read -r file line msg; do\n    [ -z \"$file\" ] && continue\n    out+=\"$mod/$file:$line\"$'\\t'\"$msg\"$'\\n'\n    issues=$((issues+1))\n  done < <(echo \"$report\" | python3 \"$root/.karen/gates/format_pip_audit.py\")\ndone\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
+      "gate-2-completeness": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nout=\"\"\nfor mod in backend client-lib; do\n  while IFS=$'\\t' read -r file line msg; do\n    [ -z \"$file\" ] && continue\n    out+=\"$file:$line\"$'\\t'\"$msg\"$'\\n'\n    issues=$((issues+1))\n  done < <(cd \"$root/$mod\" && ruff check src --select F,E --output-format=concise 2>/dev/null | python3 \"$root/.karen/gates/format_ruff.py\")\n  while IFS=$'\\t' read -r file line msg; do\n    [ -z \"$file\" ] && continue\n    out+=\"$file:$line\"$'\\t'\"$msg\"$'\\n'\n    issues=$((issues+1))\n  done < <(python3 \"$root/.karen/gates/stub_scan.py\" \"$root/$mod/src\")\ndone\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
+      "gate-3-security": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nout=\"\"\nfor mod in backend client-lib; do\n  while IFS=$'\\t' read -r file line msg; do\n    [ -z \"$file\" ] && continue\n    out+=\"$file:$line\"$'\\t'\"$msg\"$'\\n'\n    issues=$((issues+1))\n  done < <(cd \"$root/$mod\" && bandit -r src -f json 2>/dev/null | python3 \"$root/.karen/gates/format_bandit.py\")\ndone\n# working-tree secret scan, root-wide, not scoped to tracked files only\nwhile IFS=$'\\t' read -r file line msg; do\n  [ -z \"$file\" ] && continue\n  out+=\"$file:$line\"$'\\t'\"$msg\"$'\\n'\n  issues=$((issues+1))\ndone < <(gitleaks detect --source \"$root\" --no-git --report-format json 2>/dev/null | python3 \"$root/.karen/gates/format_gitleaks.py\")\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; echo \"ZERO-TOLERANCE\"; exit 1; fi\n",
+      "gate-4-docs-parity": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nout=\"\"\nfor mod in backend client-lib; do\n  while IFS=$'\\t' read -r file line msg; do\n    [ -z \"$file\" ] && continue\n    out+=\"$file:$line\"$'\\t'\"$msg\"$'\\n'\n    issues=$((issues+1))\n  done < <(node \"$root/.karen/gates/doctest-and-symbol-diff.js\" \"$root/$mod\")\ndone\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
+      "gate-5-compliance": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nout=\"\"\n# SOC2 artifacts checked against backend/ only -- client-lib is explicitly\n# out of SOC2 scope per the interview.\nrequired=(\"backend/docs/compliance/SOC2-CONTROLS.md\")\nfor f in \"${required[@]}\"; do\n  if [ ! -f \"$root/$f\" ]; then\n    out+=\"$f:0\"$'\\t'\"required SOC2 artifact missing\"$'\\n'\n    issues=$((issues+1))\n  fi\ndone\nif ! grep -q \"Generate SBOM\" \"$root/.github/workflows/ci.yml\" 2>/dev/null; then\n  out+=\".github/workflows/ci.yml:0\"$'\\t'\"no SBOM generation step found for backend release artifact\"$'\\n'\n  issues=$((issues+1))\nfi\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
+      "gate-6-test-integrity": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nout=\"\"\nfor mod in backend client-lib; do\n  pkg=$([ \"$mod\" = \"backend\" ] && echo signal_relay_backend || echo signal_relay_client)\n  (cd \"$root/$mod\" && pytest --cov=\"$pkg\" --cov-report=xml >/dev/null 2>&1) || true\n  pct=$(python3 \"$root/.karen/gates/coverage_pct.py\" \"$root/$mod/coverage.xml\")\n  threshold=80\n  if [ -n \"$pct\" ] && awk -v p=\"$pct\" -v t=\"$threshold\" 'BEGIN{exit !(p<t)}'; then\n    out+=\"$mod/coverage.xml:0\"$'\\t'\"coverage $pct% below $threshold% threshold\"$'\\n'\n    issues=$((issues+1))\n  fi\ndone\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
+      "gate-7-agent-context": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nout=\"\"\nagents_file=\"$root/AGENTS.md\"\nif [ ! -f \"$agents_file\" ]; then\n  out+=\"AGENTS.md:0\"$'\\t'\"missing root agent-context file\"$'\\n'\n  issues=$((issues+1))\nelse\n  while IFS=$'\\t' read -r file line msg; do\n    [ -z \"$file\" ] && continue\n    out+=\"$file:$line\"$'\\t'\"$msg\"$'\\n'\n    issues=$((issues+1))\n  done < <(python3 \"$root/.karen/gates/agent_context_checklist.py\" \"$agents_file\" backend client-lib)\nfi\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n"
+    }
+  },
+  "auditRuns": [
+    {
+      "trigger": "initial",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-5-compliance": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "backend/src/signal_relay_backend/audit_log.py:16\thardcoded HMAC audit-log signing key checked into source — credential leak via repository\nbackend/src/signal_relay_backend/cache.py:22\tpickle.loads on cached Redis blob sharing a keyspace with operator-triggered diagnostic output — unsafe deserialization of untrusted data\nbackend/src/signal_relay_backend/server.py:30\tsubprocess.run with shell=True and unsanitized operator-supplied probe string — shell injection via /admin/diagnostics\nclient-lib/src/signal_relay_client/config.py:8\thardcoded fallback API key checked into source, used as ClientConfig default — credential leak via repository\nclient-lib/src/signal_relay_client/filters.py:17\teval() on caller-supplied filter expression with full builtins available — dynamic code execution\nclient-lib/src/signal_relay_client/filters.py:31\tliteral string \"eval(\" appears in documentation example text -- flagged by textual-only heuristic that does not recognize string-literal context\nFAIL (6 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 1,
+        "timestamp": "2026-06-27T09:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 6,
+            "fingerprint": [
+              "fp-hardcoded-secret-audit-log",
+              "fp-unsafe-deserialization-cache",
+              "fp-shell-injection-server",
+              "fp-hardcoded-secret-config-client",
+              "fp-dynamic-code-execution-filters",
+              "fp-dynamic-code-execution-filters-decoy"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-5-compliance": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 6
+      }
+    },
+    {
+      "trigger": "01-partial-fix",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-5-compliance": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "backend/src/signal_relay_backend/audit_log.py:16\thardcoded HMAC audit-log signing key checked into source — credential leak via repository\nbackend/src/signal_relay_backend/cache.py:22\tpickle.loads on cached Redis blob sharing a keyspace with operator-triggered diagnostic output — unsafe deserialization of untrusted data\nclient-lib/src/signal_relay_client/config.py:8\thardcoded fallback API key checked into source, used as ClientConfig default — credential leak via repository\nclient-lib/src/signal_relay_client/filters.py:17\teval() on caller-supplied filter expression with full builtins available — dynamic code execution\nclient-lib/src/signal_relay_client/filters.py:31\tliteral string \"eval(\" appears in documentation example text -- flagged by textual-only heuristic that does not recognize string-literal context\nFAIL (5 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 2,
+        "timestamp": "2026-06-27T10:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 5,
+            "fingerprint": [
+              "fp-hardcoded-secret-audit-log",
+              "fp-unsafe-deserialization-cache",
+              "fp-hardcoded-secret-config-client",
+              "fp-dynamic-code-execution-filters",
+              "fp-dynamic-code-execution-filters-decoy"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-5-compliance": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 5
+      }
+    },
+    {
+      "trigger": "02-regression",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-5-compliance": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "backend/src/signal_relay_backend/audit_log.py:16\thardcoded HMAC audit-log signing key checked into source — credential leak via repository\nbackend/src/signal_relay_backend/cache.py:22\tpickle.loads on cached Redis blob sharing a keyspace with operator-triggered diagnostic output — unsafe deserialization of untrusted data\nclient-lib/src/signal_relay_client/__init__.py:11\thardcoded staging API key exported as a package-level default at import time — credential leak via repository\nclient-lib/src/signal_relay_client/config.py:8\thardcoded fallback API key checked into source, used as ClientConfig default — credential leak via repository\nclient-lib/src/signal_relay_client/filters.py:17\teval() on caller-supplied filter expression with full builtins available — dynamic code execution\nclient-lib/src/signal_relay_client/filters.py:31\tliteral string \"eval(\" appears in documentation example text -- flagged by textual-only heuristic that does not recognize string-literal context\nFAIL (6 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 3,
+        "timestamp": "2026-06-27T11:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 6,
+            "fingerprint": [
+              "fp-hardcoded-secret-audit-log",
+              "fp-unsafe-deserialization-cache",
+              "fp-hardcoded-secret-init-client",
+              "fp-hardcoded-secret-config-client",
+              "fp-dynamic-code-execution-filters",
+              "fp-dynamic-code-execution-filters-decoy"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-5-compliance": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 6
+      }
+    },
+    {
+      "trigger": "03-noop-line-shift",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-5-compliance": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "backend/src/signal_relay_backend/audit_log.py:16\thardcoded HMAC audit-log signing key checked into source — credential leak via repository\nbackend/src/signal_relay_backend/cache.py:22\tpickle.loads on cached Redis blob sharing a keyspace with operator-triggered diagnostic output — unsafe deserialization of untrusted data\nclient-lib/src/signal_relay_client/__init__.py:11\thardcoded staging API key exported as a package-level default at import time — credential leak via repository\nclient-lib/src/signal_relay_client/config.py:12\thardcoded fallback API key checked into source, used as ClientConfig default — credential leak via repository\nclient-lib/src/signal_relay_client/filters.py:17\teval() on caller-supplied filter expression with full builtins available — dynamic code execution\nclient-lib/src/signal_relay_client/filters.py:31\tliteral string \"eval(\" appears in documentation example text -- flagged by textual-only heuristic that does not recognize string-literal context\nFAIL (6 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 4,
+        "timestamp": "2026-06-27T12:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 6,
+            "fingerprint": [
+              "fp-hardcoded-secret-audit-log",
+              "fp-unsafe-deserialization-cache",
+              "fp-hardcoded-secret-init-client",
+              "fp-hardcoded-secret-config-client",
+              "fp-dynamic-code-execution-filters",
+              "fp-dynamic-code-execution-filters-decoy"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-5-compliance": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 6
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-1",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-5-compliance": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "backend/src/signal_relay_backend/audit_log.py:16\thardcoded HMAC audit-log signing key checked into source — credential leak via repository\nbackend/src/signal_relay_backend/cache.py:22\tpickle.loads on cached Redis blob sharing a keyspace with operator-triggered diagnostic output — unsafe deserialization of untrusted data\nclient-lib/src/signal_relay_client/__init__.py:11\thardcoded staging API key exported as a package-level default at import time — credential leak via repository\nclient-lib/src/signal_relay_client/config.py:12\thardcoded fallback API key checked into source, used as ClientConfig default — credential leak via repository\nclient-lib/src/signal_relay_client/filters.py:17\teval() on caller-supplied filter expression with full builtins available — dynamic code execution\nclient-lib/src/signal_relay_client/filters.py:31\tliteral string \"eval(\" appears in documentation example text -- flagged by textual-only heuristic that does not recognize string-literal context\nFAIL (6 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 5,
+        "timestamp": "2026-06-27T13:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 6,
+            "fingerprint": [
+              "fp-hardcoded-secret-audit-log",
+              "fp-unsafe-deserialization-cache",
+              "fp-hardcoded-secret-init-client",
+              "fp-hardcoded-secret-config-client",
+              "fp-dynamic-code-execution-filters",
+              "fp-dynamic-code-execution-filters-decoy"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-5-compliance": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 6
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-2",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-5-compliance": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "backend/src/signal_relay_backend/audit_log.py:16\thardcoded HMAC audit-log signing key checked into source — credential leak via repository\nbackend/src/signal_relay_backend/cache.py:22\tpickle.loads on cached Redis blob sharing a keyspace with operator-triggered diagnostic output — unsafe deserialization of untrusted data\nclient-lib/src/signal_relay_client/__init__.py:11\thardcoded staging API key exported as a package-level default at import time — credential leak via repository\nclient-lib/src/signal_relay_client/config.py:12\thardcoded fallback API key checked into source, used as ClientConfig default — credential leak via repository\nclient-lib/src/signal_relay_client/filters.py:17\teval() on caller-supplied filter expression with full builtins available — dynamic code execution\nclient-lib/src/signal_relay_client/filters.py:31\tliteral string \"eval(\" appears in documentation example text -- flagged by textual-only heuristic that does not recognize string-literal context\nFAIL (6 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 6,
+        "timestamp": "2026-06-27T14:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 6,
+            "fingerprint": [
+              "fp-hardcoded-secret-audit-log",
+              "fp-unsafe-deserialization-cache",
+              "fp-hardcoded-secret-init-client",
+              "fp-hardcoded-secret-config-client",
+              "fp-dynamic-code-execution-filters",
+              "fp-dynamic-code-execution-filters-decoy"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-5-compliance": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 6
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-3",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-4-docs-parity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-5-compliance": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "backend/src/signal_relay_backend/audit_log.py:16\thardcoded HMAC audit-log signing key checked into source — credential leak via repository\nbackend/src/signal_relay_backend/cache.py:22\tpickle.loads on cached Redis blob sharing a keyspace with operator-triggered diagnostic output — unsafe deserialization of untrusted data\nclient-lib/src/signal_relay_client/__init__.py:11\thardcoded staging API key exported as a package-level default at import time — credential leak via repository\nclient-lib/src/signal_relay_client/config.py:12\thardcoded fallback API key checked into source, used as ClientConfig default — credential leak via repository\nclient-lib/src/signal_relay_client/filters.py:17\teval() on caller-supplied filter expression with full builtins available — dynamic code execution\nclient-lib/src/signal_relay_client/filters.py:31\tliteral string \"eval(\" appears in documentation example text -- flagged by textual-only heuristic that does not recognize string-literal context\nFAIL (6 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 7,
+        "timestamp": "2026-06-27T15:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 6,
+            "fingerprint": [
+              "fp-hardcoded-secret-audit-log",
+              "fp-unsafe-deserialization-cache",
+              "fp-hardcoded-secret-init-client",
+              "fp-hardcoded-secret-config-client",
+              "fp-dynamic-code-execution-filters",
+              "fp-dynamic-code-execution-filters-decoy"
+            ]
+          },
+          "gate-4-docs-parity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-5-compliance": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 6
+      }
+    }
+  ]
+}

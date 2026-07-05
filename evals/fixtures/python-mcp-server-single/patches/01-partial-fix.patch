@@ -1,0 +1,15 @@
+diff --git a/src/incident_mcp_server/tools/notify.py b/src/incident_mcp_server/tools/notify.py
+index c5d8c9c..daced03 100644
+--- a/src/incident_mcp_server/tools/notify.py
++++ b/src/incident_mcp_server/tools/notify.py
+@@ -10,8 +10,6 @@ def log_notify_status(channel: str) -> None:
+     print(f"Paging {channel}: escalation handler is implemented and active")
+ 
+ 
+-# Real issue (stub-implementation): exported, reachable from a tool handler
+-# path, but never implemented — raises instead of paging anyone. Any incident
+-# step that depends on this silently fails to notify a human.
++# Fixed: page_on_call now actually pages instead of raising.
+ def page_on_call(channel: str, message: str) -> None:
+-    raise NotImplementedError("not implemented")
++    print(f"Paging {channel}: {message}")

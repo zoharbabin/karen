@@ -1,0 +1,31 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "type": "service",
+    "language": ["typescript"],
+    "deployment": ["node-server"],
+    "audience": "internal",
+    "aiPowered": false,
+    "subprojects": []
+  },
+  "compliance": [
+    { "standard": "gdpr", "activatesWhen": "feature:analytics-tier", "note": "Analytics tier is the first tier that stores personal data broadly enough to trigger export/erasure obligations — already live, so this requirement is enforced now, not forward-declared" },
+    { "standard": "gdpr", "activatesWhen": "feature:personalization-tier", "note": "personalization-tier is flagged in src/features.ts but not yet built — tracked so the team sees GDPR scope expanding the day it ships, not enforced until then" }
+  ],
+  "personalDataRegistry": {
+    "path": "src/consent/registry.ts",
+    "stores": ["src/datastores/userTable.ts", "src/datastores/eventStore.ts"]
+  },
+  "coverage": { "threshold": 80 },
+  "testRunner": {
+    "command": "npm test",
+    "coverageReport": "coverage/lcov.info",
+    "format": "lcov"
+  },
+  "existingGates": [],
+  "knownGaps": [],
+  "exceedsBaseline": [],
+  "exceptions": {},
+  "circuitBreaker": { "threshold": 3, "exitCode": 2 },
+  "expiryWarningDays": 7
+}

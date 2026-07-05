@@ -1,0 +1,39 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "type": "mcp-server",
+    "language": ["python"],
+    "deployment": ["mcp-stdio"],
+    "audience": "internal",
+    "aiPowered": true,
+    "aiPoweredReason": "BLUEPRINT.md's ai-agent profile is satisfied by EITHER condition, not just the 'calls an LLM at runtime' one — this server is invoked by an LLM's tool-calling loop, runs agentic tool-call handlers (apply_config_patch, run_diagnostic_command), and exposes a conversational-adjacent surface (a connecting LLM client drives it end to end) even though it never itself makes an outbound call to an LLM API. Python is the most common real-world MCP server language, so this classification must follow the exact same principled call as the Node and Go MCP-server fixtures, not a language-specific carve-out: the blueprint's own excessive-agency check (LLM06/ASI 01-02) is specifically about 'agent-initiated actions... with no gate/allow-list/human-in-the-loop checkpoint before they take effect' — that threat class exists precisely because *some* agent (here, the connecting LLM client) is initiating the actions this server executes. Classifying this as aiPowered: false because the server has no outbound LLM call would silently exempt run_diagnostic_command and apply_config_patch from the excessive-agency, unbounded-consumption, and prompt-injection checks that are exactly the checks this project needs most — an MCP tool-call handler fed by an LLM's tool-call arguments (patch_yaml, command) is the textbook case for LLM01 (prompt injection reaching a tool-call context) and LLM06 (excessive agency), regardless of which side of the MCP connection issues the LLM call itself. Decided deliberately per EVALS-PLAN.md section 10's open question: aiPowered=true for a plain MCP server with no LLM calls of its own, held to parity with fixtures 3 (node-mcp-server-single) and 7 (go-mcp-server-single).",
+    "agentActions": {
+      "scope": "maximal",
+      "reason": "Interview confirmed run_diagnostic_command is intentionally broad — on-call engineers need arbitrary diagnostic/remediation shell access during incidents; a fixed allow-list would defeat the tool's purpose. Bar is 'every call logged and reviewable,' not 'minimal surface' — declared once at the project level since this is a single-package repo with no subprojects to scope it to."
+    },
+    "subprojects": []
+  },
+  "compliance": [],
+  "coverage": { "threshold": 80 },
+  "testRunner": {
+    "command": "pytest",
+    "coverageReport": "coverage.xml",
+    "format": "cobertura"
+  },
+  "doctest": {
+    "files": ["README.md"],
+    "languages": ["py", "python"],
+    "annotation": "karen:runnable"
+  },
+  "permissions": {},
+  "circuitBreaker": {
+    "threshold": 3,
+    "exitCode": 2
+  },
+  "expiryWarningDays": 7,
+  "existingGates": [],
+  "crossSubprojectConsistency": [],
+  "knownGaps": [],
+  "exceedsBaseline": [],
+  "exceptions": {}
+}

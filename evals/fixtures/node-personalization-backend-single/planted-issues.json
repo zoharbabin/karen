@@ -1,0 +1,26 @@
+[
+  {
+    "file": "src/datastores/eventStore.ts",
+    "line": 16,
+    "category": "unregistered-personal-data-store",
+    "isDecoy": false
+  },
+  {
+    "file": "src/datastores/sessionCache.ts",
+    "line": 7,
+    "category": "unregistered-personal-data-store",
+    "isDecoy": true
+  },
+  {
+    "file": "SECURITY.md",
+    "line": 17,
+    "category": "compliance-overclaim",
+    "isDecoy": false
+  },
+  {
+    "file": "SECURITY.md",
+    "line": 12,
+    "category": "compliance-overclaim",
+    "isDecoy": true
+  }
+]

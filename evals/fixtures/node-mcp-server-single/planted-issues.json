@@ -1,0 +1,9 @@
+[
+  { "file": "src/utils/config.ts", "line": 17, "category": "hardcoded-secret", "isDecoy": false },
+  { "file": "src/utils/config.ts", "line": 13, "category": "hardcoded-secret", "isDecoy": true },
+  { "file": "src/tools/runShellCommand.ts", "line": 29, "category": "shell-injection", "isDecoy": false },
+  { "file": "src/tools/runShellCommand.ts", "line": 17, "category": "shell-injection", "isDecoy": true },
+  { "file": "src/tools/readConfig.ts", "line": 26, "category": "path-traversal", "isDecoy": false },
+  { "file": "src/tools/notify.ts", "line": 17, "category": "stub-implementation", "isDecoy": false },
+  { "file": "src/tools/notify.ts", "line": 10, "category": "stub-implementation", "isDecoy": true }
+]

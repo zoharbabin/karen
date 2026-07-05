@@ -1,0 +1,14 @@
+{
+  "flaws": [
+    {
+      "dimension": "gateIssues",
+      "description": "internal/dispatch/format.go:10 dead-code (real, non-decoy) FormatLegacyPayload is never emitted by gate-2-completeness's stdout in the initial auditRuns entry — a false negative on the planted dead-code issue.",
+      "expectedGraderFinding": "false negative on dead-code at internal/dispatch/format.go:10"
+    },
+    {
+      "dimension": "gateIssues",
+      "description": "internal/dispatch/registry.go:20 dead-code (decoy — FormatJSONPayload is reached indirectly via the formatters lookup table, so a call-graph-aware scanner should not flag it) IS emitted by gate-2-completeness's stdout in the initial auditRuns entry — a false positive on a decoy that a structural scanner should have correctly ignored.",
+      "expectedGraderFinding": "false positive (decoyFalsePositives) on dead-code at internal/dispatch/registry.go:20"
+    }
+  ]
+}

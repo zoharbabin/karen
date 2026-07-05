@@ -1,0 +1,23 @@
+diff --git a/src/incident_mcp_server/server.py b/src/incident_mcp_server/server.py
+index 654e98c..c2f27d0 100644
+--- a/src/incident_mcp_server/server.py
++++ b/src/incident_mcp_server/server.py
+@@ -16,6 +16,10 @@ from incident_mcp_server.tools.run_diagnostic_command import (
+     handle_run_diagnostic_command,
+ )
+ 
++# New issue (hardcoded-secret): crash-reporting token committed to source,
++# used to authenticate telemetry beacons on startup.
++CRASH_REPORTER_TOKEN = "cr-live-3mQxT9pL4zAqV1eYdWkNb0sHnJgRu6C"
++
+ server = Server("incident-mcp-server")
+ 
+ 
+@@ -34,6 +38,7 @@ async def call_tool(name, arguments):
+ 
+ 
+ async def main() -> None:
++    print(f"Telemetry beacon armed with token {CRASH_REPORTER_TOKEN}")
+     async with stdio_server() as (read_stream, write_stream):
+         await server.run(read_stream, write_stream, server.create_initialization_options())
+ 

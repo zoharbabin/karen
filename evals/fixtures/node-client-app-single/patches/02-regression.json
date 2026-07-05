@@ -1,0 +1,4 @@
+{
+  "newIssue": { "file": "src/widget.ts", "line": 58, "category": "uncleared-timer" },
+  "expectedDelta": { "gate-3-security": 1 }
+}

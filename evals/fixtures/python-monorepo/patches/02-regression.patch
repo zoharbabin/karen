@@ -1,0 +1,13 @@
+diff --git a/client-lib/src/signal_relay_client/__init__.py b/client-lib/src/signal_relay_client/__init__.py
+index 6c90a36..3912e14 100644
+--- a/client-lib/src/signal_relay_client/__init__.py
++++ b/client-lib/src/signal_relay_client/__init__.py
+@@ -4,3 +4,8 @@ from signal_relay_client.client import SignalRelayClient
+ 
+ __version__ = "1.2.0"
+ __all__ = ["SignalRelayClient"]
++
++# New issue (hardcoded-secret): a staging-environment API key committed to
++# source, exported at package import time as a convenience default for
++# local scripts.
++STAGING_API_KEY = "sr-client-staging-4a7f9e1c6b3d0852"

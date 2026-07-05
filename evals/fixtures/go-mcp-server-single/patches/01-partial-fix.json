@@ -1,0 +1,4 @@
+{
+  "fixedIssueIds": ["internal/tools/grep.go:28:shell-injection"],
+  "expectedDelta": { "gate-3-security": -1 }
+}

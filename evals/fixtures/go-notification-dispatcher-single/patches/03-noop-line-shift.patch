@@ -1,0 +1,12 @@
+diff --git a/internal/dispatch/history.go b/internal/dispatch/history.go
+index e770e7c..a3b5351 100644
+--- a/internal/dispatch/history.go
++++ b/internal/dispatch/history.go
+@@ -15,6 +15,7 @@ func LogDelivery(rec DeliveryRecord) {
+ 	deliveryLog = append(deliveryLog, rec)
+ }
+ 
++
+ // ListDeliveryHistory returns every logged delivery attempt for
+ // subscriberID, across the log's entire lifetime.
+ //

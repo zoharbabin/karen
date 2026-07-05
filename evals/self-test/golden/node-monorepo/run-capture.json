@@ -1,0 +1,753 @@
+{
+  "fixture": "node-monorepo",
+  "init": {
+    "detectProjectOutput": {
+      "languages": [
+        "typescript"
+      ],
+      "manifests": [
+        {
+          "path": "package.json",
+          "language": "typescript"
+        },
+        {
+          "path": "sdk/package.json",
+          "language": "typescript"
+        },
+        {
+          "path": "backend/package.json",
+          "language": "typescript"
+        },
+        {
+          "path": "apps/teaching-avatar/package.json",
+          "language": "typescript"
+        },
+        {
+          "path": "apps/support-widget/package.json",
+          "language": "typescript"
+        }
+      ],
+      "frameworks": [
+        "node"
+      ],
+      "ciConfig": [
+        ".github/workflows/ci.yml"
+      ],
+      "existingTestSetup": {
+        "runner": "vitest",
+        "coverageTool": "v8",
+        "coverageReport": "coverage/lcov.info"
+      },
+      "agentContextFiles": [
+        "CLAUDE.md"
+      ],
+      "existingGates": [
+        {
+          "id": "check-docs",
+          "command": "node tools/check-docs.mjs",
+          "outputFormat": "exit-code",
+          "coverage": [
+            {
+              "gate": "gate-4-docs-parity",
+              "scope": "full",
+              "reason": "Checks every tracked markdown file's relative links resolve and every README-documented symbol matches a real export under that package's src/ — full doc<->code drift + link-rot coverage across the whole repo"
+            },
+            {
+              "gate": "gate-3-security",
+              "scope": "partial",
+              "detail": "Structural secret-shaped regex scan (sk-live-/sk_live_/AKIA patterns) over tracked files only, via `git ls-files` — misses untracked/gitignored files and any secret shape outside those three patterns",
+              "reason": "Karen's generated gate-3 script covers the working-tree/gitignored gap and any secret shape this scan doesn't recognize"
+            },
+            {
+              "gate": "gate-2-completeness",
+              "scope": "partial",
+              "detail": "Structural stub-marker scan (`//` TODO/FIXME/HACK/XXX comments and `throw new Error('not implemented...')`) over tracked source only — does not do per-symbol doc/test coverage or check block-comment stub markers",
+              "reason": "Karen's generated gate-2 script still needs to cover per-symbol completeness and any stub marker outside check-docs.mjs's two patterns"
+            }
+          ]
+        }
+      ],
+      "subprojects": [
+        {
+          "path": "sdk",
+          "manifestPath": "sdk/package.json",
+          "language": "typescript"
+        },
+        {
+          "path": "backend",
+          "manifestPath": "backend/package.json",
+          "language": "typescript"
+        },
+        {
+          "path": "apps/teaching-avatar",
+          "manifestPath": "apps/teaching-avatar/package.json",
+          "language": "typescript"
+        },
+        {
+          "path": "apps/support-widget",
+          "manifestPath": "apps/support-widget/package.json",
+          "language": "typescript"
+        }
+      ],
+      "unclaimedPaths": []
+    },
+    "transcript": [
+      {
+        "role": "karen",
+        "text": "What does this project do, and who uses it?"
+      },
+      {
+        "role": "user",
+        "text": "Signal Avatar is a browser SDK for an AI teaching avatar, used by edtech customers. sdk/ is the embeddable widget, backend/ mints session tokens and proxies chat-completion calls, and the two apps/* are our own reference apps showing customers how to wire it up."
+      },
+      {
+        "role": "karen",
+        "text": "This project has four package.json files -- what's the audit boundary here: is each package tested and audited independently, or as one unit?"
+      },
+      {
+        "role": "user",
+        "text": "Independently. sdk/ and backend/ each run their own npm test with coverage; apps/teaching-avatar and apps/support-widget each run npm run test:e2e -- they're reference apps, not the audited coverage target, so don't hold them to the 80% threshold, just check they have real assertions."
+      },
+      {
+        "role": "karen",
+        "text": "How does each of these four packages get delivered to end users -- browser-loaded directly, or as a server-side process?"
+      },
+      {
+        "role": "user",
+        "text": "The widget and both apps/* are browser-direct-js -- they load straight into a page, no sandbox. backend/ is a plain Node HTTP service behind our own infra, not browser-direct."
+      },
+      {
+        "role": "karen",
+        "text": "For each subproject -- the widget, backend, and the two reference apps -- is it AI-powered, meaning does it call an LLM itself, live?"
+      },
+      {
+        "role": "user",
+        "text": "Yes for backend/ -- it holds the chat-completion provider's API key and proxies every chat-completion call for both reference apps. The widget itself doesn't call an LLM; it just mounts/tears down the avatar. The two apps/* call backend/'s chat endpoint live and render the model's output, so they're AI-powered too."
+      },
+      {
+        "role": "karen",
+        "text": "Who's the audience, and is there a compliance regime?"
+      },
+      {
+        "role": "user",
+        "text": "Enterprise edtech customers embed the widget in production lesson pages. No SOC2/HIPAA/PCI requirement today -- no payment or health data touches any of these packages."
+      },
+      {
+        "role": "karen",
+        "text": "I see tools/check-docs.mjs running in CI -- walk me through exactly what it checks, not just what domain it's named after."
+      },
+      {
+        "role": "user",
+        "text": "It checks four things: every relative markdown link resolves, every README-documented symbol matches a real export, a secret-shaped regex scan over every file tracked by git, and a stub-marker scan also over tracked files only. It does NOT scan untracked or gitignored files, and its secret regex only covers three patterns -- sk-live-, sk_live_, and AWS AKIA keys, nothing else."
+      },
+      {
+        "role": "karen",
+        "text": "Does anything scan the working tree, including untracked or gitignored files, for secrets or stub markers?"
+      },
+      {
+        "role": "user",
+        "text": "No -- nothing today. check-docs.mjs only sees what git ls-files reports."
+      },
+      {
+        "role": "karen",
+        "text": "apps/teaching-avatar and apps/support-widget both call backend/ for a session token and both make chat-completion calls -- should Karen check they apply the same security invariants (origin check, token scope, no secret in the response), confirming neither drifted from the other?"
+      },
+      {
+        "role": "user",
+        "text": "Yes, please. They're supposed to be identical in that regard -- if one drifts from the other without a documented reason, we want to know."
+      },
+      {
+        "role": "karen",
+        "text": "Last one -- same threshold as your other packages, 80%?"
+      },
+      {
+        "role": "user",
+        "text": "80%, same as our other packages."
+      },
+      {
+        "role": "karen",
+        "text": "Got it -- anything else before I generate the gates?"
+      },
+      {
+        "role": "user",
+        "text": "Nope, that covers it."
+      }
+    ],
+    "karenJson": {
+      "version": "1.0.0",
+      "project": {
+        "type": "library",
+        "language": [
+          "typescript"
+        ],
+        "deployment": [
+          "browser-direct-js"
+        ],
+        "audience": "enterprise",
+        "aiPowered": true,
+        "subprojects": [
+          {
+            "path": "sdk",
+            "type": "library",
+            "deployment": [
+              "browser-direct-js"
+            ],
+            "aiPowered": false,
+            "codeRole": "sdk-entry-point",
+            "reason": "Zero-dependency embeddable widget loaded directly into a customer's page — it mounts/tears down the avatar and never calls an LLM itself; the conversational model lives behind backend/"
+          },
+          {
+            "path": "backend",
+            "type": "service",
+            "deployment": [
+              "node-server"
+            ],
+            "aiPowered": true,
+            "codeRole": "credential-holder",
+            "reason": "Holds the chat-completion API key server-side, mints short-lived session tokens, proxies chat-completion calls for both reference apps — the only subproject that calls the LLM provider"
+          },
+          {
+            "path": "apps/teaching-avatar",
+            "type": "application",
+            "deployment": [
+              "browser-direct-js"
+            ],
+            "aiPowered": true,
+            "codeRole": "reference-app",
+            "reason": "Calls backend's chat-completion endpoint at runtime and renders model output — ai-agent runtime profile applies here but not to the SDK itself"
+          },
+          {
+            "path": "apps/support-widget",
+            "type": "application",
+            "deployment": [
+              "browser-direct-js"
+            ],
+            "aiPowered": true,
+            "codeRole": "reference-app",
+            "reason": "Same reference-app shape as apps/teaching-avatar — a support chat widget calling backend's chat-completion endpoint at runtime"
+          }
+        ]
+      },
+      "compliance": [],
+      "coverage": {
+        "threshold": 80
+      },
+      "testRunner": {
+        "command": "npm test",
+        "coverageReport": "coverage/lcov.info",
+        "format": "lcov",
+        "packages": [
+          {
+            "path": "sdk",
+            "command": "npm test",
+            "coverageReport": "sdk/coverage/lcov.info",
+            "role": "primary"
+          },
+          {
+            "path": "backend",
+            "command": "npm test",
+            "coverageReport": "backend/coverage/lcov.info",
+            "role": "primary"
+          },
+          {
+            "path": "apps/teaching-avatar",
+            "command": "npm run test:e2e",
+            "coverageReport": null,
+            "role": "e2e-only"
+          },
+          {
+            "path": "apps/support-widget",
+            "command": "npm run test:e2e",
+            "coverageReport": null,
+            "role": "e2e-only"
+          }
+        ]
+      },
+      "doctest": {
+        "files": [
+          "README.md"
+        ],
+        "languages": [
+          "js",
+          "ts"
+        ],
+        "annotation": "karen:runnable"
+      },
+      "permissions": {},
+      "circuitBreaker": {
+        "threshold": 3,
+        "exitCode": 2
+      },
+      "expiryWarningDays": 7,
+      "existingGates": [
+        {
+          "id": "check-docs",
+          "command": "node tools/check-docs.mjs",
+          "outputFormat": "exit-code",
+          "coverage": [
+            {
+              "gate": "gate-4-docs-parity",
+              "scope": "full",
+              "reason": "Checks every tracked markdown file's relative links resolve and every README-documented symbol matches a real export under that package's src/ — full doc<->code drift + link-rot coverage across the whole repo"
+            },
+            {
+              "gate": "gate-3-security",
+              "scope": "partial",
+              "detail": "Structural secret-shaped regex scan (sk-live-/sk_live_/AKIA patterns) over tracked files only, via `git ls-files` — misses untracked/gitignored files and any secret shape outside those three patterns",
+              "reason": "Karen's generated gate-3 script covers the working-tree/gitignored gap and any secret shape this scan doesn't recognize"
+            },
+            {
+              "gate": "gate-2-completeness",
+              "scope": "partial",
+              "detail": "Structural stub-marker scan (`//` TODO/FIXME/HACK/XXX comments and `throw new Error('not implemented...')`) over tracked source only — does not do per-symbol doc/test coverage or check block-comment stub markers",
+              "reason": "Karen's generated gate-2 script still needs to cover per-symbol completeness and any stub marker outside check-docs.mjs's two patterns"
+            }
+          ]
+        }
+      ],
+      "crossSubprojectConsistency": [
+        {
+          "pattern": "server holds admin-scoped chat-completion API key, mints short-lived client session token, exposes a session/chat REST API",
+          "subprojects": [
+            "apps/teaching-avatar",
+            "apps/support-widget"
+          ],
+          "invariants": [
+            "origin/CORS check present",
+            "token scope excludes admin operations",
+            "no secret in any response body"
+          ]
+        }
+      ],
+      "knownGaps": [],
+      "exceedsBaseline": [
+        {
+          "gate": "gate-1-supply-chain",
+          "note": "sdk/ has zero runtime dependencies — package.json's dependencies field is empty; the entire widget is built on browser platform APIs alone"
+        }
+      ],
+      "exceptions": {}
+    },
+    "gateScripts": {
+      "gate-1-supply-chain": "#!/usr/bin/env bash\nset -euo pipefail\nROOT=\"$1\"\ncd \"$ROOT\"\nissues=0\nfor pkg in sdk backend apps/teaching-avatar apps/support-widget; do\n  [ -f \"$pkg/package.json\" ] || continue\n  report=$(cd \"$pkg\" && npm audit --json 2>/dev/null || true)\n  count=$(echo \"$report\" | node -e 'let d=\"\";process.stdin.on(\"data\",c=>d+=c);process.stdin.on(\"end\",()=>{try{const j=JSON.parse(d);console.log(j.metadata?.vulnerabilities?.total||0)}catch{console.log(0)}})')\n  if [ \"${count:-0}\" -gt 0 ]; then\n    echo -e \"${pkg}/package.json\\t${count} known-vulnerable dependency advisories reported by npm audit\"\n    issues=$((issues + count))\n  fi\ndone\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nelse\n  echo \"FAIL (${issues} issues)\"\n  exit 1\nfi\n",
+      "gate-2-completeness": "#!/usr/bin/env bash\nset -euo pipefail\nROOT=\"$1\"\ncd \"$ROOT\"\nissues=0\n# Gap beyond check-docs.mjs's tracked-file //-comment TODO/FIXME/HACK/XXX\n# and throw-new-Error('not implemented...') scan: block-comment stub markers\n# and any stub reachable via a boolean flag param, across all four packages.\nwhile IFS=: read -r file line rest; do\n  [ -z \"$file\" ] && continue\n  echo -e \"${file}:${line}\\tunresolved stub or reachable not-implemented branch: ${rest# }\"\n  issues=$((issues + 1))\ndone < <(grep -rnE \"throw new Error\\('not implemented\" sdk/src backend/src apps/*/src 2>/dev/null | grep -v '^\\s*\\*' || true)\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nelse\n  echo \"FAIL (${issues} issues)\"\n  exit 1\nfi\n",
+      "gate-3-security": "#!/usr/bin/env bash\nset -euo pipefail\nROOT=\"$1\"\ncd \"$ROOT\"\nissues=0\n# Gap beyond check-docs.mjs: scans the full working tree (including\n# untracked/gitignored files), not just `git ls-files`, and flags structural\n# patterns its three secret regexes don't recognize (credentials:'include',\n# unremoved listeners, missing-origin drift across sibling reference apps).\nreport=$(semgrep --config auto --json sdk backend apps 2>/dev/null || true)\nwhile IFS=$'\\t' read -r file line msg; do\n  [ -z \"$file\" ] && continue\n  echo -e \"${file}:${line}\\t${msg}\"\n  issues=$((issues + 1))\ndone < <(echo \"$report\" | node tools/semgrep-to-tsv.mjs 2>/dev/null || true)\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nelse\n  echo \"FAIL (${issues} issues)\"\n  echo \"ZERO-TOLERANCE\"\n  exit 1\nfi\n",
+      "gate-6-test-integrity": "#!/usr/bin/env bash\nset -euo pipefail\nROOT=\"$1\"\ncd \"$ROOT\"\nissues=0\nfor pkg in sdk backend; do\n  out=$(cd \"$pkg\" && npm test -- --coverage --run 2>&1 || true)\n  echo \"$out\" | grep -qE 'failed|FAIL' && {\n    echo -e \"${pkg}\\tunit test failures reported by npm test\"\n    issues=$((issues + 1))\n  }\ndone\nfor app in apps/teaching-avatar apps/support-widget; do\n  out=$(cd \"$app\" && npm run test:e2e 2>&1 || true)\n  echo \"$out\" | grep -qE 'failed|FAIL' && {\n    echo -e \"${app}\\te2e test failures reported by npm run test:e2e\"\n    issues=$((issues + 1))\n  }\ndone\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nelse\n  echo \"FAIL (${issues} issues)\"\n  exit 1\nfi\n",
+      "gate-7-agent-context": "#!/usr/bin/env bash\nset -euo pipefail\nROOT=\"$1\"\ncd \"$ROOT\"\nissues=0\nif [ ! -f CLAUDE.md ]; then\n  echo -e \"CLAUDE.md\\tmissing agent context file at repo root\"\n  issues=$((issues + 1))\nelse\n  grep -q \"Signal Avatar\" CLAUDE.md || {\n    echo -e \"CLAUDE.md\\tmissing project-identity summary agents need before making changes\"\n    issues=$((issues + 1))\n  }\nfi\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nelse\n  echo \"FAIL (${issues} issues)\"\n  exit 1\nfi\n"
+    }
+  },
+  "auditRuns": [
+    {
+      "trigger": "initial",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "backend/src/chatProxy.ts:19\tstreaming branch throws 'not implemented: streaming chat completions' instead of degrading or being rejected up front\nFAIL (1 issues)\n",
+          "exitCode": 1
+        },
+        "gate-3-security": {
+          "stdout": "backend/src/server.ts:14\thardcoded chat-completion provider API key (sk-live-...) committed to source\nsdk/src/analytics.ts:20\tfetch to third-party telemetry endpoint sets credentials: 'include', widening the customer's cookie/auth exposure\nsdk/src/sdk.ts:40\tdestroy() removes the resize listener but never removes the visibilitychange listener registered in the constructor -- leaks for the page's lifetime\napps/support-widget/src/session.ts:33\tstartSession()/sendChatMessage() call BACKEND_HOST with no assertExpectedOrigin() guard, unlike apps/teaching-avatar's matching module\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 1,
+        "timestamp": "2026-07-02T09:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 1,
+            "fingerprint": [
+              "fp-stub-implementation-chatproxy"
+            ]
+          },
+          "gate-3-security": {
+            "count": 4,
+            "fingerprint": [
+              "fp-hardcoded-secret-server",
+              "fp-credentials-include-analytics",
+              "fp-unremoved-listener-sdk",
+              "fp-missing-origin-check-session"
+            ]
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 5
+      }
+    },
+    {
+      "trigger": "01-partial-fix",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "backend/src/chatProxy.ts:19\tstreaming branch throws 'not implemented: streaming chat completions' instead of degrading or being rejected up front\nFAIL (1 issues)\n",
+          "exitCode": 1
+        },
+        "gate-3-security": {
+          "stdout": "backend/src/server.ts:14\thardcoded chat-completion provider API key (sk-live-...) committed to source\nsdk/src/analytics.ts:20\tfetch to third-party telemetry endpoint sets credentials: 'include', widening the customer's cookie/auth exposure\napps/support-widget/src/session.ts:33\tstartSession()/sendChatMessage() call BACKEND_HOST with no assertExpectedOrigin() guard, unlike apps/teaching-avatar's matching module\nFAIL (3 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 2,
+        "timestamp": "2026-07-02T09:15:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 1,
+            "fingerprint": [
+              "fp-stub-implementation-chatproxy"
+            ]
+          },
+          "gate-3-security": {
+            "count": 3,
+            "fingerprint": [
+              "fp-hardcoded-secret-server",
+              "fp-credentials-include-analytics",
+              "fp-missing-origin-check-session"
+            ]
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 4
+      }
+    },
+    {
+      "trigger": "02-regression",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "backend/src/chatProxy.ts:19\tstreaming branch throws 'not implemented: streaming chat completions' instead of degrading or being rejected up front\nFAIL (1 issues)\n",
+          "exitCode": 1
+        },
+        "gate-3-security": {
+          "stdout": "backend/src/server.ts:14\thardcoded chat-completion provider API key (sk-live-...) committed to source\nsdk/src/analytics.ts:20\tfetch to third-party telemetry endpoint sets credentials: 'include', widening the customer's cookie/auth exposure\napps/support-widget/src/session.ts:33\tstartSession()/sendChatMessage() call BACKEND_HOST with no assertExpectedOrigin() guard, unlike apps/teaching-avatar's matching module\napps/support-widget/src/session.ts:49\tconsole.log prints the live session token to the console for support triage, unguarded by any debug-mode check\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 3,
+        "timestamp": "2026-07-02T09:30:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 1,
+            "fingerprint": [
+              "fp-stub-implementation-chatproxy"
+            ]
+          },
+          "gate-3-security": {
+            "count": 4,
+            "fingerprint": [
+              "fp-hardcoded-secret-server",
+              "fp-credentials-include-analytics",
+              "fp-missing-origin-check-session",
+              "fp-console-debug-guard-session"
+            ]
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 5
+      }
+    },
+    {
+      "trigger": "03-noop-line-shift",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "backend/src/chatProxy.ts:19\tstreaming branch throws 'not implemented: streaming chat completions' instead of degrading or being rejected up front\nFAIL (1 issues)\n",
+          "exitCode": 1
+        },
+        "gate-3-security": {
+          "stdout": "backend/src/server.ts:15\thardcoded chat-completion provider API key (sk-live-...) committed to source\nsdk/src/analytics.ts:20\tfetch to third-party telemetry endpoint sets credentials: 'include', widening the customer's cookie/auth exposure\napps/support-widget/src/session.ts:33\tstartSession()/sendChatMessage() call BACKEND_HOST with no assertExpectedOrigin() guard, unlike apps/teaching-avatar's matching module\napps/support-widget/src/session.ts:49\tconsole.log prints the live session token to the console for support triage, unguarded by any debug-mode check\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 4,
+        "timestamp": "2026-07-02T09:45:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 1,
+            "fingerprint": [
+              "fp-stub-implementation-chatproxy"
+            ]
+          },
+          "gate-3-security": {
+            "count": 4,
+            "fingerprint": [
+              "fp-hardcoded-secret-server",
+              "fp-credentials-include-analytics",
+              "fp-missing-origin-check-session",
+              "fp-console-debug-guard-session"
+            ]
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 5
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-1",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "backend/src/chatProxy.ts:19\tstreaming branch throws 'not implemented: streaming chat completions' instead of degrading or being rejected up front\nFAIL (1 issues)\n",
+          "exitCode": 1
+        },
+        "gate-3-security": {
+          "stdout": "backend/src/server.ts:15\thardcoded chat-completion provider API key (sk-live-...) committed to source\nsdk/src/analytics.ts:20\tfetch to third-party telemetry endpoint sets credentials: 'include', widening the customer's cookie/auth exposure\napps/support-widget/src/session.ts:33\tstartSession()/sendChatMessage() call BACKEND_HOST with no assertExpectedOrigin() guard, unlike apps/teaching-avatar's matching module\napps/support-widget/src/session.ts:49\tconsole.log prints the live session token to the console for support triage, unguarded by any debug-mode check\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 5,
+        "timestamp": "2026-07-02T10:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 1,
+            "fingerprint": [
+              "fp-stub-implementation-chatproxy"
+            ]
+          },
+          "gate-3-security": {
+            "count": 4,
+            "fingerprint": [
+              "fp-hardcoded-secret-server",
+              "fp-credentials-include-analytics",
+              "fp-missing-origin-check-session",
+              "fp-console-debug-guard-session"
+            ]
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 5
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-2",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "backend/src/chatProxy.ts:19\tstreaming branch throws 'not implemented: streaming chat completions' instead of degrading or being rejected up front\nFAIL (1 issues)\n",
+          "exitCode": 1
+        },
+        "gate-3-security": {
+          "stdout": "backend/src/server.ts:15\thardcoded chat-completion provider API key (sk-live-...) committed to source\nsdk/src/analytics.ts:20\tfetch to third-party telemetry endpoint sets credentials: 'include', widening the customer's cookie/auth exposure\napps/support-widget/src/session.ts:33\tstartSession()/sendChatMessage() call BACKEND_HOST with no assertExpectedOrigin() guard, unlike apps/teaching-avatar's matching module\napps/support-widget/src/session.ts:49\tconsole.log prints the live session token to the console for support triage, unguarded by any debug-mode check\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 6,
+        "timestamp": "2026-07-02T10:15:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 1,
+            "fingerprint": [
+              "fp-stub-implementation-chatproxy"
+            ]
+          },
+          "gate-3-security": {
+            "count": 4,
+            "fingerprint": [
+              "fp-hardcoded-secret-server",
+              "fp-credentials-include-analytics",
+              "fp-missing-origin-check-session",
+              "fp-console-debug-guard-session"
+            ]
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 5
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-3",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "backend/src/chatProxy.ts:19\tstreaming branch throws 'not implemented: streaming chat completions' instead of degrading or being rejected up front\nFAIL (1 issues)\n",
+          "exitCode": 1
+        },
+        "gate-3-security": {
+          "stdout": "backend/src/server.ts:15\thardcoded chat-completion provider API key (sk-live-...) committed to source\nsdk/src/analytics.ts:20\tfetch to third-party telemetry endpoint sets credentials: 'include', widening the customer's cookie/auth exposure\napps/support-widget/src/session.ts:33\tstartSession()/sendChatMessage() call BACKEND_HOST with no assertExpectedOrigin() guard, unlike apps/teaching-avatar's matching module\napps/support-widget/src/session.ts:49\tconsole.log prints the live session token to the console for support triage, unguarded by any debug-mode check\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        }
+      },
+      "runState": {
+        "run": 7,
+        "timestamp": "2026-07-02T10:30:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 1,
+            "fingerprint": [
+              "fp-stub-implementation-chatproxy"
+            ]
+          },
+          "gate-3-security": {
+            "count": 4,
+            "fingerprint": [
+              "fp-hardcoded-secret-server",
+              "fp-credentials-include-analytics",
+              "fp-missing-origin-check-session",
+              "fp-console-debug-guard-session"
+            ]
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          }
+        },
+        "total": 5
+      }
+    }
+  ]
+}

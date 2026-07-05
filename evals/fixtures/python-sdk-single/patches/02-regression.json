@@ -1,0 +1,4 @@
+{
+  "newIssue": { "file": "src/prism_sdk/webhooks.py", "line": 6, "category": "hardcoded-secret" },
+  "expectedDelta": { "gate-3-security": 1 }
+}

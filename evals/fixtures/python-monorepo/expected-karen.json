@@ -1,0 +1,48 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "type": "service",
+    "language": ["python"],
+    "deployment": ["python"],
+    "audience": "internal",
+    "aiPowered": false,
+    "subprojects": [
+      {
+        "path": "backend",
+        "type": "service",
+        "deployment": ["python"],
+        "compliance": ["soc2"],
+        "reason": "Ingests customer telemetry and holds the tamper-evident audit-log/SBOM evidence trail described in backend/docs/compliance/SOC2-CONTROLS.md — SOC2-scoped on its own, independent of the repo root profile"
+      },
+      {
+        "path": "client-lib",
+        "type": "library",
+        "deployment": ["python"],
+        "compliance": [],
+        "reason": "Thin HTTP client SDK forwarded to backend/ over HTTPS — holds no customer data itself and carries none of backend's SOC2 artifact requirements; explicitly not compliance-scoped despite sharing a repo with a subproject that is"
+      }
+    ]
+  },
+  "compliance": [],
+  "coverage": { "threshold": 80 },
+  "testRunner": {
+    "command": "pytest --cov --cov-report=xml",
+    "coverageReport": "coverage.xml",
+    "format": "cobertura",
+    "packages": [
+      { "path": "backend", "command": "pytest --cov=signal_relay_backend --cov-report=xml", "coverageReport": "backend/coverage.xml", "role": "primary" },
+      { "path": "client-lib", "command": "pytest --cov=signal_relay_client --cov-report=xml", "coverageReport": "client-lib/coverage.xml", "role": "primary" }
+    ]
+  },
+  "permissions": {},
+  "circuitBreaker": {
+    "threshold": 3,
+    "exitCode": 2
+  },
+  "expiryWarningDays": 7,
+  "existingGates": [],
+  "crossSubprojectConsistency": [],
+  "knownGaps": [],
+  "exceedsBaseline": [],
+  "exceptions": {}
+}

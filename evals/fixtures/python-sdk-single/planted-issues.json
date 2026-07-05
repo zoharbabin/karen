@@ -1,0 +1,11 @@
+[
+  { "file": "src/prism_sdk/client.py", "line": 9, "category": "hardcoded-secret", "isDecoy": false },
+  { "file": "src/prism_sdk/client.py", "line": 15, "category": "password-variable", "isDecoy": true },
+  { "file": "src/prism_sdk/utils.py", "line": 15, "category": "shell-injection", "isDecoy": false },
+  { "file": "src/prism_sdk/utils.py", "line": 22, "category": "shell-injection", "isDecoy": true },
+  { "file": "src/prism_sdk/config.py", "line": 16, "category": "yaml-unsafe-load", "isDecoy": false },
+  { "file": "src/prism_sdk/config.py", "line": 22, "category": "yaml-unsafe-load", "isDecoy": true },
+  { "file": "src/prism_sdk/config.py", "line": 9, "category": "eval-in-comment", "isDecoy": true },
+  { "file": "src/prism_sdk/exporter.py", "line": 6, "category": "stub-implementation", "isDecoy": false },
+  { "file": "src/prism_sdk/exporter.py", "line": 18, "category": "stub-implementation", "isDecoy": true }
+]

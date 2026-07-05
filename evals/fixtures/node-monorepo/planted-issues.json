@@ -1,0 +1,15 @@
+[
+  { "file": "backend/src/server.ts", "line": 14, "category": "hardcoded-secret", "isDecoy": false },
+  { "file": "backend/src/server.ts", "line": 19, "category": "password-variable", "isDecoy": true },
+  { "file": "backend/src/tokens.ts", "line": 16, "category": "hardcoded-secret", "isDecoy": true },
+  { "file": "backend/src/chatProxy.ts", "line": 19, "category": "stub-implementation", "isDecoy": false },
+  { "file": "backend/src/chatProxy.ts", "line": 35, "category": "stub-implementation", "isDecoy": true },
+  { "file": "sdk/src/sdk.ts", "line": 40, "category": "unremoved-listener", "isDecoy": false },
+  { "file": "sdk/src/sdk.ts", "line": 47, "category": "console-debug-guard", "isDecoy": true },
+  { "file": "sdk/src/analytics.ts", "line": 20, "category": "credentials-include", "isDecoy": false },
+  { "file": "sdk/src/analytics.ts", "line": 11, "category": "password-variable", "isDecoy": true },
+  { "file": "sdk/src/utils.ts", "line": 7, "category": "eval-in-comment", "isDecoy": true },
+  { "file": "apps/support-widget/src/session.ts", "line": 33, "category": "missing-origin-check", "isDecoy": false },
+  { "file": "apps/support-widget/src/session.ts", "line": 21, "category": "eval-in-comment", "isDecoy": true },
+  { "file": "apps/teaching-avatar/src/session.ts", "line": 24, "category": "password-variable", "isDecoy": true }
+]

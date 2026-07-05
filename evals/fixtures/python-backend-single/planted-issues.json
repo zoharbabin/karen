@@ -1,0 +1,8 @@
+[
+  { "file": "src/beacon_ingest/server.py", "line": 30, "category": "shell-injection", "isDecoy": false },
+  { "file": "src/beacon_ingest/server.py", "line": 43, "category": "shell-injection", "isDecoy": true },
+  { "file": "src/beacon_ingest/cache.py", "line": 28, "category": "unsafe-deserialization", "isDecoy": false },
+  { "file": "src/beacon_ingest/cache.py", "line": 46, "category": "unsafe-deserialization", "isDecoy": true },
+  { "file": "src/beacon_ingest/config.py", "line": 16, "category": "unsafe-yaml-load", "isDecoy": false },
+  { "file": "src/beacon_ingest/config.py", "line": 34, "category": "unsafe-yaml-load", "isDecoy": true }
+]

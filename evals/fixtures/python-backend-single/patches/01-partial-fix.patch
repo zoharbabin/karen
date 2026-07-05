@@ -1,0 +1,21 @@
+diff --git a/src/beacon_ingest/server.py b/src/beacon_ingest/server.py
+index 9a0fa6b..c926d1a 100644
+--- a/src/beacon_ingest/server.py
++++ b/src/beacon_ingest/server.py
+@@ -22,12 +22,12 @@ async def submit_beacon(payload: dict):
+ async def run_diagnostics(payload: dict):
+     """Run an operator-requested diagnostic probe against the ingest host.
+ 
+-    `probe` is a shell fragment supplied by the calling operator tool --
+-    built as a single string and handed to the shell so operators can
+-    compose ad-hoc probes (e.g. "ping -c 3 host && traceroute host").
++    Fixed: `probe` is now passed as a single discrete argv element to
++    `diag-tool` directly -- no shell is invoked, so there is no command
++    string for the probe value to escape.
+     """
+     probe = payload.get("probe", "")
+-    result = subprocess.run(f"diag-tool --check {probe}", shell=True, capture_output=True)
++    result = subprocess.run(["diag-tool", "--check", probe], shell=False, capture_output=True)
+     return {"stdout": result.stdout.decode("utf-8", errors="replace")}
+ 
+ 

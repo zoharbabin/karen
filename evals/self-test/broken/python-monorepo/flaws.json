@@ -1,0 +1,14 @@
+{
+  "flaws": [
+    {
+      "dimension": "gateIssues",
+      "description": "backend/src/signal_relay_backend/config.py:16 unsafe-yaml-load (real, non-decoy) is never emitted by gate-3-security's stdout in any auditRuns entry -- a false negative, with runState.gates['gate-3-security'].fingerprint/count adjusted to omit the missing emission at every run.",
+      "expectedGraderFinding": "false negative on unsafe-yaml-load"
+    },
+    {
+      "dimension": "gateIssues",
+      "description": "client-lib/src/signal_relay_client/filters.py:31 dynamic-code-execution (decoy) IS emitted by gate-3-security's stdout in every auditRuns entry -- a false positive, with runState.gates['gate-3-security'].fingerprint/count adjusted to include the decoy at every run.",
+      "expectedGraderFinding": "false positive on dynamic-code-execution (decoy)"
+    }
+  ]
+}

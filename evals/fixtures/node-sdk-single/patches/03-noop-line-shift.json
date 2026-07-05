@@ -1,0 +1,6 @@
+{
+  "unchangedIssueId": "src/sdk.ts:34:global-scope-write",
+  "previousLine": 34,
+  "newLine": 38,
+  "expectedDelta": {}
+}

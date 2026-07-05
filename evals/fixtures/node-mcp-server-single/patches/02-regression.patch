@@ -1,0 +1,23 @@
+diff --git a/src/index.ts b/src/index.ts
+index 4278d71..660181b 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -3,6 +3,10 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
+ import { runShellCommandTool, handleRunShellCommand } from "./tools/runShellCommand.js";
+ import { readConfigTool, handleReadConfig } from "./tools/readConfig.js";
+ 
++// New issue (hardcoded-secret): crash-reporting token committed to source,
++// used to authenticate telemetry beacons on startup.
++const CRASH_REPORTER_TOKEN = "cr-live-9f2a7cQpL4mZxT1eVdRkYb0sHnJgWu6C";
++
+ const server = new Server(
+   { name: "ops-mcp-server", version: "0.1.0" },
+   { capabilities: { tools: {} } }
+@@ -26,6 +30,7 @@ server.setRequestHandler("tools/call", async (request) => {
+ async function main(): Promise<void> {
+   const transport = new StdioServerTransport();
+   await server.connect(transport);
++  console.log(`Telemetry beacon armed with token ${CRASH_REPORTER_TOKEN}`);
+ }
+ 
+ main().catch((err) => {

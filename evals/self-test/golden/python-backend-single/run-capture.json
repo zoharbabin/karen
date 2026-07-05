@@ -1,0 +1,246 @@
+{
+  "fixture": "python-backend-single",
+  "init": {
+    "detectProjectOutput": {
+      "languages": ["python"],
+      "manifests": [
+        { "path": "pyproject.toml", "language": "python" }
+      ],
+      "frameworks": ["fastapi"],
+      "ciConfig": [".github/workflows/ci.yml"],
+      "existingTestSetup": {
+        "runner": "pytest",
+        "coverageTool": null,
+        "coverageReport": null
+      },
+      "agentContextFiles": ["CLAUDE.md"],
+      "existingGates": [],
+      "subprojects": [],
+      "unclaimedPaths": []
+    },
+    "transcript": [
+      { "role": "karen", "text": "What does this project do / who uses it?" },
+      { "role": "user", "text": "beacon-ingest is our internal telemetry ingestion backend — other Beacon platform services POST beacons to it over HTTP, a separate worker processes them, and callers poll job status back. Internal only, not customer-facing." },
+      { "role": "karen", "text": "What's your deployment and runtime environment?" },
+      { "role": "user", "text": "Runs as a standalone FastAPI service under uvicorn, talks to a shared Redis instance for job caching. No browser context, nothing client-side — plain backend service." },
+      { "role": "karen", "text": "Who's the audience, and are there any compliance or regulatory requirements?" },
+      { "role": "user", "text": "Internal only — other services in our own infra call it. No SOC2/HIPAA/PCI requirement, no customer PII flows through this service directly." },
+      { "role": "karen", "text": "Is this project AI-powered, or built with or used by LLM coding agents?" },
+      { "role": "user", "text": "No LLM calls at runtime at all — it's telemetry ingestion plumbing. CLAUDE.md is there for contributors using coding agents, but the service itself never calls a model." },
+      { "role": "karen", "text": "Your suite here is E2E-only — Playwright-driven, end-to-end, nothing at unit level touching beacon_ingest.cache or beacon_ingest.config. Is that a deliberate choice for this kind of service, or should this get flagged as a coverage gap?" },
+      { "role": "user", "text": "Intentional. There's not much internal branching logic worth unit-testing in isolation here — it's a thin pass-through between HTTP and Redis. We'd rather exercise the real request/response contract end to end than mock Redis just to produce a coverage percentage. Run coverage-less, assertion-density-only is fine." },
+      { "role": "karen", "text": "Got it — I'll record coverage as intentionally disabled with that rationale, and gate-6 will still check assertion density on the E2E suite. Anything else before I generate the gates?" },
+      { "role": "user", "text": "Nope, that covers it." }
+    ],
+    "karenJson": {
+      "version": "1.0.0",
+      "project": {
+        "type": "service",
+        "language": ["python"],
+        "deployment": ["python"],
+        "audience": "internal",
+        "aiPowered": false,
+        "subprojects": []
+      },
+      "compliance": [],
+      "coverage": {
+        "enabled": false,
+        "reason": "Only an E2E suite exists (Playwright driving the live FastAPI service over real HTTP against a live Redis) — there is no unit-level import of beacon_ingest.cache or beacon_ingest.config anywhere, so pytest-cov would report near-zero function-level coverage even though the request/response contract is genuinely exercised. Interview confirmed this is intentional: beacon-ingest is a thin ingestion/cache pass-through with little internal branching logic to unit-test in isolation, and the team explicitly chose not to mock Redis just to produce a coverage number. Gate-6 still enforces assertion density on the E2E suite."
+      },
+      "testRunner": {
+        "command": "pytest tests/e2e",
+        "coverageReport": null,
+        "format": null
+      },
+      "permissions": {},
+      "circuitBreaker": {
+        "threshold": 3,
+        "exitCode": 2
+      },
+      "expiryWarningDays": 7,
+      "existingGates": [],
+      "crossSubprojectConsistency": [],
+      "knownGaps": [],
+      "exceedsBaseline": [],
+      "exceptions": {}
+    },
+    "gateScripts": {
+      "gate-1-supply-chain": "#!/usr/bin/env bash\nset -euo pipefail\nROOT=\"$1\"\ncd \"$ROOT\"\nissues=0\nreport=$(pip-audit --strict --format json 2>/dev/null || true)\nif [ -n \"$report\" ]; then\n  while IFS=$'\\t' read -r pkg version vuln; do\n    [ -z \"$pkg\" ] && continue\n    echo -e \"pyproject.toml\\t${pkg} ${version}: ${vuln}\"\n    issues=$((issues + 1))\n  done < <(echo \"$report\" | python3 -c '\nimport json, sys\ndata = json.load(sys.stdin)\nfor dep in data.get(\"dependencies\", []):\n    for v in dep.get(\"vulns\", []):\n        print(f\"{dep[\\\"name\\\"]}\\t{dep[\\\"version\\\"]}\\t{v[\\\"id\\\"]}\")\n')\nfi\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nelse\n  echo \"FAIL (${issues} issues)\"\n  exit 1\nfi\n",
+      "gate-2-completeness": "#!/usr/bin/env bash\nset -euo pipefail\nROOT=\"$1\"\ncd \"$ROOT\"\nissues=0\nwhile IFS=: read -r file line rest; do\n  [ -z \"$file\" ] && continue\n  echo -e \"${file}:${line}\\tunresolved stub or TODO marker: ${rest# }\"\n  issues=$((issues + 1))\ndone < <(grep -nE 'TODO|FIXME|NotImplementedError|pass  # stub' -r src 2>/dev/null || true)\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nelse\n  echo \"FAIL (${issues} issues)\"\n  exit 1\nfi\n",
+      "gate-3-security": "#!/usr/bin/env bash\nset -euo pipefail\nROOT=\"$1\"\ncd \"$ROOT\"\nissues=0\nwhile IFS=$'\\t' read -r file line msg; do\n  [ -z \"$file\" ] && continue\n  echo -e \"${file}:${line}\\t${msg}\"\n  issues=$((issues + 1))\ndone < <(bandit -r src -f json 2>/dev/null | python3 -c '\nimport json, sys\ndata = json.load(sys.stdin)\nfor r in data.get(\"results\", []):\n    print(f\"{r[\\\"filename\\\"]}\\t{r[\\\"line_number\\\"]}\\t{r[\\\"issue_text\\\"]}\")\n')\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nelse\n  echo \"FAIL (${issues} issues)\"\n  echo \"ZERO-TOLERANCE\"\n  exit 1\nfi\n",
+      "gate-4-docs-parity": "#!/usr/bin/env bash\nset -euo pipefail\nROOT=\"$1\"\ncd \"$ROOT\"\nissues=0\nfor doc in README.md SECURITY.md; do\n  [ -f \"$doc\" ] || continue\n  while read -r symbol; do\n    [ -z \"$symbol\" ] && continue\n    grep -rq \"def ${symbol}(\" src 2>/dev/null || {\n      echo -e \"${doc}\\tdocumented symbol '${symbol}' no longer exists in src/\"\n      issues=$((issues + 1))\n    }\n  done < <(grep -oE '`[a-z_]+\\(' \"$doc\" | tr -d '`(')\ndone\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nelse\n  echo \"FAIL (${issues} issues)\"\n  exit 1\nfi\n",
+      "gate-6-test-integrity": "#!/usr/bin/env bash\nset -euo pipefail\nROOT=\"$1\"\ncd \"$ROOT\"\nissues=0\noutfile=$(mktemp)\npytest tests/e2e -q --tb=no > \"$outfile\" 2>&1 || true\nif grep -qE '[0-9]+ failed' \"$outfile\"; then\n  while IFS= read -r line; do\n    echo -e \"tests/e2e\\t${line}\"\n    issues=$((issues + 1))\n  done < <(grep -E '^FAILED' \"$outfile\")\nfi\ndensity=$(python3 tools/assertion_density.py tests/e2e)\nif ! python3 -c \"exit(0 if float('$density') >= 1.0 else 1)\"; then\n  echo -e \"tests/e2e\\tassertion density ${density} below 1.0 assertions/test minimum\"\n  issues=$((issues + 1))\nfi\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nelse\n  echo \"FAIL (${issues} issues)\"\n  exit 1\nfi\n",
+      "gate-7-agent-context": "#!/usr/bin/env bash\nset -euo pipefail\nROOT=\"$1\"\ncd \"$ROOT\"\nissues=0\nif [ ! -f CLAUDE.md ]; then\n  echo -e \"CLAUDE.md\\tmissing agent context file at repo root\"\n  issues=$((issues + 1))\nelse\n  grep -q \"beacon-ingest\" CLAUDE.md || {\n    echo -e \"CLAUDE.md\\tmissing project-identity summary agents need before making changes\"\n    issues=$((issues + 1))\n  }\nfi\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nelse\n  echo \"FAIL (${issues} issues)\"\n  exit 1\nfi\n"
+    }
+  },
+  "auditRuns": [
+    {
+      "trigger": "initial",
+      "gateResults": {
+        "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-3-security": { "stdout": "src/beacon_ingest/server.py:30\tsubprocess call with shell=True on unsanitized user-supplied `probe` value\nsrc/beacon_ingest/cache.py:28\tpickle.loads on Redis-cached bytes lets any writer execute arbitrary code via __reduce__\nsrc/beacon_ingest/config.py:16\tyaml.load without an explicit safe Loader can construct arbitrary Python objects from untrusted YAML\nFAIL (3 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
+        "gate-4-docs-parity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
+      },
+      "runState": {
+        "run": 1,
+        "timestamp": "2026-06-25T09:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 0, "fingerprint": [] },
+          "gate-3-security": { "count": 3, "fingerprint": ["fp-shellinj-server-probe", "fp-unsafedeser-cache", "fp-yamlload-config"] },
+          "gate-4-docs-parity": { "count": 0, "fingerprint": [] },
+          "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
+          "gate-7-agent-context": { "count": 0, "fingerprint": [] }
+        },
+        "total": 3
+      }
+    },
+    {
+      "trigger": "01-partial-fix",
+      "gateResults": {
+        "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-3-security": { "stdout": "src/beacon_ingest/cache.py:28\tpickle.loads on Redis-cached bytes lets any writer execute arbitrary code via __reduce__\nsrc/beacon_ingest/config.py:16\tyaml.load without an explicit safe Loader can construct arbitrary Python objects from untrusted YAML\nFAIL (2 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
+        "gate-4-docs-parity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
+      },
+      "runState": {
+        "run": 2,
+        "timestamp": "2026-06-25T09:12:00Z",
+        "gates": {
+          "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 0, "fingerprint": [] },
+          "gate-3-security": { "count": 2, "fingerprint": ["fp-unsafedeser-cache", "fp-yamlload-config"] },
+          "gate-4-docs-parity": { "count": 0, "fingerprint": [] },
+          "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
+          "gate-7-agent-context": { "count": 0, "fingerprint": [] }
+        },
+        "total": 2
+      }
+    },
+    {
+      "trigger": "02-regression",
+      "gateResults": {
+        "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-3-security": { "stdout": "src/beacon_ingest/cache.py:28\tpickle.loads on Redis-cached bytes lets any writer execute arbitrary code via __reduce__\nsrc/beacon_ingest/config.py:16\tyaml.load without an explicit safe Loader can construct arbitrary Python objects from untrusted YAML\nsrc/beacon_ingest/server.py:57\tsubprocess call with shell=True on unsanitized user-supplied `key_pattern` value\nFAIL (3 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
+        "gate-4-docs-parity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
+      },
+      "runState": {
+        "run": 3,
+        "timestamp": "2026-06-25T09:25:00Z",
+        "gates": {
+          "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 0, "fingerprint": [] },
+          "gate-3-security": { "count": 3, "fingerprint": ["fp-unsafedeser-cache", "fp-yamlload-config", "fp-shellinj-server-keypattern"] },
+          "gate-4-docs-parity": { "count": 0, "fingerprint": [] },
+          "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
+          "gate-7-agent-context": { "count": 0, "fingerprint": [] }
+        },
+        "total": 3
+      }
+    },
+    {
+      "trigger": "03-noop-line-shift",
+      "gateResults": {
+        "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-3-security": { "stdout": "src/beacon_ingest/cache.py:31\tpickle.loads on Redis-cached bytes lets any writer execute arbitrary code via __reduce__\nsrc/beacon_ingest/config.py:16\tyaml.load without an explicit safe Loader can construct arbitrary Python objects from untrusted YAML\nsrc/beacon_ingest/server.py:57\tsubprocess call with shell=True on unsanitized user-supplied `key_pattern` value\nFAIL (3 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
+        "gate-4-docs-parity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
+      },
+      "runState": {
+        "run": 4,
+        "timestamp": "2026-06-25T09:40:00Z",
+        "gates": {
+          "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 0, "fingerprint": [] },
+          "gate-3-security": { "count": 3, "fingerprint": ["fp-unsafedeser-cache", "fp-yamlload-config", "fp-shellinj-server-keypattern"] },
+          "gate-4-docs-parity": { "count": 0, "fingerprint": [] },
+          "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
+          "gate-7-agent-context": { "count": 0, "fingerprint": [] }
+        },
+        "total": 3
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-1",
+      "gateResults": {
+        "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-3-security": { "stdout": "src/beacon_ingest/cache.py:31\tpickle.loads on Redis-cached bytes lets any writer execute arbitrary code via __reduce__\nsrc/beacon_ingest/config.py:16\tyaml.load without an explicit safe Loader can construct arbitrary Python objects from untrusted YAML\nsrc/beacon_ingest/server.py:57\tsubprocess call with shell=True on unsanitized user-supplied `key_pattern` value\nFAIL (3 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
+        "gate-4-docs-parity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
+      },
+      "runState": {
+        "run": 5,
+        "timestamp": "2026-06-25T09:45:00Z",
+        "gates": {
+          "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 0, "fingerprint": [] },
+          "gate-3-security": { "count": 3, "fingerprint": ["fp-unsafedeser-cache", "fp-yamlload-config", "fp-shellinj-server-keypattern"] },
+          "gate-4-docs-parity": { "count": 0, "fingerprint": [] },
+          "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
+          "gate-7-agent-context": { "count": 0, "fingerprint": [] }
+        },
+        "total": 3
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-2",
+      "gateResults": {
+        "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-3-security": { "stdout": "src/beacon_ingest/cache.py:31\tpickle.loads on Redis-cached bytes lets any writer execute arbitrary code via __reduce__\nsrc/beacon_ingest/config.py:16\tyaml.load without an explicit safe Loader can construct arbitrary Python objects from untrusted YAML\nsrc/beacon_ingest/server.py:57\tsubprocess call with shell=True on unsanitized user-supplied `key_pattern` value\nFAIL (3 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
+        "gate-4-docs-parity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
+      },
+      "runState": {
+        "run": 6,
+        "timestamp": "2026-06-25T09:50:00Z",
+        "gates": {
+          "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 0, "fingerprint": [] },
+          "gate-3-security": { "count": 3, "fingerprint": ["fp-unsafedeser-cache", "fp-yamlload-config", "fp-shellinj-server-keypattern"] },
+          "gate-4-docs-parity": { "count": 0, "fingerprint": [] },
+          "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
+          "gate-7-agent-context": { "count": 0, "fingerprint": [] }
+        },
+        "total": 3
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-3",
+      "gateResults": {
+        "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-3-security": { "stdout": "src/beacon_ingest/cache.py:31\tpickle.loads on Redis-cached bytes lets any writer execute arbitrary code via __reduce__\nsrc/beacon_ingest/config.py:16\tyaml.load without an explicit safe Loader can construct arbitrary Python objects from untrusted YAML\nsrc/beacon_ingest/server.py:57\tsubprocess call with shell=True on unsanitized user-supplied `key_pattern` value\nFAIL (3 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
+        "gate-4-docs-parity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
+      },
+      "runState": {
+        "run": 7,
+        "timestamp": "2026-06-25T09:55:00Z",
+        "gates": {
+          "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 0, "fingerprint": [] },
+          "gate-3-security": { "count": 3, "fingerprint": ["fp-unsafedeser-cache", "fp-yamlload-config", "fp-shellinj-server-keypattern"] },
+          "gate-4-docs-parity": { "count": 0, "fingerprint": [] },
+          "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
+          "gate-7-agent-context": { "count": 0, "fingerprint": [] }
+        },
+        "total": 3
+      }
+    }
+  ]
+}

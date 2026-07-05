@@ -1,0 +1,44 @@
+[
+  {
+    "id": "gate-1-supply-chain",
+    "tool": "npm audit",
+    "coversCategories": [],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-2-completeness",
+    "tool": "custom stub-marker scan",
+    "coversCategories": [],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-3-security",
+    "tool": "semgrep",
+    "coversCategories": [],
+    "zeroTolerance": true
+  },
+  {
+    "id": "gate-4-docs-parity",
+    "tool": "custom",
+    "coversCategories": [],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-5-compliance",
+    "tool": "custom compliance-claim + personal-data-registry check",
+    "coversCategories": ["compliance-overclaim", "unregistered-personal-data-store"],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-6-test-integrity",
+    "tool": "vitest",
+    "coversCategories": [],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-7-agent-context",
+    "tool": "custom",
+    "coversCategories": [],
+    "zeroTolerance": false
+  }
+]

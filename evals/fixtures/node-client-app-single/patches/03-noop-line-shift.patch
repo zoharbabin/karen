@@ -1,0 +1,12 @@
+diff --git a/src/analytics.ts b/src/analytics.ts
+index 1f277e5..ae48828 100644
+--- a/src/analytics.ts
++++ b/src/analytics.ts
+@@ -9,6 +9,7 @@
+  * Replaced with a direct function reference below.
+  */
+ 
++// NOTE: endpoint moved behind a config flag in a future release.
+ const ANALYTICS_ENDPOINT = 'https://telemetry.example.com/v1/beacon';
+ 
+ // Decoy: this holds a per-session correlation id generated client-side —

@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e backend[dev]
+      - run: pytest --cov=signal_relay_backend --cov-report=xml
+        working-directory: backend
+      - name: Generate SBOM (SOC2 release artifact)
+        run: pip install cyclonedx-bom && cyclonedx-py environment -o backend/sbom.json
+        working-directory: backend
+
+  client-lib:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e client-lib[dev]
+      - run: pytest --cov=signal_relay_client --cov-report=xml
+        working-directory: client-lib

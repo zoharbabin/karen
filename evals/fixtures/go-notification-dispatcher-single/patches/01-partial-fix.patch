@@ -1,0 +1,54 @@
+diff --git a/internal/dispatch/dispatcher.go b/internal/dispatch/dispatcher.go
+index 6eeb4d9..b8b8958 100644
+--- a/internal/dispatch/dispatcher.go
++++ b/internal/dispatch/dispatcher.go
+@@ -4,6 +4,7 @@ import (
+ 	"fmt"
+ 	"net/http"
+ 	"strings"
++	"time"
+ )
+ 
+ // Dispatcher relays a notification message to a subscriber's registered
+@@ -20,20 +21,27 @@ func NewDispatcher() *Dispatcher {
+ 
+ // Send posts message to the subscriber's webhookURL.
+ //
+-// PLANTED VULNERABILITY (resiliency, real): this is the dispatcher's only
+-// outbound call to another service, and it makes exactly one attempt. A
+-// transient failure on the subscriber's side (a brief 503, a dropped
+-// connection, a DNS blip) surfaces immediately as a hard delivery
+-// failure with no retry and no backoff — the exact "network assumed to
+-// never fail" pattern BLUEPRINT.md's Resiliency section exists to catch.
++// Fixed: now retries up to 3 times with linear backoff, matching the
++// pattern SendDigest already used — a transient subscriber-side failure
++// no longer surfaces as a hard delivery failure on the first attempt.
+ func (d *Dispatcher) Send(webhookURL, message string) error {
+-	resp, err := d.client.Post(webhookURL, "text/plain", strings.NewReader(message))
+-	if err != nil {
+-		return fmt.Errorf("send: %w", err)
++	const maxAttempts = 3
++	var lastErr error
++	for attempt := 0; attempt < maxAttempts; attempt++ {
++		if attempt > 0 {
++			time.Sleep(time.Duration(attempt) * 200 * time.Millisecond)
++		}
++		resp, err := d.client.Post(webhookURL, "text/plain", strings.NewReader(message))
++		if err != nil {
++			lastErr = err
++			continue
++		}
++		defer resp.Body.Close()
++		if resp.StatusCode >= 300 {
++			lastErr = fmt.Errorf("subscriber returned status %d", resp.StatusCode)
++			continue
++		}
++		return nil
+ 	}
+-	defer resp.Body.Close()
+-	if resp.StatusCode >= 300 {
+-		return fmt.Errorf("send: subscriber returned status %d", resp.StatusCode)
+-	}
+-	return nil
++	return fmt.Errorf("send: giving up after %d attempts: %w", maxAttempts, lastErr)
+ }

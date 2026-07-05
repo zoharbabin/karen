@@ -1,0 +1,6 @@
+{
+  "unchangedIssueId": "client-lib/src/signal_relay_client/config.py:8:hardcoded-secret",
+  "previousLine": 8,
+  "newLine": 12,
+  "expectedDelta": {}
+}

@@ -1,0 +1,583 @@
+{
+  "fixture": "go-monorepo",
+  "init": {
+    "detectProjectOutput": {
+      "languages": [
+        "go"
+      ],
+      "manifests": [
+        {
+          "path": "backend/go.mod",
+          "language": "go"
+        },
+        {
+          "path": "cli/go.mod",
+          "language": "go"
+        }
+      ],
+      "frameworks": [],
+      "ciConfig": [
+        ".github/workflows/ci.yml"
+      ],
+      "existingTestSetup": {
+        "runner": "go test",
+        "coverageTool": "go test -coverprofile (wired in CI per module, not run locally by default)",
+        "coverageReport": "coverage.out"
+      },
+      "agentContextFiles": [
+        "AGENTS.md"
+      ],
+      "existingGates": [],
+      "subprojects": [
+        {
+          "path": "backend",
+          "manifestPath": "backend/go.mod",
+          "language": "go"
+        },
+        {
+          "path": "cli",
+          "manifestPath": "cli/go.mod",
+          "language": "go"
+        }
+      ],
+      "unclaimedPaths": [
+        "mint-admin-token.sh"
+      ]
+    },
+    "transcript": [
+      {
+        "role": "karen",
+        "text": "What does this project do and who uses it?"
+      },
+      {
+        "role": "user",
+        "text": "It's a two-module Go monorepo: `backend` is an internal HTTP API service, `cli` is `karenctl`, the operator command-line tool that talks to it. Used by our own infra/ops team, not distributed externally."
+      },
+      {
+        "role": "karen",
+        "text": "I see two independent go.mod files — backend and cli — with no root go.mod tying them together. Should Karen treat these as two separate subprojects with their own profiles, or is one of them primary?"
+      },
+      {
+        "role": "user",
+        "text": "Treat them as two separate subprojects — they're built, tested, and released independently. Neither is 'primary' over the other; they're peers."
+      },
+      {
+        "role": "karen",
+        "text": "What's the deployment setup and runtime environment for backend and cli respectively?"
+      },
+      {
+        "role": "user",
+        "text": "backend runs as a long-lived internal HTTP service — node-server-equivalent deployment profile, not browser-facing. cli is a one-shot operator tool run from a terminal against that service; it's invoked locally, never deployed as a service itself."
+      },
+      {
+        "role": "karen",
+        "text": "What's the audience, and does this handle sensitive data?"
+      },
+      {
+        "role": "user",
+        "text": "Internal only — our own ops team. No customer PII. The one thing that is sensitive: mint-admin-token.sh mints real admin bearer tokens against our internal auth endpoint, so that script's signing material is a live production credential, not a throwaway dev value."
+      },
+      {
+        "role": "karen",
+        "text": "I found mint-admin-token.sh at the repo root — it's not under backend/ or cli/, and there's no go.mod at the root, so it isn't claimed by either module's manifest. How should Karen scope this for gates 2, 3, and 7?"
+      },
+      {
+        "role": "user",
+        "text": "Scope it as its own root-utility pseudo-subproject, like the blueprint describes. It's shared ops tooling invoked by both modules' release pipelines and it mints credentials, so it needs the same security scrutiny as the two Go modules — don't let it fall through the cracks just because it has no go.mod."
+      },
+      {
+        "role": "karen",
+        "text": "Any compliance or regulatory requirements I should know about?"
+      },
+      {
+        "role": "user",
+        "text": "No. Internal ops tooling — no SOC2, HIPAA, or PCI scope."
+      },
+      {
+        "role": "karen",
+        "text": "Is this project AI-powered, or built with / used by LLM coding agents?"
+      },
+      {
+        "role": "user",
+        "text": "It's built day-to-day with Claude Code, but neither backend nor cli calls an LLM at runtime or exposes any agentic behavior to end users — it's a plain HTTP service and a plain CLI."
+      },
+      {
+        "role": "karen",
+        "text": "What's your coverage threshold, and should backend and cli report separately?"
+      },
+      {
+        "role": "user",
+        "text": "80% for both, reported separately — they're independent modules, so one shouldn't hide the other's coverage gaps."
+      }
+    ],
+    "karenJson": {
+      "version": "1.0.0",
+      "project": {
+        "type": "service",
+        "language": [
+          "go"
+        ],
+        "deployment": [
+          "node-server"
+        ],
+        "audience": "internal",
+        "aiPowered": false,
+        "subprojects": [
+          {
+            "path": "backend",
+            "type": "service",
+            "deployment": [
+              "node-server"
+            ],
+            "reason": "HTTP API service with its own go.mod, own lifecycle (built/deployed independently of cli), root profile applies as-is"
+          },
+          {
+            "path": "cli",
+            "type": "cli-tool",
+            "deployment": [
+              "node-server"
+            ],
+            "reason": "Operator command-line tool with its own go.mod — invoked locally by operators against the backend's REST API, not a long-running service itself"
+          },
+          {
+            "path": "mint-admin-token.sh",
+            "type": "root-utility",
+            "reason": "Unclaimed by either module's go.mod but mints admin bearer tokens for karenctl operators against the backend's auth endpoint — scoped as its own pseudo-subproject so gates 2/3/7 still walk it instead of silently skipping unowned root-level code"
+          }
+        ]
+      },
+      "compliance": [],
+      "coverage": {
+        "threshold": 80
+      },
+      "testRunner": {
+        "command": "go test -coverprofile=coverage.out ./...",
+        "coverageReport": "coverage.out",
+        "format": "go-cover",
+        "packages": [
+          {
+            "path": "backend",
+            "command": "go test -coverprofile=coverage.out ./...",
+            "coverageReport": "backend/coverage.out",
+            "role": "primary"
+          },
+          {
+            "path": "cli",
+            "command": "go test -coverprofile=coverage.out ./...",
+            "coverageReport": "cli/coverage.out",
+            "role": "primary"
+          }
+        ]
+      },
+      "permissions": {},
+      "circuitBreaker": {
+        "threshold": 3,
+        "exitCode": 2
+      },
+      "expiryWarningDays": 7,
+      "existingGates": [],
+      "crossSubprojectConsistency": [],
+      "knownGaps": [],
+      "exceedsBaseline": [
+        {
+          "gate": "gate-1-supply-chain",
+          "note": "backend module has zero runtime dependencies — the HTTP service is built entirely on the Go standard library"
+        }
+      ],
+      "exceptions": {}
+    },
+    "gateScripts": {
+      "gate-1-supply-chain": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nout=\"\"\nfor mod in backend cli; do\n  report=\"$(cd \"$root/$mod\" && govulncheck ./... 2>/dev/null || true)\"\n  while IFS=$'\\t' read -r file line msg; do\n    [ -z \"$file\" ] && continue\n    out+=\"$mod/$file:$line\"$'\\t'\"$msg\"$'\\n'\n    issues=$((issues+1))\n  done < <(echo \"$report\" | node \"$root/.karen/gates/format-govulncheck.js\")\ndone\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
+      "gate-2-completeness": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nout=\"\"\nfor mod in backend cli; do\n  while IFS=$'\\t' read -r file line msg; do\n    [ -z \"$file\" ] && continue\n    out+=\"$file:$line\"$'\\t'\"$msg\"$'\\n'\n    issues=$((issues+1))\n  done < <(cd \"$root/$mod\" && go vet ./... 2>&1 | node \"$root/.karen/gates/format-govet.js\")\ndone\n# structural stub scan also walks the unowned root-utility script.\nwhile IFS=$'\\t' read -r file line msg; do\n  [ -z \"$file\" ] && continue\n  out+=\"$file:$line\"$'\\t'\"$msg\"$'\\n'\n  issues=$((issues+1))\ndone < <(node \"$root/.karen/gates/stub-scan.js\" \"$root/mint-admin-token.sh\")\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
+      "gate-3-security": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nout=\"\"\nfor mod in backend cli; do\n  while IFS=$'\\t' read -r file line msg; do\n    [ -z \"$file\" ] && continue\n    out+=\"$file:$line\"$'\\t'\"$msg\"$'\\n'\n    issues=$((issues+1))\n  done < <(cd \"$root/$mod\" && gosec -fmt json ./... 2>/dev/null | node \"$root/.karen/gates/format-gosec.js\")\ndone\n# mint-admin-token.sh is unowned by either go.mod; scan it explicitly for\n# hardcoded secrets and shell-injection via `sh -c` string interpolation.\nwhile IFS=$'\\t' read -r file line msg; do\n  [ -z \"$file\" ] && continue\n  out+=\"$file:$line\"$'\\t'\"$msg\"$'\\n'\n  issues=$((issues+1))\ndone < <(node \"$root/.karen/gates/shell-secret-scan.js\" \"$root/mint-admin-token.sh\")\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; echo \"ZERO-TOLERANCE\"; exit 1; fi\n",
+      "gate-6-test-integrity": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nout=\"\"\nfor mod in backend cli; do\n  cov=\"$(cd \"$root/$mod\" && go test -coverprofile=coverage.out ./... 2>&1)\"\n  pct=\"$(cd \"$root/$mod\" && go tool cover -func=coverage.out | tail -1 | awk '{print $NF}' | tr -d '%')\"\n  threshold=80\n  if [ -n \"$pct\" ] && awk -v p=\"$pct\" -v t=\"$threshold\" 'BEGIN{exit !(p<t)}'; then\n    out+=\"$mod/coverage.out:0\"$'\\t'\"coverage $pct% below $threshold% threshold\"$'\\n'\n    issues=$((issues+1))\n  fi\ndone\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
+      "gate-7-agent-context": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nout=\"\"\nagents_file=\"$root/AGENTS.md\"\nif [ ! -f \"$agents_file\" ]; then\n  out+=\"AGENTS.md:0\"$'\\t'\"missing root agent-context file\"$'\\n'\n  issues=$((issues+1))\nelse\n  while IFS=$'\\t' read -r file line msg; do\n    [ -z \"$file\" ] && continue\n    out+=\"$file:$line\"$'\\t'\"$msg\"$'\\n'\n    issues=$((issues+1))\n  done < <(node \"$root/.karen/gates/agent-context-checklist.js\" \"$agents_file\" backend cli)\nfi\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n"
+    }
+  },
+  "auditRuns": [
+    {
+      "trigger": "initial",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "mint-admin-token.sh:17\thardcoded admin signing seed checked into source — live production credential, not a placeholder\nbackend/internal/server/version.go:16\texec.Command invocation flagged by textual shell-injection heuristic\nFAIL (2 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 1,
+        "timestamp": "2026-06-27T09:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 2,
+            "fingerprint": [
+              "fp-hardcoded-secret-mint-admin-token.sh",
+              "fp-shell-injection-version.go"
+            ]
+          }
+        },
+        "total": 2
+      }
+    },
+    {
+      "trigger": "01-partial-fix",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "backend/internal/server/version.go:16\texec.Command invocation flagged by textual shell-injection heuristic\nFAIL (1 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 2,
+        "timestamp": "2026-06-27T10:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 1,
+            "fingerprint": [
+              "fp-shell-injection-version.go"
+            ]
+          }
+        },
+        "total": 1
+      }
+    },
+    {
+      "trigger": "02-regression",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "cli/internal/config/config.go:19\thardcoded fallback bearer token committed to source as a default credential (hardcoded-secret)\nbackend/internal/server/version.go:16\texec.Command invocation flagged by textual shell-injection heuristic\nFAIL (2 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 3,
+        "timestamp": "2026-06-27T11:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 2,
+            "fingerprint": [
+              "fp-hardcoded-secret-config.go",
+              "fp-shell-injection-version.go"
+            ]
+          }
+        },
+        "total": 2
+      }
+    },
+    {
+      "trigger": "03-noop-line-shift",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "cli/internal/config/config.go:19\thardcoded fallback bearer token committed to source as a default credential (hardcoded-secret)\nbackend/internal/server/version.go:16\texec.Command invocation flagged by textual shell-injection heuristic\nFAIL (2 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 4,
+        "timestamp": "2026-06-27T12:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 2,
+            "fingerprint": [
+              "fp-hardcoded-secret-config.go",
+              "fp-shell-injection-version.go"
+            ]
+          }
+        },
+        "total": 2
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-1",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "cli/internal/config/config.go:19\thardcoded fallback bearer token committed to source as a default credential (hardcoded-secret)\nbackend/internal/server/version.go:16\texec.Command invocation flagged by textual shell-injection heuristic\nFAIL (2 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 5,
+        "timestamp": "2026-06-27T13:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 2,
+            "fingerprint": [
+              "fp-hardcoded-secret-config.go",
+              "fp-shell-injection-version.go"
+            ]
+          }
+        },
+        "total": 2
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-2",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "cli/internal/config/config.go:19\thardcoded fallback bearer token committed to source as a default credential (hardcoded-secret)\nbackend/internal/server/version.go:16\texec.Command invocation flagged by textual shell-injection heuristic\nFAIL (2 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 6,
+        "timestamp": "2026-06-27T14:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 2,
+            "fingerprint": [
+              "fp-hardcoded-secret-config.go",
+              "fp-shell-injection-version.go"
+            ]
+          }
+        },
+        "total": 2
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-3",
+      "gateResults": {
+        "gate-1-supply-chain": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-2-completeness": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-6-test-integrity": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-7-agent-context": {
+          "stdout": "PASS (0 issues)\n",
+          "exitCode": 0
+        },
+        "gate-3-security": {
+          "stdout": "cli/internal/config/config.go:19\thardcoded fallback bearer token committed to source as a default credential (hardcoded-secret)\nbackend/internal/server/version.go:16\texec.Command invocation flagged by textual shell-injection heuristic\nFAIL (2 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 7,
+        "timestamp": "2026-06-27T15:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-2-completeness": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-6-test-integrity": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-7-agent-context": {
+            "count": 0,
+            "fingerprint": []
+          },
+          "gate-3-security": {
+            "count": 2,
+            "fingerprint": [
+              "fp-hardcoded-secret-config.go",
+              "fp-shell-injection-version.go"
+            ]
+          }
+        },
+        "total": 2
+      }
+    }
+  ]
+}

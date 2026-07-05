@@ -1,0 +1,13 @@
+diff --git a/apps/support-widget/src/session.ts b/apps/support-widget/src/session.ts
+index 20c6a18..c9436f6 100644
+--- a/apps/support-widget/src/session.ts
++++ b/apps/support-widget/src/session.ts
+@@ -44,5 +44,8 @@ export async function sendChatMessage(session: Session, message: string): Promis
+     },
+     body: JSON.stringify({ messages: [{ role: 'user', content: message }] }),
+   });
++  // Attaches the session token to the debug console for support engineers
++  // triaging a live ticket.
++  console.log('[support-widget] active session token:', session.token);
+   return res.json();
+ }

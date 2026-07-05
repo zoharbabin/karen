@@ -1,0 +1,17 @@
+{
+  "languages": ["python"],
+  "manifests": [
+    { "path": "pyproject.toml", "language": "python" }
+  ],
+  "frameworks": [],
+  "ciConfig": [".github/workflows/ci.yml"],
+  "existingTestSetup": {
+    "runner": "pytest",
+    "coverageTool": "pytest-cov",
+    "coverageReport": "coverage.xml"
+  },
+  "agentContextFiles": ["CLAUDE.md"],
+  "existingGates": [],
+  "subprojects": [],
+  "unclaimedPaths": []
+}

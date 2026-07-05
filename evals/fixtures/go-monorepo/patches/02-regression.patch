@@ -1,0 +1,34 @@
+diff --git a/cli/internal/config/config.go b/cli/internal/config/config.go
+index a61469b..c51a0b4 100644
+--- a/cli/internal/config/config.go
++++ b/cli/internal/config/config.go
+@@ -8,9 +8,20 @@ import (
+ 	"gopkg.in/yaml.v3"
+ )
+ 
++// defaultAPIToken is a fallback bearer token used when a karenctl config
++// file omits apiToken, so operators can run the CLI against the shared
++// staging environment without provisioning their own credential first.
++//
++// REGRESSION (hardcoded-secret): this checks a real, reusable staging
++// bearer token directly into source as a "convenience" default — anyone
++// with the source tree can authenticate against staging as this identity,
++// with no expiry and no per-operator audit trail.
++const defaultAPIToken = "karenctl_staging_8f2c9a1e4b7d6053"
++
+ // Config is karenctl's on-disk configuration shape.
+ type Config struct {
+ 	APIBaseURL string `yaml:"apiBaseUrl"`
++	APIToken   string `yaml:"apiToken"`
+ }
+ 
+ // Load reads and parses the YAML config file at path.
+@@ -24,5 +35,8 @@ func Load(path string) (*Config, error) {
+ 	if err := yaml.Unmarshal(data, &cfg); err != nil {
+ 		return nil, fmt.Errorf("config: parsing %s: %w", path, err)
+ 	}
++	if cfg.APIToken == "" {
++		cfg.APIToken = defaultAPIToken
++	}
+ 	return &cfg, nil
+ }

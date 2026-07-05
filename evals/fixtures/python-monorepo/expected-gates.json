@@ -1,0 +1,44 @@
+[
+  {
+    "id": "gate-1-supply-chain",
+    "tool": "pip-audit (once per pyproject.toml: backend/, client-lib/)",
+    "coversCategories": [],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-2-completeness",
+    "tool": "ruff + structural stub scan (backend/, client-lib/)",
+    "coversCategories": [],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-3-security",
+    "tool": "bandit + working-tree secret scan (backend/, client-lib/)",
+    "coversCategories": ["shell-injection", "unsafe-deserialization", "unsafe-yaml-load", "hardcoded-secret", "dynamic-code-execution"],
+    "zeroTolerance": true
+  },
+  {
+    "id": "gate-4-docs-parity",
+    "tool": "markdown doctest + symbol diff (backend/, client-lib/)",
+    "coversCategories": [],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-5-compliance",
+    "tool": "SOC2 artifact presence + content check (backend/ only — SBOM in CI, audit-log evidence trail in docs/compliance/SOC2-CONTROLS.md)",
+    "coversCategories": [],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-6-test-integrity",
+    "tool": "pytest --cov (per subproject: backend/, client-lib/)",
+    "coversCategories": [],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-7-agent-context",
+    "tool": "agent-context checklist (root AGENTS.md)",
+    "coversCategories": [],
+    "zeroTolerance": false
+  }
+]

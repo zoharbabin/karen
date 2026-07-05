@@ -1,0 +1,5 @@
+{
+  "unchangedIssueId": "src/incident_mcp_server/tools/apply_config_patch.py:31:yaml-unsafe-load",
+  "note": "Zero-hunk empty diff, applied 3 consecutive times with no code change — tests circuit breaker trip at threshold 3 on gate-3-security. Issue is at line 31 post-03-noop-line-shift (was line 28 before that patch).",
+  "expectedDelta": {}
+}

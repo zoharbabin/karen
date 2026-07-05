@@ -1,0 +1,17 @@
+{
+  "languages": ["typescript"],
+  "manifests": [
+    { "path": "package.json", "language": "typescript" }
+  ],
+  "frameworks": ["express"],
+  "ciConfig": [".github/workflows/ci.yml"],
+  "existingTestSetup": {
+    "runner": "vitest",
+    "coverageTool": "v8",
+    "coverageReport": "coverage/lcov.info"
+  },
+  "agentContextFiles": ["CLAUDE.md"],
+  "existingGates": [],
+  "subprojects": [],
+  "unclaimedPaths": []
+}

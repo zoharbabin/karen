@@ -1,0 +1,24 @@
+diff --git a/src/render.ts b/src/render.ts
+index f6b678f..67d9595 100644
+--- a/src/render.ts
++++ b/src/render.ts
+@@ -35,12 +35,14 @@ export function renderFixtureTemplate(): string {
+ 
+ /**
+  * Applies a project's custom naming convention to a rendered file name.
+- * Not yet implemented — depends on a naming-convention config format the
+- * registry API doesn't expose yet.
+  */
+-export function applyNamingConvention(_fileName: string, _conventionId: string): string {
+-  // Real issue (stub-implementation): public export with no implementation.
+-  throw new Error("not implemented");
++export function applyNamingConvention(fileName: string, conventionId: string): string {
++  // Fixed: implements kebab-case conversion instead of throwing; falls back
++  // to the original name for any other convention id.
++  if (conventionId === "kebab-case") {
++    return fileName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
++  }
++  return fileName;
+ }
+ 
+ /**

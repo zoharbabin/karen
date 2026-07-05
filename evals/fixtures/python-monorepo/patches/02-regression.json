@@ -1,0 +1,4 @@
+{
+  "newIssue": { "file": "client-lib/src/signal_relay_client/__init__.py", "line": 11, "category": "hardcoded-secret" },
+  "expectedDelta": { "gate-3-security": 1 }
+}

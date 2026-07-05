@@ -1,0 +1,56 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "type": "service",
+    "language": ["go"],
+    "deployment": ["node-server"],
+    "audience": "internal",
+    "aiPowered": false,
+    "subprojects": [
+      {
+        "path": "backend",
+        "type": "service",
+        "deployment": ["node-server"],
+        "reason": "HTTP API service with its own go.mod, own lifecycle (built/deployed independently of cli), root profile applies as-is"
+      },
+      {
+        "path": "cli",
+        "type": "cli-tool",
+        "deployment": ["node-server"],
+        "reason": "Operator command-line tool with its own go.mod — invoked locally by operators against the backend's REST API, not a long-running service itself"
+      },
+      {
+        "path": "mint-admin-token.sh",
+        "type": "root-utility",
+        "reason": "Unclaimed by either module's go.mod but mints admin bearer tokens for karenctl operators against the backend's auth endpoint — scoped as its own pseudo-subproject so gates 2/3/7 still walk it instead of silently skipping unowned root-level code"
+      }
+    ]
+  },
+  "compliance": [],
+  "coverage": { "threshold": 80 },
+  "testRunner": {
+    "command": "go test -coverprofile=coverage.out ./...",
+    "coverageReport": "coverage.out",
+    "format": "go-cover",
+    "packages": [
+      { "path": "backend", "command": "go test -coverprofile=coverage.out ./...", "coverageReport": "backend/coverage.out", "role": "primary" },
+      { "path": "cli", "command": "go test -coverprofile=coverage.out ./...", "coverageReport": "cli/coverage.out", "role": "primary" }
+    ]
+  },
+  "permissions": {},
+  "circuitBreaker": {
+    "threshold": 3,
+    "exitCode": 2
+  },
+  "expiryWarningDays": 7,
+  "existingGates": [],
+  "crossSubprojectConsistency": [],
+  "knownGaps": [],
+  "exceedsBaseline": [
+    {
+      "gate": "gate-1-supply-chain",
+      "note": "backend module has zero runtime dependencies — the HTTP service is built entirely on the Go standard library"
+    }
+  ],
+  "exceptions": {}
+}

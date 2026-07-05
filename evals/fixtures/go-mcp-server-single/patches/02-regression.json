@@ -1,0 +1,4 @@
+{
+  "newIssue": { "file": "internal/tools/config.go", "line": 18, "category": "shell-injection" },
+  "expectedDelta": { "gate-3-security": 1 }
+}

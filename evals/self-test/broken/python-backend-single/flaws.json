@@ -1,0 +1,14 @@
+{
+  "flaws": [
+    {
+      "dimension": "gateIssues",
+      "description": "src/beacon_ingest/config.py:16 unsafe-yaml-load (real, non-decoy) is never emitted by gate-3-security's stdout in any auditRuns entry — a false negative.",
+      "expectedGraderFinding": "false negative on unsafe-yaml-load"
+    },
+    {
+      "dimension": "gateIssues",
+      "description": "src/beacon_ingest/server.py:43 shell-injection (decoy: fixed argv, shell=False) IS emitted by gate-3-security's stdout in every auditRuns entry — a false positive.",
+      "expectedGraderFinding": "false positive on shell-injection (decoy)"
+    }
+  ]
+}

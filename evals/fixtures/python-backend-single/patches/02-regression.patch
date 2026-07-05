@@ -1,0 +1,25 @@
+diff --git a/src/beacon_ingest/server.py b/src/beacon_ingest/server.py
+index c926d1a..fdfd347 100644
+--- a/src/beacon_ingest/server.py
++++ b/src/beacon_ingest/server.py
+@@ -44,6 +44,20 @@ async def restart_status():
+     return {"active": result.stdout.decode("utf-8").strip() == "active"}
+ 
+ 
++@app.post("/admin/purge-cache")
++async def purge_cache(payload: dict):
++    """Purge cached job entries matching a caller-supplied key pattern.
++
++    New issue (shell-injection): `key_pattern` comes straight from the
++    request body and is spliced directly into a shell command string with
++    no validation or quoting -- the same vulnerability class as the
++    (now-fixed) /admin/diagnostics probe, reintroduced in a new handler.
++    """
++    key_pattern = payload.get("key_pattern", "*")
++    result = subprocess.run(f"redis-cli --scan --pattern {key_pattern} | xargs redis-cli del", shell=True, capture_output=True)
++    return {"stdout": result.stdout.decode("utf-8", errors="replace")}
++
++
+ @app.get("/jobs/{job_id}")
+ async def get_job(job_id: str):
+     """Return cached job state, deserialized by beacon_ingest.cache."""

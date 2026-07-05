@@ -1,0 +1,4 @@
+{
+  "newIssue": { "file": "apps/support-widget/src/session.ts", "line": 49, "category": "console-debug-guard" },
+  "expectedDelta": { "gate-3-security": 1 }
+}

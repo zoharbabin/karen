@@ -1,0 +1,14 @@
+diff --git a/sdk/src/sdk.ts b/sdk/src/sdk.ts
+index 9d3bcee..6d97e66 100644
+--- a/sdk/src/sdk.ts
++++ b/sdk/src/sdk.ts
+@@ -63,8 +63,7 @@ export class SignalAvatarSDK {
+    */
+   destroy(): void {
+     window.removeEventListener('resize', this.onResize);
+-    // BUG: the visibilitychange listener registered in the constructor is
+-    // never removed here — it leaks for the lifetime of the page.
++    document.removeEventListener('visibilitychange', this.onVisibilityChange);
+     this.container.replaceChildren();
+   }
+ }

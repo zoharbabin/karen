@@ -1,0 +1,6 @@
+{
+  "unchangedIssueId": "backend/src/server.ts:14:hardcoded-secret",
+  "previousLine": 14,
+  "newLine": 15,
+  "expectedDelta": {}
+}

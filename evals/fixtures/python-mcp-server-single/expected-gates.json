@@ -1,0 +1,38 @@
+[
+  {
+    "id": "gate-1-supply-chain",
+    "tool": "pip-audit",
+    "coversCategories": [],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-2-completeness",
+    "tool": "ruff + structural stub scan",
+    "coversCategories": ["stub-implementation"],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-3-security",
+    "tool": "bandit",
+    "coversCategories": ["hardcoded-secret", "shell-injection", "yaml-unsafe-load"],
+    "zeroTolerance": true
+  },
+  {
+    "id": "gate-4-docs-parity",
+    "tool": "markdown doctest + symbol diff",
+    "coversCategories": [],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-6-test-integrity",
+    "tool": "pytest --cov",
+    "coversCategories": [],
+    "zeroTolerance": false
+  },
+  {
+    "id": "gate-7-agent-context",
+    "tool": "agent-context checklist",
+    "coversCategories": [],
+    "zeroTolerance": false
+  }
+]

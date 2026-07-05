@@ -1,0 +1,4 @@
+{
+  "newIssue": { "file": "src/datastores/preferenceCache.ts", "line": 1, "category": "unregistered-personal-data-store" },
+  "expectedDelta": { "gate-5-compliance": 1 }
+}

@@ -1,0 +1,302 @@
+{
+  "fixture": "node-client-app-single",
+  "init": {
+    "detectProjectOutput": {
+      "languages": [
+        "typescript"
+      ],
+      "manifests": [
+        {
+          "path": "package.json",
+          "language": "typescript"
+        }
+      ],
+      "frameworks": [
+        "node"
+      ],
+      "ciConfig": [
+        ".github/workflows/ci.yml"
+      ],
+      "existingTestSetup": {
+        "runner": "vitest",
+        "coverageTool": "v8",
+        "coverageReport": "coverage/lcov.info"
+      },
+      "agentContextFiles": [
+        "CLAUDE.md"
+      ],
+      "existingGates": [],
+      "subprojects": [],
+      "unclaimedPaths": []
+    },
+    "transcript": [
+      {
+        "role": "karen",
+        "text": "What does this project do and who uses it?"
+      },
+      {
+        "role": "user",
+        "text": "Embeddable chat widget SDK. Customers drop it into their own page via <script src> from our CDN or npm install — it's a browser-direct-js SDK, not a hosted app we control."
+      },
+      {
+        "role": "karen",
+        "text": "What's the deployment situation — does this run in the customer's page directly, or behind an iframe boundary? I see <script src> usage in the README and a destroy() teardown method in ChatWidget, but detect_project has no field for confirming unsandboxed embedding."
+      },
+      {
+        "role": "user",
+        "text": "Directly in the customer's page, no iframe. browser-direct-js — there's no sandbox, so instance isolation and destroy() cleanup are load-bearing."
+      },
+      {
+        "role": "karen",
+        "text": "Who's the audience, and is there a compliance regime we should hold this to?"
+      },
+      {
+        "role": "user",
+        "text": "Enterprise customers embed this on production marketing and support pages. No SOC2/HIPAA/PCI requirement today — it's a stateless widget, no payment or health data ever touches it."
+      },
+      {
+        "role": "karen",
+        "text": "Is this project AI-powered, or built with / used by LLM coding agents?"
+      },
+      {
+        "role": "user",
+        "text": "Built with Claude Code day to day, but the widget itself is a plain chat UI — no LLM call happens inside this package at runtime."
+      },
+      {
+        "role": "karen",
+        "text": "requestMicrophone() calls getUserMedia — what's that microphone capability for, and is it required or optional? I need this to populate the permissions entry in .karen.json."
+      },
+      {
+        "role": "user",
+        "text": "Optional voice-input mode, off by default, enabled via enableMicrophone: true. The customer has to explicitly opt in and grant Permissions-Policy: microphone=(self) on their page — the widget never requests it unprompted."
+      },
+      {
+        "role": "karen",
+        "text": "What baseline percentage should this be held to?"
+      },
+      {
+        "role": "user",
+        "text": "80%, same as our other packages."
+      }
+    ],
+    "karenJson": {
+      "version": "1.0.0",
+      "project": {
+        "type": "library",
+        "language": [
+          "typescript"
+        ],
+        "deployment": [
+          "browser-direct-js"
+        ],
+        "audience": "enterprise",
+        "aiPowered": false,
+        "subprojects": []
+      },
+      "compliance": [],
+      "coverage": {
+        "threshold": 80
+      },
+      "testRunner": {
+        "command": "npm test",
+        "coverageReport": "coverage/lcov.info",
+        "format": "lcov"
+      },
+      "doctest": {
+        "files": [
+          "README.md"
+        ],
+        "languages": [
+          "js",
+          "ts"
+        ],
+        "annotation": "karen:runnable"
+      },
+      "permissions": {
+        "microphone": "Optional — voice-input mode, off by default; customer opts in via enableMicrophone and grants Permissions-Policy: microphone=(self)"
+      },
+      "circuitBreaker": {
+        "threshold": 3,
+        "exitCode": 2
+      },
+      "expiryWarningDays": 7,
+      "existingGates": [],
+      "crossSubprojectConsistency": [],
+      "knownGaps": [],
+      "exceedsBaseline": [],
+      "exceptions": {}
+    },
+    "gateScripts": {
+      "gate-3-security": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\n\ncheck() {\n  local file=\"$1\" line=\"$2\" msg=\"$3\"\n  printf '%s:%s\\t%s\\n' \"$file\" \"$line\" \"$msg\"\n  issues=$((issues + 1))\n}\n\n# unremoved-listener: visibilitychange registered but never removed in destroy()\nif grep -q \"addEventListener('visibilitychange'\" \"$root/src/widget.ts\" && \\\n   ! grep -q \"removeEventListener('visibilitychange'\" \"$root/src/widget.ts\"; then\n  line=$(grep -n \"addEventListener('visibilitychange'\" \"$root/src/widget.ts\" | cut -d: -f1)\n  check src/widget.ts \"$line\" \"unremoved event listener — 'visibilitychange' listener registered in the constructor is never removed in destroy(), leaking for the lifetime of the page\"\nfi\n\n# uncleared-timer: setInterval with no matching clearInterval\nif grep -q 'setInterval(' \"$root/src/widget.ts\" && ! grep -q 'clearInterval(' \"$root/src/widget.ts\"; then\n  line=$(grep -n 'setInterval(' \"$root/src/widget.ts\" | cut -d: -f1)\n  check src/widget.ts \"$line\" \"setInterval registered in the constructor is never cleared — no clearInterval reference kept, leaks for the lifetime of the page\"\nfi\n\n# credentials-include: fetch widening cookie/auth exposure off-origin\nif grep -q \"credentials: 'include'\" \"$root/src/analytics.ts\"; then\n  line=$(grep -n \"credentials: 'include'\" \"$root/src/analytics.ts\" | cut -d: -f1)\n  check src/analytics.ts \"$line\" \"fetch call uses credentials: 'include' — widens customer cookie/auth exposure to a third-party telemetry endpoint, a browser-direct-js zero-tolerance violation\"\nfi\n\n# missing-sri: CDN <script src> tag with no integrity attribute\nif grep -q '<script src=\"https://cdn' \"$root/README.md\" && ! grep -q 'integrity=' \"$root/README.md\"; then\n  line=$(grep -n '<script src=\"https://cdn' \"$root/README.md\" | cut -d: -f1)\n  check README.md \"$line\" \"CDN <script src> tag has no integrity/crossorigin attribute — missing Subresource Integrity (SRI) hash\"\nfi\n\nif [ \"$issues\" -eq 0 ]; then\n  echo 'PASS (0 issues)'\n  exit 0\nelse\n  echo \"FAIL ($issues issues)\"\n  echo 'ZERO-TOLERANCE'\n  exit 1\nfi\n"
+    }
+  },
+  "auditRuns": [
+    {
+      "trigger": "initial",
+      "gateResults": {
+        "gate-3-security": {
+          "stdout": "src/widget.ts:50\tunremoved event listener — 'visibilitychange' listener registered in the constructor is never removed in destroy(), leaking for the lifetime of the page\nsrc/analytics.ts:26\tfetch call uses credentials: 'include' — widens customer cookie/auth exposure to a third-party telemetry endpoint, a browser-direct-js zero-tolerance violation\nsrc/analytics.ts:6\tdynamic eval() call found in a comment block — flagged defensively even though it documents a removed pattern\nFAIL (3 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 1,
+        "timestamp": "2026-06-27T23:00:00Z",
+        "gates": {
+          "gate-3-security": {
+            "count": 3,
+            "fingerprint": [
+              "fp-unremoved-listener-widget",
+              "fp-credentials-include-analytics",
+              "fp-eval-in-comment-analytics"
+            ]
+          }
+        },
+        "total": 3
+      }
+    },
+    {
+      "trigger": "01-partial-fix",
+      "gateResults": {
+        "gate-3-security": {
+          "stdout": "src/analytics.ts:26\tfetch call uses credentials: 'include' — widens customer cookie/auth exposure to a third-party telemetry endpoint, a browser-direct-js zero-tolerance violation\nsrc/analytics.ts:6\tdynamic eval() call found in a comment block — flagged defensively even though it documents a removed pattern\nFAIL (2 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 2,
+        "timestamp": "2026-06-27T23:10:00Z",
+        "gates": {
+          "gate-3-security": {
+            "count": 2,
+            "fingerprint": [
+              "fp-credentials-include-analytics",
+              "fp-eval-in-comment-analytics"
+            ]
+          }
+        },
+        "total": 2
+      }
+    },
+    {
+      "trigger": "02-regression",
+      "gateResults": {
+        "gate-3-security": {
+          "stdout": "src/analytics.ts:26\tfetch call uses credentials: 'include' — widens customer cookie/auth exposure to a third-party telemetry endpoint, a browser-direct-js zero-tolerance violation\nsrc/widget.ts:58\tsetInterval registered in the constructor is never cleared — no clearInterval reference kept, leaks for the lifetime of the page\nsrc/analytics.ts:6\tdynamic eval() call found in a comment block — flagged defensively even though it documents a removed pattern\nFAIL (3 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 3,
+        "timestamp": "2026-06-27T23:20:00Z",
+        "gates": {
+          "gate-3-security": {
+            "count": 3,
+            "fingerprint": [
+              "fp-credentials-include-analytics",
+              "fp-uncleared-timer-widget",
+              "fp-eval-in-comment-analytics"
+            ]
+          }
+        },
+        "total": 3
+      }
+    },
+    {
+      "trigger": "03-noop-line-shift",
+      "gateResults": {
+        "gate-3-security": {
+          "stdout": "src/analytics.ts:27\tfetch call uses credentials: 'include' — widens customer cookie/auth exposure to a third-party telemetry endpoint, a browser-direct-js zero-tolerance violation\nsrc/widget.ts:58\tsetInterval registered in the constructor is never cleared — no clearInterval reference kept, leaks for the lifetime of the page\nsrc/analytics.ts:6\tdynamic eval() call found in a comment block — flagged defensively even though it documents a removed pattern\nFAIL (3 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 4,
+        "timestamp": "2026-06-27T23:30:00Z",
+        "gates": {
+          "gate-3-security": {
+            "count": 3,
+            "fingerprint": [
+              "fp-credentials-include-analytics",
+              "fp-uncleared-timer-widget",
+              "fp-eval-in-comment-analytics"
+            ]
+          }
+        },
+        "total": 3
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-1",
+      "gateResults": {
+        "gate-3-security": {
+          "stdout": "src/analytics.ts:27\tfetch call uses credentials: 'include' — widens customer cookie/auth exposure to a third-party telemetry endpoint, a browser-direct-js zero-tolerance violation\nsrc/widget.ts:58\tsetInterval registered in the constructor is never cleared — no clearInterval reference kept, leaks for the lifetime of the page\nsrc/analytics.ts:6\tdynamic eval() call found in a comment block — flagged defensively even though it documents a removed pattern\nFAIL (3 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 5,
+        "timestamp": "2026-06-27T23:40:00Z",
+        "gates": {
+          "gate-3-security": {
+            "count": 3,
+            "fingerprint": [
+              "fp-credentials-include-analytics",
+              "fp-uncleared-timer-widget",
+              "fp-eval-in-comment-analytics"
+            ]
+          }
+        },
+        "total": 3
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-2",
+      "gateResults": {
+        "gate-3-security": {
+          "stdout": "src/analytics.ts:27\tfetch call uses credentials: 'include' — widens customer cookie/auth exposure to a third-party telemetry endpoint, a browser-direct-js zero-tolerance violation\nsrc/widget.ts:58\tsetInterval registered in the constructor is never cleared — no clearInterval reference kept, leaks for the lifetime of the page\nsrc/analytics.ts:6\tdynamic eval() call found in a comment block — flagged defensively even though it documents a removed pattern\nFAIL (3 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 6,
+        "timestamp": "2026-06-27T23:50:00Z",
+        "gates": {
+          "gate-3-security": {
+            "count": 3,
+            "fingerprint": [
+              "fp-credentials-include-analytics",
+              "fp-uncleared-timer-widget",
+              "fp-eval-in-comment-analytics"
+            ]
+          }
+        },
+        "total": 3
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-3",
+      "gateResults": {
+        "gate-3-security": {
+          "stdout": "src/analytics.ts:27\tfetch call uses credentials: 'include' — widens customer cookie/auth exposure to a third-party telemetry endpoint, a browser-direct-js zero-tolerance violation\nsrc/widget.ts:58\tsetInterval registered in the constructor is never cleared — no clearInterval reference kept, leaks for the lifetime of the page\nsrc/analytics.ts:6\tdynamic eval() call found in a comment block — flagged defensively even though it documents a removed pattern\nFAIL (3 issues)\nZERO-TOLERANCE\n",
+          "exitCode": 1
+        }
+      },
+      "runState": {
+        "run": 7,
+        "timestamp": "2026-06-28T00:00:00Z",
+        "gates": {
+          "gate-3-security": {
+            "count": 3,
+            "fingerprint": [
+              "fp-credentials-include-analytics",
+              "fp-uncleared-timer-widget",
+              "fp-eval-in-comment-analytics"
+            ]
+          }
+        },
+        "total": 3
+      }
+    }
+  ]
+}

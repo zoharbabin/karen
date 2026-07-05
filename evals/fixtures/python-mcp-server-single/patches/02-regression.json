@@ -1,0 +1,4 @@
+{
+  "newIssue": { "file": "src/incident_mcp_server/server.py", "line": 21, "category": "hardcoded-secret" },
+  "expectedDelta": { "gate-3-security": 1 }
+}

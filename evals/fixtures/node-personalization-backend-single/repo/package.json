@@ -1,0 +1,21 @@
+{
+  "name": "@example/personalization-backend",
+  "version": "2.1.0",
+  "description": "Backend service for a tiered avatar personalization product — core avatar-rendering tier is free with no personal-data handling, an opt-in analytics tier adds usage tracking, and a personalization tier above that stores per-user preference profiles.",
+  "main": "dist/server.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run --coverage",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "express": "^4.19.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^1.5.0",
+    "@vitest/coverage-v8": "^1.5.0",
+    "eslint": "^8.57.0"
+  }
+}

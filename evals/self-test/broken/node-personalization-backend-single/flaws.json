@@ -1,0 +1,14 @@
+{
+  "flaws": [
+    {
+      "dimension": "gateIssues",
+      "description": "src/datastores/eventStore.ts:16 unregistered-personal-data-store (real, non-decoy) is never emitted by gate-5-compliance's stdout in any auditRuns entry — removed from the issue lines and from runState.gates['gate-5-compliance'].fingerprint/count at every run",
+      "expectedGraderFinding": "false negative on unregistered-personal-data-store"
+    },
+    {
+      "dimension": "gateIssues",
+      "description": "src/datastores/sessionCache.ts:7 unregistered-personal-data-store (decoy — a TTL'd session-token cache holding no personal data) IS emitted by gate-5-compliance's stdout in every auditRuns entry — added to the issue lines and to runState.gates['gate-5-compliance'].fingerprint/count at every run",
+      "expectedGraderFinding": "false positive (decoy hit) on unregistered-personal-data-store"
+    }
+  ]
+}
