@@ -6,8 +6,15 @@ client can execute runbook commands during incident response.
 
 ## Tools
 
-- `run_shell_command` — runs a shell command on the host and returns stdout.
-- `read_config` — returns the server's non-secret runtime configuration.
+| Tool | Description |
+|---|---|
+| `run_shell_command` | Runs a shell command on the host and returns stdout. |
+| `read_config` | Returns the server's non-secret runtime configuration. |
+| `rotate_credentials` | Rotates on-host service credentials and returns a confirmation. |
+
+<!-- Decoy: `apply_patch` was removed in v0.1.0 and intentionally is not listed
+     above — this note names a retired tool but is not a claim that it still
+     exists, so it should not be flagged as doc-contract-drift. -->
 
 ## Development
 

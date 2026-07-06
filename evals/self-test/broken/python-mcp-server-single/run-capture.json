@@ -157,7 +157,7 @@
           "exitCode": 1
         },
         "gate-3-security": {
-          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/tools/apply_config_patch.py:28\tyaml.load with default Loader on untrusted tool-call input \u2014 arbitrary object construction / code execution\nsrc/incident_mcp_server/config.py:17\thardcoded fallback token found in default config constant \u2014 potential credential leak\nFAIL (3 issues)\nZERO-TOLERANCE\n",
+          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/tools/apply_config_patch.py:28\tyaml.load with default Loader on untrusted tool-call input \u2014 arbitrary object construction / code execution\nsrc/incident_mcp_server/config.py:17\thardcoded fallback token found in default config constant \u2014 potential credential leak\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:50\tunlabeled tool output — externally-sourced diagnostic content returned without a delimiter marking it as untrusted data\nFAIL (4 issues)\nZERO-TOLERANCE\n",
           "exitCode": 1
         },
         "gate-4-docs-parity": {
@@ -188,11 +188,12 @@
             ]
           },
           "gate-3-security": {
-            "count": 3,
+            "count": 4,
             "fingerprint": [
               "fp-hardcoded-secret-config-py",
               "fp-yaml-unsafe-load-applyconfigpatch-py",
-              "fp-hardcoded-secret-decoy-config-py"
+              "fp-hardcoded-secret-decoy-config-py",
+              "fp-unlabeled-tool-output-decoy-rundiagnosticcommand-py"
             ]
           },
           "gate-4-docs-parity": {
@@ -208,7 +209,7 @@
             "fingerprint": []
           }
         },
-        "total": 4,
+        "total": 5,
         "exitCode": 1
       }
     },
@@ -224,7 +225,7 @@
           "exitCode": 0
         },
         "gate-3-security": {
-          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/tools/apply_config_patch.py:28\tyaml.load with default Loader on untrusted tool-call input \u2014 arbitrary object construction / code execution\nsrc/incident_mcp_server/config.py:17\thardcoded fallback token found in default config constant \u2014 potential credential leak\nFAIL (3 issues)\nZERO-TOLERANCE\n",
+          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/tools/apply_config_patch.py:28\tyaml.load with default Loader on untrusted tool-call input \u2014 arbitrary object construction / code execution\nsrc/incident_mcp_server/config.py:17\thardcoded fallback token found in default config constant \u2014 potential credential leak\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:50\tunlabeled tool output — externally-sourced diagnostic content returned without a delimiter marking it as untrusted data\nFAIL (4 issues)\nZERO-TOLERANCE\n",
           "exitCode": 1
         },
         "gate-4-docs-parity": {
@@ -253,11 +254,12 @@
             "fingerprint": []
           },
           "gate-3-security": {
-            "count": 3,
+            "count": 4,
             "fingerprint": [
               "fp-hardcoded-secret-config-py",
               "fp-yaml-unsafe-load-applyconfigpatch-py",
-              "fp-hardcoded-secret-decoy-config-py"
+              "fp-hardcoded-secret-decoy-config-py",
+              "fp-unlabeled-tool-output-decoy-rundiagnosticcommand-py"
             ]
           },
           "gate-4-docs-parity": {
@@ -273,7 +275,7 @@
             "fingerprint": []
           }
         },
-        "total": 3,
+        "total": 4,
         "exitCode": 1
       }
     },
@@ -289,7 +291,7 @@
           "exitCode": 0
         },
         "gate-3-security": {
-          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/tools/apply_config_patch.py:28\tyaml.load with default Loader on untrusted tool-call input \u2014 arbitrary object construction / code execution\nsrc/incident_mcp_server/server.py:21\thardcoded crash-reporter token committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/config.py:17\thardcoded fallback token found in default config constant \u2014 potential credential leak\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/tools/apply_config_patch.py:28\tyaml.load with default Loader on untrusted tool-call input \u2014 arbitrary object construction / code execution\nsrc/incident_mcp_server/server.py:21\thardcoded crash-reporter token committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/config.py:17\thardcoded fallback token found in default config constant \u2014 potential credential leak\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:50\tunlabeled tool output — externally-sourced diagnostic content returned without a delimiter marking it as untrusted data\nFAIL (5 issues)\nZERO-TOLERANCE\n",
           "exitCode": 1
         },
         "gate-4-docs-parity": {
@@ -318,12 +320,13 @@
             "fingerprint": []
           },
           "gate-3-security": {
-            "count": 4,
+            "count": 5,
             "fingerprint": [
               "fp-hardcoded-secret-config-py",
               "fp-yaml-unsafe-load-applyconfigpatch-py",
               "fp-hardcoded-secret-server-py",
-              "fp-hardcoded-secret-decoy-config-py"
+              "fp-hardcoded-secret-decoy-config-py",
+              "fp-unlabeled-tool-output-decoy-rundiagnosticcommand-py"
             ]
           },
           "gate-4-docs-parity": {
@@ -339,7 +342,7 @@
             "fingerprint": []
           }
         },
-        "total": 4,
+        "total": 5,
         "exitCode": 1
       }
     },
@@ -355,7 +358,7 @@
           "exitCode": 0
         },
         "gate-3-security": {
-          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/tools/apply_config_patch.py:31\tyaml.load with default Loader on untrusted tool-call input \u2014 arbitrary object construction / code execution\nsrc/incident_mcp_server/server.py:21\thardcoded crash-reporter token committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/config.py:17\thardcoded fallback token found in default config constant \u2014 potential credential leak\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/tools/apply_config_patch.py:31\tyaml.load with default Loader on untrusted tool-call input \u2014 arbitrary object construction / code execution\nsrc/incident_mcp_server/server.py:21\thardcoded crash-reporter token committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/config.py:17\thardcoded fallback token found in default config constant \u2014 potential credential leak\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:50\tunlabeled tool output — externally-sourced diagnostic content returned without a delimiter marking it as untrusted data\nFAIL (5 issues)\nZERO-TOLERANCE\n",
           "exitCode": 1
         },
         "gate-4-docs-parity": {
@@ -384,12 +387,13 @@
             "fingerprint": []
           },
           "gate-3-security": {
-            "count": 4,
+            "count": 5,
             "fingerprint": [
               "fp-hardcoded-secret-config-py",
               "fp-yaml-unsafe-load-applyconfigpatch-py",
               "fp-hardcoded-secret-server-py",
-              "fp-hardcoded-secret-decoy-config-py"
+              "fp-hardcoded-secret-decoy-config-py",
+              "fp-unlabeled-tool-output-decoy-rundiagnosticcommand-py"
             ]
           },
           "gate-4-docs-parity": {
@@ -405,7 +409,7 @@
             "fingerprint": []
           }
         },
-        "total": 4,
+        "total": 5,
         "exitCode": 1
       }
     },
@@ -421,7 +425,7 @@
           "exitCode": 0
         },
         "gate-3-security": {
-          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/tools/apply_config_patch.py:31\tyaml.load with default Loader on untrusted tool-call input \u2014 arbitrary object construction / code execution\nsrc/incident_mcp_server/server.py:21\thardcoded crash-reporter token committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/config.py:17\thardcoded fallback token found in default config constant \u2014 potential credential leak\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/tools/apply_config_patch.py:31\tyaml.load with default Loader on untrusted tool-call input \u2014 arbitrary object construction / code execution\nsrc/incident_mcp_server/server.py:21\thardcoded crash-reporter token committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/config.py:17\thardcoded fallback token found in default config constant \u2014 potential credential leak\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:50\tunlabeled tool output — externally-sourced diagnostic content returned without a delimiter marking it as untrusted data\nFAIL (5 issues)\nZERO-TOLERANCE\n",
           "exitCode": 1
         },
         "gate-4-docs-parity": {
@@ -450,12 +454,13 @@
             "fingerprint": []
           },
           "gate-3-security": {
-            "count": 4,
+            "count": 5,
             "fingerprint": [
               "fp-hardcoded-secret-config-py",
               "fp-yaml-unsafe-load-applyconfigpatch-py",
               "fp-hardcoded-secret-server-py",
-              "fp-hardcoded-secret-decoy-config-py"
+              "fp-hardcoded-secret-decoy-config-py",
+              "fp-unlabeled-tool-output-decoy-rundiagnosticcommand-py"
             ]
           },
           "gate-4-docs-parity": {
@@ -471,7 +476,7 @@
             "fingerprint": []
           }
         },
-        "total": 4,
+        "total": 5,
         "exitCode": 1
       }
     },
@@ -487,7 +492,7 @@
           "exitCode": 0
         },
         "gate-3-security": {
-          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/tools/apply_config_patch.py:31\tyaml.load with default Loader on untrusted tool-call input \u2014 arbitrary object construction / code execution\nsrc/incident_mcp_server/server.py:21\thardcoded crash-reporter token committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/config.py:17\thardcoded fallback token found in default config constant \u2014 potential credential leak\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/tools/apply_config_patch.py:31\tyaml.load with default Loader on untrusted tool-call input \u2014 arbitrary object construction / code execution\nsrc/incident_mcp_server/server.py:21\thardcoded crash-reporter token committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/config.py:17\thardcoded fallback token found in default config constant \u2014 potential credential leak\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:50\tunlabeled tool output — externally-sourced diagnostic content returned without a delimiter marking it as untrusted data\nFAIL (5 issues)\nZERO-TOLERANCE\n",
           "exitCode": 1
         },
         "gate-4-docs-parity": {
@@ -516,12 +521,13 @@
             "fingerprint": []
           },
           "gate-3-security": {
-            "count": 4,
+            "count": 5,
             "fingerprint": [
               "fp-hardcoded-secret-config-py",
               "fp-yaml-unsafe-load-applyconfigpatch-py",
               "fp-hardcoded-secret-server-py",
-              "fp-hardcoded-secret-decoy-config-py"
+              "fp-hardcoded-secret-decoy-config-py",
+              "fp-unlabeled-tool-output-decoy-rundiagnosticcommand-py"
             ]
           },
           "gate-4-docs-parity": {
@@ -537,7 +543,7 @@
             "fingerprint": []
           }
         },
-        "total": 4,
+        "total": 5,
         "exitCode": 1
       }
     },
@@ -553,7 +559,7 @@
           "exitCode": 0
         },
         "gate-3-security": {
-          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/tools/apply_config_patch.py:31\tyaml.load with default Loader on untrusted tool-call input \u2014 arbitrary object construction / code execution\nsrc/incident_mcp_server/server.py:21\thardcoded crash-reporter token committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/config.py:17\thardcoded fallback token found in default config constant \u2014 potential credential leak\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/tools/apply_config_patch.py:31\tyaml.load with default Loader on untrusted tool-call input \u2014 arbitrary object construction / code execution\nsrc/incident_mcp_server/server.py:21\thardcoded crash-reporter token committed to source \u2014 credential leak via repository\nsrc/incident_mcp_server/config.py:17\thardcoded fallback token found in default config constant \u2014 potential credential leak\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:50\tunlabeled tool output — externally-sourced diagnostic content returned without a delimiter marking it as untrusted data\nFAIL (5 issues)\nZERO-TOLERANCE\n",
           "exitCode": 1
         },
         "gate-4-docs-parity": {
@@ -582,12 +588,13 @@
             "fingerprint": []
           },
           "gate-3-security": {
-            "count": 4,
+            "count": 5,
             "fingerprint": [
               "fp-hardcoded-secret-config-py",
               "fp-yaml-unsafe-load-applyconfigpatch-py",
               "fp-hardcoded-secret-server-py",
-              "fp-hardcoded-secret-decoy-config-py"
+              "fp-hardcoded-secret-decoy-config-py",
+              "fp-unlabeled-tool-output-decoy-rundiagnosticcommand-py"
             ]
           },
           "gate-4-docs-parity": {
@@ -603,7 +610,7 @@
             "fingerprint": []
           }
         },
-        "total": 4,
+        "total": 5,
         "exitCode": 2
       }
     }

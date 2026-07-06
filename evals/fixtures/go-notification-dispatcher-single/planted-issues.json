@@ -46,5 +46,17 @@
     "line": 26,
     "category": "eager-heavy-startup",
     "isDecoy": true
+  },
+  {
+    "file": "README.md",
+    "line": 39,
+    "category": "accuracy-overclaim",
+    "isDecoy": false
+  },
+  {
+    "file": "README.md",
+    "line": 43,
+    "category": "accuracy-overclaim",
+    "isDecoy": true
   }
 ]

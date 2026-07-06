@@ -6,5 +6,7 @@
   { "file": "src/incident_mcp_server/tools/apply_config_patch.py", "line": 28, "category": "yaml-unsafe-load", "isDecoy": false },
   { "file": "src/incident_mcp_server/tools/apply_config_patch.py", "line": 39, "category": "yaml-unsafe-load", "isDecoy": true },
   { "file": "src/incident_mcp_server/tools/notify.py", "line": 17, "category": "stub-implementation", "isDecoy": false },
-  { "file": "src/incident_mcp_server/tools/notify.py", "line": 10, "category": "stub-implementation", "isDecoy": true }
+  { "file": "src/incident_mcp_server/tools/notify.py", "line": 10, "category": "stub-implementation", "isDecoy": true },
+  { "file": "src/incident_mcp_server/tools/run_diagnostic_command.py", "line": 40, "category": "unlabeled-tool-output", "isDecoy": false },
+  { "file": "src/incident_mcp_server/tools/run_diagnostic_command.py", "line": 50, "category": "unlabeled-tool-output", "isDecoy": true }
 ]

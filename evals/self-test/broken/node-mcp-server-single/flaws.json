@@ -9,6 +9,26 @@
       "dimension": "gateIssues",
       "description": "src/utils/config.ts:13 hardcoded-secret (decoy) IS emitted by gate-3-security's stdout across every auditRuns entry — gate-3-security's count/fingerprint were adjusted up to match.",
       "expectedGraderFinding": "false positive / decoyFalsePositives entry on hardcoded-secret (src/utils/config.ts:13) — score-gate-issues.js reports a non-empty decoyFalsePositives list, which is a hard fail"
+    },
+    {
+      "dimension": "gateIssues",
+      "description": "README.md:13 doc-contract-drift (real, non-decoy — the fictional `rotate_credentials` table row) is never emitted by gate-4-docs-parity's stdout across every auditRuns entry where it should appear.",
+      "expectedGraderFinding": "false negative on doc-contract-drift (README.md:13) — score-gate-issues.js overall.recall drops below the 0.9 pass threshold"
+    },
+    {
+      "dimension": "gateIssues",
+      "description": "README.md:15 doc-contract-drift (decoy — the retired-tool HTML comment naming `apply_patch`) IS emitted by gate-4-docs-parity's stdout across every auditRuns entry — gate-4-docs-parity's count/fingerprint were adjusted up to match.",
+      "expectedGraderFinding": "false positive / decoyFalsePositives entry on doc-contract-drift (README.md:15) — score-gate-issues.js reports a non-empty decoyFalsePositives list, which is a hard fail"
+    },
+    {
+      "dimension": "gateIssues",
+      "description": "CLAUDE.md:5 agent-context-audience-overclaim (real, non-decoy — the unbacked Cursor audience claim) is never emitted by gate-7-agent-context's stdout across every auditRuns entry where it should appear.",
+      "expectedGraderFinding": "false negative on agent-context-audience-overclaim (CLAUDE.md:5) — score-gate-issues.js overall.recall drops below the 0.9 pass threshold"
+    },
+    {
+      "dimension": "gateIssues",
+      "description": "CLAUDE.md:3 agent-context-audience-overclaim (decoy — the Claude Code audience claim, correctly satisfied since the file itself is CLAUDE.md) IS emitted by gate-7-agent-context's stdout across every auditRuns entry — gate-7-agent-context's count/fingerprint were adjusted up to match.",
+      "expectedGraderFinding": "false positive / decoyFalsePositives entry on agent-context-audience-overclaim (CLAUDE.md:3) — score-gate-issues.js reports a non-empty decoyFalsePositives list, which is a hard fail"
     }
   ]
 }

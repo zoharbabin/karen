@@ -22,5 +22,17 @@
     "line": 12,
     "category": "compliance-overclaim",
     "isDecoy": true
+  },
+  {
+    "file": "src/consent/registry.ts",
+    "line": 42,
+    "category": "unannotated-intentional-duplication",
+    "isDecoy": false
+  },
+  {
+    "file": "src/consent/registry.ts",
+    "line": 62,
+    "category": "unannotated-intentional-duplication",
+    "isDecoy": true
   }
 ]

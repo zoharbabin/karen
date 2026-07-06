@@ -20,7 +20,7 @@
   {
     "id": "gate-4-docs-parity",
     "tool": "markdown doctest + symbol diff",
-    "coversCategories": [],
+    "coversCategories": ["doc-contract-drift"],
     "zeroTolerance": false
   },
   {
@@ -32,7 +32,7 @@
   {
     "id": "gate-7-agent-context",
     "tool": "agent-context checklist",
-    "coversCategories": [],
+    "coversCategories": ["agent-context-audience-overclaim"],
     "zeroTolerance": false
   }
 ]

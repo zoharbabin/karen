@@ -1,12 +1,24 @@
-[
-  {
-    "dimension": "gateIssues",
-    "description": "gate-3-security never emits the real (non-decoy) shell-injection finding at src/incident_mcp_server/tools/run_diagnostic_command.py:32, across every auditRuns entry where it should appear (initial through 04-repeat-noop-3). Its count/fingerprint contribution was removed from every affected run's gateResults stdout and runState.gates entry.",
-    "expectedGraderFinding": "score-gate-issues.js should report a false negative for src/incident_mcp_server/tools/run_diagnostic_command.py:32:shell-injection (recall < 1 for the shell-injection category and overall), causing pass: false."
-  },
-  {
-    "dimension": "gateIssues",
-    "description": "gate-3-security wrongly emits the decoy hardcoded-secret finding at src/incident_mcp_server/config.py:17 (isDecoy: true) in every auditRuns entry's gateResults stdout, with its count/fingerprint added consistently to every affected run's runState.gates entry.",
-    "expectedGraderFinding": "score-gate-issues.js should report a decoy false positive for src/incident_mcp_server/config.py:17:hardcoded-secret (present in decoyFalsePositives), causing pass: false."
-  }
-]
+{
+  "flaws": [
+    {
+      "dimension": "gateIssues",
+      "description": "gate-3-security never emits the real (non-decoy) shell-injection finding at src/incident_mcp_server/tools/run_diagnostic_command.py:32, across every auditRuns entry where it should appear (initial through 04-repeat-noop-3). Its count/fingerprint contribution was removed from every affected run's gateResults stdout and runState.gates entry.",
+      "expectedGraderFinding": "score-gate-issues.js should report a false negative for src/incident_mcp_server/tools/run_diagnostic_command.py:32:shell-injection (recall < 1 for the shell-injection category and overall), causing pass: false."
+    },
+    {
+      "dimension": "gateIssues",
+      "description": "gate-3-security wrongly emits the decoy hardcoded-secret finding at src/incident_mcp_server/config.py:17 (isDecoy: true) in every auditRuns entry's gateResults stdout, with its count/fingerprint added consistently to every affected run's runState.gates entry.",
+      "expectedGraderFinding": "score-gate-issues.js should report a decoy false positive for src/incident_mcp_server/config.py:17:hardcoded-secret (present in decoyFalsePositives), causing pass: false."
+    },
+    {
+      "dimension": "gateIssues",
+      "description": "gate-3-security never emits the real (non-decoy) unlabeled-tool-output finding at src/incident_mcp_server/tools/run_diagnostic_command.py:40, across every auditRuns entry where it should appear (initial through 04-repeat-noop-3).",
+      "expectedGraderFinding": "score-gate-issues.js should report a false negative for src/incident_mcp_server/tools/run_diagnostic_command.py:40:unlabeled-tool-output."
+    },
+    {
+      "dimension": "gateIssues",
+      "description": "gate-3-security wrongly emits the decoy unlabeled-tool-output finding at src/incident_mcp_server/tools/run_diagnostic_command.py:50 (isDecoy: true, the safely-delimited helper) in every auditRuns entry's gateResults stdout.",
+      "expectedGraderFinding": "score-gate-issues.js should report a decoy false positive for src/incident_mcp_server/tools/run_diagnostic_command.py:50:unlabeled-tool-output (present in decoyFalsePositives), causing pass: false."
+    }
+  ]
+}

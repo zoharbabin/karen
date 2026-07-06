@@ -81,7 +81,7 @@
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-2-completeness": { "stdout": "internal/dispatch/format.go:10\tdead-code: FormatLegacyPayload is exported but has no call site, no interface satisfaction, and no indirect reference from any lookup table — nothing in this codebase invokes it\ninternal/dispatch/dispatcher.go:29\tno-retry: Dispatcher.Send makes exactly one attempt to POST to the subscriber webhook, with no retry loop or backoff on transient failure\ninternal/dispatch/history.go:28\tunbounded-payload: ListDeliveryHistory returns the full delivery log for a subscriber with no page size, offset, or row cap\ninternal/dispatch/templates.go:16\teager-heavy-startup: compiledTemplateCache is initialized by a subprocess spawn (digest-template-compiler) at package-init time, before any digest has been requested\nFAIL (4 issues)\n", "exitCode": 1 },
-        "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-6-test-integrity": { "stdout": "README.md:39\taccuracy-overclaim: claims the failure-classification heuristic is 98% accurate at routing failures to the correct retry policy, with no backing eval script or dataset anywhere in the repo\nFAIL (1 issues)\n", "exitCode": 1 },
         "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
       },
       "runState": {
@@ -90,10 +90,10 @@
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
           "gate-2-completeness": { "count": 4, "fingerprint": ["fp-deadcode-formatlegacypayload", "fp-noretry-send", "fp-unbounded-listdeliveryhistory", "fp-eagerstartup-templatecache"] },
-          "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
+          "gate-6-test-integrity": { "count": 1, "fingerprint": ["fp-accuracy-overclaim-readme-md"] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 4
+        "total": 5
       }
     },
     {
@@ -101,7 +101,7 @@
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-2-completeness": { "stdout": "internal/dispatch/format.go:10\tdead-code: FormatLegacyPayload is exported but has no call site, no interface satisfaction, and no indirect reference from any lookup table — nothing in this codebase invokes it\ninternal/dispatch/history.go:28\tunbounded-payload: ListDeliveryHistory returns the full delivery log for a subscriber with no page size, offset, or row cap\ninternal/dispatch/templates.go:16\teager-heavy-startup: compiledTemplateCache is initialized by a subprocess spawn (digest-template-compiler) at package-init time, before any digest has been requested\nFAIL (3 issues)\n", "exitCode": 1 },
-        "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-6-test-integrity": { "stdout": "README.md:39\taccuracy-overclaim: claims the failure-classification heuristic is 98% accurate at routing failures to the correct retry policy, with no backing eval script or dataset anywhere in the repo\nFAIL (1 issues)\n", "exitCode": 1 },
         "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
       },
       "runState": {
@@ -110,10 +110,10 @@
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
           "gate-2-completeness": { "count": 3, "fingerprint": ["fp-deadcode-formatlegacypayload", "fp-unbounded-listdeliveryhistory", "fp-eagerstartup-templatecache"] },
-          "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
+          "gate-6-test-integrity": { "count": 1, "fingerprint": ["fp-accuracy-overclaim-readme-md"] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 3
+        "total": 4
       }
     },
     {
@@ -121,7 +121,7 @@
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-2-completeness": { "stdout": "internal/dispatch/format.go:10\tdead-code: FormatLegacyPayload is exported but has no call site, no interface satisfaction, and no indirect reference from any lookup table — nothing in this codebase invokes it\ninternal/dispatch/history.go:28\tunbounded-payload: ListDeliveryHistory returns the full delivery log for a subscriber with no page size, offset, or row cap\ninternal/dispatch/templates.go:16\teager-heavy-startup: compiledTemplateCache is initialized by a subprocess spawn (digest-template-compiler) at package-init time, before any digest has been requested\ninternal/dispatch/priority.go:15\tno-retry: Dispatcher.SendPriority makes exactly one attempt to POST to the subscriber webhook, with no retry loop or backoff on transient failure\nFAIL (4 issues)\n", "exitCode": 1 },
-        "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-6-test-integrity": { "stdout": "README.md:39\taccuracy-overclaim: claims the failure-classification heuristic is 98% accurate at routing failures to the correct retry policy, with no backing eval script or dataset anywhere in the repo\nFAIL (1 issues)\n", "exitCode": 1 },
         "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
       },
       "runState": {
@@ -130,10 +130,10 @@
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
           "gate-2-completeness": { "count": 4, "fingerprint": ["fp-deadcode-formatlegacypayload", "fp-unbounded-listdeliveryhistory", "fp-eagerstartup-templatecache", "fp-noretry-sendpriority"] },
-          "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
+          "gate-6-test-integrity": { "count": 1, "fingerprint": ["fp-accuracy-overclaim-readme-md"] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 4
+        "total": 5
       }
     },
     {
@@ -141,7 +141,7 @@
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-2-completeness": { "stdout": "internal/dispatch/format.go:10\tdead-code: FormatLegacyPayload is exported but has no call site, no interface satisfaction, and no indirect reference from any lookup table — nothing in this codebase invokes it\ninternal/dispatch/history.go:29\tunbounded-payload: ListDeliveryHistory returns the full delivery log for a subscriber with no page size, offset, or row cap\ninternal/dispatch/templates.go:16\teager-heavy-startup: compiledTemplateCache is initialized by a subprocess spawn (digest-template-compiler) at package-init time, before any digest has been requested\ninternal/dispatch/priority.go:15\tno-retry: Dispatcher.SendPriority makes exactly one attempt to POST to the subscriber webhook, with no retry loop or backoff on transient failure\nFAIL (4 issues)\n", "exitCode": 1 },
-        "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-6-test-integrity": { "stdout": "README.md:39\taccuracy-overclaim: claims the failure-classification heuristic is 98% accurate at routing failures to the correct retry policy, with no backing eval script or dataset anywhere in the repo\nFAIL (1 issues)\n", "exitCode": 1 },
         "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
       },
       "runState": {
@@ -150,10 +150,10 @@
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
           "gate-2-completeness": { "count": 4, "fingerprint": ["fp-deadcode-formatlegacypayload", "fp-unbounded-listdeliveryhistory", "fp-eagerstartup-templatecache", "fp-noretry-sendpriority"] },
-          "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
+          "gate-6-test-integrity": { "count": 1, "fingerprint": ["fp-accuracy-overclaim-readme-md"] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 4
+        "total": 5
       }
     },
     {
@@ -161,7 +161,7 @@
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-2-completeness": { "stdout": "internal/dispatch/format.go:10\tdead-code: FormatLegacyPayload is exported but has no call site, no interface satisfaction, and no indirect reference from any lookup table — nothing in this codebase invokes it\ninternal/dispatch/history.go:29\tunbounded-payload: ListDeliveryHistory returns the full delivery log for a subscriber with no page size, offset, or row cap\ninternal/dispatch/templates.go:16\teager-heavy-startup: compiledTemplateCache is initialized by a subprocess spawn (digest-template-compiler) at package-init time, before any digest has been requested\ninternal/dispatch/priority.go:15\tno-retry: Dispatcher.SendPriority makes exactly one attempt to POST to the subscriber webhook, with no retry loop or backoff on transient failure\nFAIL (4 issues)\n", "exitCode": 1 },
-        "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-6-test-integrity": { "stdout": "README.md:39\taccuracy-overclaim: claims the failure-classification heuristic is 98% accurate at routing failures to the correct retry policy, with no backing eval script or dataset anywhere in the repo\nFAIL (1 issues)\n", "exitCode": 1 },
         "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
       },
       "runState": {
@@ -170,10 +170,10 @@
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
           "gate-2-completeness": { "count": 4, "fingerprint": ["fp-deadcode-formatlegacypayload", "fp-unbounded-listdeliveryhistory", "fp-eagerstartup-templatecache", "fp-noretry-sendpriority"] },
-          "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
+          "gate-6-test-integrity": { "count": 1, "fingerprint": ["fp-accuracy-overclaim-readme-md"] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 4
+        "total": 5
       }
     },
     {
@@ -181,7 +181,7 @@
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-2-completeness": { "stdout": "internal/dispatch/format.go:10\tdead-code: FormatLegacyPayload is exported but has no call site, no interface satisfaction, and no indirect reference from any lookup table — nothing in this codebase invokes it\ninternal/dispatch/history.go:29\tunbounded-payload: ListDeliveryHistory returns the full delivery log for a subscriber with no page size, offset, or row cap\ninternal/dispatch/templates.go:16\teager-heavy-startup: compiledTemplateCache is initialized by a subprocess spawn (digest-template-compiler) at package-init time, before any digest has been requested\ninternal/dispatch/priority.go:15\tno-retry: Dispatcher.SendPriority makes exactly one attempt to POST to the subscriber webhook, with no retry loop or backoff on transient failure\nFAIL (4 issues)\n", "exitCode": 1 },
-        "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-6-test-integrity": { "stdout": "README.md:39\taccuracy-overclaim: claims the failure-classification heuristic is 98% accurate at routing failures to the correct retry policy, with no backing eval script or dataset anywhere in the repo\nFAIL (1 issues)\n", "exitCode": 1 },
         "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
       },
       "runState": {
@@ -190,10 +190,10 @@
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
           "gate-2-completeness": { "count": 4, "fingerprint": ["fp-deadcode-formatlegacypayload", "fp-unbounded-listdeliveryhistory", "fp-eagerstartup-templatecache", "fp-noretry-sendpriority"] },
-          "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
+          "gate-6-test-integrity": { "count": 1, "fingerprint": ["fp-accuracy-overclaim-readme-md"] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 4
+        "total": 5
       }
     },
     {
@@ -201,7 +201,7 @@
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-2-completeness": { "stdout": "internal/dispatch/format.go:10\tdead-code: FormatLegacyPayload is exported but has no call site, no interface satisfaction, and no indirect reference from any lookup table — nothing in this codebase invokes it\ninternal/dispatch/history.go:29\tunbounded-payload: ListDeliveryHistory returns the full delivery log for a subscriber with no page size, offset, or row cap\ninternal/dispatch/templates.go:16\teager-heavy-startup: compiledTemplateCache is initialized by a subprocess spawn (digest-template-compiler) at package-init time, before any digest has been requested\ninternal/dispatch/priority.go:15\tno-retry: Dispatcher.SendPriority makes exactly one attempt to POST to the subscriber webhook, with no retry loop or backoff on transient failure\nFAIL (4 issues)\n", "exitCode": 1 },
-        "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-6-test-integrity": { "stdout": "README.md:39\taccuracy-overclaim: claims the failure-classification heuristic is 98% accurate at routing failures to the correct retry policy, with no backing eval script or dataset anywhere in the repo\nFAIL (1 issues)\n", "exitCode": 1 },
         "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
       },
       "runState": {
@@ -210,10 +210,10 @@
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
           "gate-2-completeness": { "count": 4, "fingerprint": ["fp-deadcode-formatlegacypayload", "fp-unbounded-listdeliveryhistory", "fp-eagerstartup-templatecache", "fp-noretry-sendpriority"] },
-          "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
+          "gate-6-test-integrity": { "count": 1, "fingerprint": ["fp-accuracy-overclaim-readme-md"] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 4
+        "total": 5
       }
     }
   ]

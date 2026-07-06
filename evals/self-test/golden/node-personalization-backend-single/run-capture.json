@@ -76,7 +76,7 @@
       "trigger": "initial",
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "src/consent/registry.ts:42\tunannotated-intentional-duplication: near-identical export-manifest formatting duplicated across jurisdictions with no karen-intentional-duplicate marker\nFAIL (1 issues)\n", "exitCode": 1 },
         "gate-3-security": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-4-docs-parity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-5-compliance": { "stdout": "src/datastores/eventStore.ts:16\tunregistered-personal-data-store: persists personal data keyed by user but never registers with src/consent/registry.ts\nSECURITY.md:17\tcompliance-overclaim: names src/audit/log.ts as backing evidence but that file does not exist\nFAIL (2 issues)\n", "exitCode": 1 },
@@ -88,21 +88,21 @@
         "timestamp": "2026-06-28T09:00:00Z",
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
-          "gate-2-completeness": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 1, "fingerprint": ["fp-unannotated-duplication-registry-ts"] },
           "gate-3-security": { "count": 0, "fingerprint": [] },
           "gate-4-docs-parity": { "count": 0, "fingerprint": [] },
           "gate-5-compliance": { "count": 2, "fingerprint": ["fp-unreg-eventstore", "fp-overclaim-auditlog"] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 2
+        "total": 3
       }
     },
     {
       "trigger": "01-partial-fix",
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "src/consent/registry.ts:42\tunannotated-intentional-duplication: near-identical export-manifest formatting duplicated across jurisdictions with no karen-intentional-duplicate marker\nFAIL (1 issues)\n", "exitCode": 1 },
         "gate-3-security": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-4-docs-parity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-5-compliance": { "stdout": "SECURITY.md:17\tcompliance-overclaim: names src/audit/log.ts as backing evidence but that file does not exist\nFAIL (1 issues)\n", "exitCode": 1 },
@@ -114,21 +114,21 @@
         "timestamp": "2026-06-28T09:10:00Z",
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
-          "gate-2-completeness": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 1, "fingerprint": ["fp-unannotated-duplication-registry-ts"] },
           "gate-3-security": { "count": 0, "fingerprint": [] },
           "gate-4-docs-parity": { "count": 0, "fingerprint": [] },
           "gate-5-compliance": { "count": 1, "fingerprint": ["fp-overclaim-auditlog"] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 1
+        "total": 2
       }
     },
     {
       "trigger": "02-regression",
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "src/consent/registry.ts:42\tunannotated-intentional-duplication: near-identical export-manifest formatting duplicated across jurisdictions with no karen-intentional-duplicate marker\nFAIL (1 issues)\n", "exitCode": 1 },
         "gate-3-security": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-4-docs-parity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-5-compliance": { "stdout": "src/datastores/preferenceCache.ts:1\tunregistered-personal-data-store: persists personal data keyed by user but never registers with src/consent/registry.ts\nSECURITY.md:17\tcompliance-overclaim: names src/audit/log.ts as backing evidence but that file does not exist\nFAIL (2 issues)\n", "exitCode": 1 },
@@ -140,21 +140,21 @@
         "timestamp": "2026-06-28T09:20:00Z",
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
-          "gate-2-completeness": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 1, "fingerprint": ["fp-unannotated-duplication-registry-ts"] },
           "gate-3-security": { "count": 0, "fingerprint": [] },
           "gate-4-docs-parity": { "count": 0, "fingerprint": [] },
           "gate-5-compliance": { "count": 2, "fingerprint": ["fp-unreg-preferencecache", "fp-overclaim-auditlog"] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 2
+        "total": 3
       }
     },
     {
       "trigger": "03-noop-line-shift",
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "src/consent/registry.ts:42\tunannotated-intentional-duplication: near-identical export-manifest formatting duplicated across jurisdictions with no karen-intentional-duplicate marker\nFAIL (1 issues)\n", "exitCode": 1 },
         "gate-3-security": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-4-docs-parity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-5-compliance": { "stdout": "src/datastores/preferenceCache.ts:1\tunregistered-personal-data-store: persists personal data keyed by user but never registers with src/consent/registry.ts\nSECURITY.md:18\tcompliance-overclaim: names src/audit/log.ts as backing evidence but that file does not exist\nFAIL (2 issues)\n", "exitCode": 1 },
@@ -166,21 +166,21 @@
         "timestamp": "2026-06-28T09:30:00Z",
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
-          "gate-2-completeness": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 1, "fingerprint": ["fp-unannotated-duplication-registry-ts"] },
           "gate-3-security": { "count": 0, "fingerprint": [] },
           "gate-4-docs-parity": { "count": 0, "fingerprint": [] },
           "gate-5-compliance": { "count": 2, "fingerprint": ["fp-unreg-preferencecache", "fp-overclaim-auditlog"] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 2
+        "total": 3
       }
     },
     {
       "trigger": "04-repeat-noop-1",
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "src/consent/registry.ts:42\tunannotated-intentional-duplication: near-identical export-manifest formatting duplicated across jurisdictions with no karen-intentional-duplicate marker\nFAIL (1 issues)\n", "exitCode": 1 },
         "gate-3-security": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-4-docs-parity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-5-compliance": { "stdout": "src/datastores/preferenceCache.ts:1\tunregistered-personal-data-store: persists personal data keyed by user but never registers with src/consent/registry.ts\nSECURITY.md:18\tcompliance-overclaim: names src/audit/log.ts as backing evidence but that file does not exist\nFAIL (2 issues)\n", "exitCode": 1 },
@@ -192,21 +192,21 @@
         "timestamp": "2026-06-28T09:35:00Z",
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
-          "gate-2-completeness": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 1, "fingerprint": ["fp-unannotated-duplication-registry-ts"] },
           "gate-3-security": { "count": 0, "fingerprint": [] },
           "gate-4-docs-parity": { "count": 0, "fingerprint": [] },
           "gate-5-compliance": { "count": 2, "fingerprint": ["fp-unreg-preferencecache", "fp-overclaim-auditlog"] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 2
+        "total": 3
       }
     },
     {
       "trigger": "04-repeat-noop-2",
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "src/consent/registry.ts:42\tunannotated-intentional-duplication: near-identical export-manifest formatting duplicated across jurisdictions with no karen-intentional-duplicate marker\nFAIL (1 issues)\n", "exitCode": 1 },
         "gate-3-security": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-4-docs-parity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-5-compliance": { "stdout": "src/datastores/preferenceCache.ts:1\tunregistered-personal-data-store: persists personal data keyed by user but never registers with src/consent/registry.ts\nSECURITY.md:18\tcompliance-overclaim: names src/audit/log.ts as backing evidence but that file does not exist\nFAIL (2 issues)\n", "exitCode": 1 },
@@ -218,21 +218,21 @@
         "timestamp": "2026-06-28T09:40:00Z",
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
-          "gate-2-completeness": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 1, "fingerprint": ["fp-unannotated-duplication-registry-ts"] },
           "gate-3-security": { "count": 0, "fingerprint": [] },
           "gate-4-docs-parity": { "count": 0, "fingerprint": [] },
           "gate-5-compliance": { "count": 2, "fingerprint": ["fp-unreg-preferencecache", "fp-overclaim-auditlog"] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 2
+        "total": 3
       }
     },
     {
       "trigger": "04-repeat-noop-3",
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "src/consent/registry.ts:42\tunannotated-intentional-duplication: near-identical export-manifest formatting duplicated across jurisdictions with no karen-intentional-duplicate marker\nFAIL (1 issues)\n", "exitCode": 1 },
         "gate-3-security": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-4-docs-parity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-5-compliance": { "stdout": "src/datastores/preferenceCache.ts:1\tunregistered-personal-data-store: persists personal data keyed by user but never registers with src/consent/registry.ts\nSECURITY.md:18\tcompliance-overclaim: names src/audit/log.ts as backing evidence but that file does not exist\nFAIL (2 issues)\n", "exitCode": 1 },
@@ -244,14 +244,14 @@
         "timestamp": "2026-06-28T09:45:00Z",
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
-          "gate-2-completeness": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 1, "fingerprint": ["fp-unannotated-duplication-registry-ts"] },
           "gate-3-security": { "count": 0, "fingerprint": [] },
           "gate-4-docs-parity": { "count": 0, "fingerprint": [] },
           "gate-5-compliance": { "count": 2, "fingerprint": ["fp-unreg-preferencecache", "fp-overclaim-auditlog"] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 2
+        "total": 3
       }
     }
   ]

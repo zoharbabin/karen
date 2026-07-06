@@ -11,5 +11,7 @@
   { "file": "sdk/src/utils.ts", "line": 7, "category": "eval-in-comment", "isDecoy": true },
   { "file": "apps/support-widget/src/session.ts", "line": 33, "category": "missing-origin-check", "isDecoy": false },
   { "file": "apps/support-widget/src/session.ts", "line": 21, "category": "eval-in-comment", "isDecoy": true },
-  { "file": "apps/teaching-avatar/src/session.ts", "line": 24, "category": "password-variable", "isDecoy": true }
+  { "file": "apps/teaching-avatar/src/session.ts", "line": 24, "category": "password-variable", "isDecoy": true },
+  { "file": "sdk/src/generated/chatClient.ts", "line": 1, "category": "stale-codegen-output", "isDecoy": false },
+  { "file": "sdk/src/generated/sessionClient.ts", "line": 1, "category": "stale-codegen-output", "isDecoy": true }
 ]

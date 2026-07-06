@@ -29,12 +29,13 @@
 // same way without a separate code path.
 //
 // Per-item stable keys used to diff array/set fields via setMetrics():
-//   project.subprojects[] -> item.path
-//   knownGaps[]            -> `${pattern}::${scope}`
-//   exceedsBaseline[]      -> item.gate
-//   exceptions             -> object keyed by gate id -> array of entries;
-//                             flattened first, then keyed by
-//                             `${gate}::${pattern}::${file}`
+//   project.subprojects[]      -> item.path
+//   knownGaps[]                -> `${pattern}::${scope}`
+//   exceedsBaseline[]          -> item.gate
+//   crossSubprojectConsistency[] -> item.pattern
+//   exceptions                 -> object keyed by gate id -> array of entries;
+//                                  flattened first, then keyed by
+//                                  `${gate}::${pattern}::${file}`
 //
 // pass = scalarMatchRate === 1 && every arrayFieldMetrics[*].f1 >= 0.9
 
@@ -106,6 +107,10 @@ function keyExceedsBaseline(item) {
   return String(item?.gate ?? '');
 }
 
+function keyCrossSubprojectConsistency(item) {
+  return String(item?.pattern ?? '');
+}
+
 // exceptions is `{ [gateId]: [{ pattern, file, reason, expires }, ...] }` —
 // flatten into a list of stable `gate::pattern::file` keys.
 function keyedExceptions(exceptionsObj) {
@@ -141,6 +146,7 @@ function main() {
       subprojects: vacuousArrayMetrics(),
       knownGaps: vacuousArrayMetrics(),
       exceedsBaseline: vacuousArrayMetrics(),
+      crossSubprojectConsistency: vacuousArrayMetrics(),
       exceptions: vacuousArrayMetrics(),
     };
     console.log(JSON.stringify({
@@ -187,6 +193,12 @@ function main() {
       expectedKaren?.exceedsBaseline,
       actualKaren?.exceedsBaseline,
       keyExceedsBaseline,
+    ),
+    crossSubprojectConsistency: arrayFieldDetail(
+      'crossSubprojectConsistency',
+      expectedKaren?.crossSubprojectConsistency,
+      actualKaren?.crossSubprojectConsistency,
+      keyCrossSubprojectConsistency,
     ),
     exceptions: (() => {
       const expectedKeys = keyedExceptions(expectedKaren?.exceptions);

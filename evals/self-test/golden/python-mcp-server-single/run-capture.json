@@ -92,7 +92,7 @@
           "exitCode": 1
         },
         "gate-3-security": {
-          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source — credential leak via repository\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:32\tsubprocess call with shell=True on caller-supplied command string — arbitrary shell command execution\nsrc/incident_mcp_server/tools/apply_config_patch.py:28\tyaml.load with default Loader on untrusted tool-call input — arbitrary object construction / code execution\nFAIL (3 issues)\nZERO-TOLERANCE\n",
+          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source — credential leak via repository\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:32\tsubprocess call with shell=True on caller-supplied command string — arbitrary shell command execution\nsrc/incident_mcp_server/tools/apply_config_patch.py:28\tyaml.load with default Loader on untrusted tool-call input — arbitrary object construction / code execution\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:40\tunlabeled tool output — raw command stdout/stderr spliced into the tool result with no delimiter marking it as data, not instructions; indirect-prompt-injection vector into the connecting LLM\nFAIL (4 issues)\nZERO-TOLERANCE\n",
           "exitCode": 1
         },
         "gate-4-docs-parity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
@@ -106,18 +106,19 @@
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
           "gate-2-completeness": { "count": 1, "fingerprint": ["fp-stub-implementation-notify-py"] },
           "gate-3-security": {
-            "count": 3,
+            "count": 4,
             "fingerprint": [
               "fp-hardcoded-secret-config-py",
               "fp-shell-injection-rundiagnosticcommand-py",
-              "fp-yaml-unsafe-load-applyconfigpatch-py"
+              "fp-yaml-unsafe-load-applyconfigpatch-py",
+              "fp-unlabeled-tool-output-rundiagnosticcommand-py"
             ]
           },
           "gate-4-docs-parity": { "count": 0, "fingerprint": [] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 4,
+        "total": 5,
         "exitCode": 1
       }
     },
@@ -127,7 +128,7 @@
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-3-security": {
-          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source — credential leak via repository\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:32\tsubprocess call with shell=True on caller-supplied command string — arbitrary shell command execution\nsrc/incident_mcp_server/tools/apply_config_patch.py:28\tyaml.load with default Loader on untrusted tool-call input — arbitrary object construction / code execution\nFAIL (3 issues)\nZERO-TOLERANCE\n",
+          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source — credential leak via repository\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:32\tsubprocess call with shell=True on caller-supplied command string — arbitrary shell command execution\nsrc/incident_mcp_server/tools/apply_config_patch.py:28\tyaml.load with default Loader on untrusted tool-call input — arbitrary object construction / code execution\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:40\tunlabeled tool output — raw command stdout/stderr spliced into the tool result with no delimiter marking it as data, not instructions; indirect-prompt-injection vector into the connecting LLM\nFAIL (4 issues)\nZERO-TOLERANCE\n",
           "exitCode": 1
         },
         "gate-4-docs-parity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
@@ -141,18 +142,19 @@
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
           "gate-2-completeness": { "count": 0, "fingerprint": [] },
           "gate-3-security": {
-            "count": 3,
+            "count": 4,
             "fingerprint": [
               "fp-hardcoded-secret-config-py",
               "fp-shell-injection-rundiagnosticcommand-py",
-              "fp-yaml-unsafe-load-applyconfigpatch-py"
+              "fp-yaml-unsafe-load-applyconfigpatch-py",
+              "fp-unlabeled-tool-output-rundiagnosticcommand-py"
             ]
           },
           "gate-4-docs-parity": { "count": 0, "fingerprint": [] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 3,
+        "total": 4,
         "exitCode": 1
       }
     },
@@ -162,7 +164,7 @@
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-3-security": {
-          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source — credential leak via repository\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:32\tsubprocess call with shell=True on caller-supplied command string — arbitrary shell command execution\nsrc/incident_mcp_server/tools/apply_config_patch.py:28\tyaml.load with default Loader on untrusted tool-call input — arbitrary object construction / code execution\nsrc/incident_mcp_server/server.py:21\thardcoded crash-reporter token committed to source — credential leak via repository\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source — credential leak via repository\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:32\tsubprocess call with shell=True on caller-supplied command string — arbitrary shell command execution\nsrc/incident_mcp_server/tools/apply_config_patch.py:28\tyaml.load with default Loader on untrusted tool-call input — arbitrary object construction / code execution\nsrc/incident_mcp_server/server.py:21\thardcoded crash-reporter token committed to source — credential leak via repository\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:40\tunlabeled tool output — raw command stdout/stderr spliced into the tool result with no delimiter marking it as data, not instructions; indirect-prompt-injection vector into the connecting LLM\nFAIL (5 issues)\nZERO-TOLERANCE\n",
           "exitCode": 1
         },
         "gate-4-docs-parity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
@@ -176,19 +178,20 @@
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
           "gate-2-completeness": { "count": 0, "fingerprint": [] },
           "gate-3-security": {
-            "count": 4,
+            "count": 5,
             "fingerprint": [
               "fp-hardcoded-secret-config-py",
               "fp-shell-injection-rundiagnosticcommand-py",
               "fp-yaml-unsafe-load-applyconfigpatch-py",
-              "fp-hardcoded-secret-server-py"
+              "fp-hardcoded-secret-server-py",
+              "fp-unlabeled-tool-output-rundiagnosticcommand-py"
             ]
           },
           "gate-4-docs-parity": { "count": 0, "fingerprint": [] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 4,
+        "total": 5,
         "exitCode": 1
       }
     },
@@ -198,7 +201,7 @@
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-3-security": {
-          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source — credential leak via repository\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:32\tsubprocess call with shell=True on caller-supplied command string — arbitrary shell command execution\nsrc/incident_mcp_server/tools/apply_config_patch.py:31\tyaml.load with default Loader on untrusted tool-call input — arbitrary object construction / code execution\nsrc/incident_mcp_server/server.py:21\thardcoded crash-reporter token committed to source — credential leak via repository\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source — credential leak via repository\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:32\tsubprocess call with shell=True on caller-supplied command string — arbitrary shell command execution\nsrc/incident_mcp_server/tools/apply_config_patch.py:31\tyaml.load with default Loader on untrusted tool-call input — arbitrary object construction / code execution\nsrc/incident_mcp_server/server.py:21\thardcoded crash-reporter token committed to source — credential leak via repository\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:40\tunlabeled tool output — raw command stdout/stderr spliced into the tool result with no delimiter marking it as data, not instructions; indirect-prompt-injection vector into the connecting LLM\nFAIL (5 issues)\nZERO-TOLERANCE\n",
           "exitCode": 1
         },
         "gate-4-docs-parity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
@@ -212,19 +215,20 @@
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
           "gate-2-completeness": { "count": 0, "fingerprint": [] },
           "gate-3-security": {
-            "count": 4,
+            "count": 5,
             "fingerprint": [
               "fp-hardcoded-secret-config-py",
               "fp-shell-injection-rundiagnosticcommand-py",
               "fp-yaml-unsafe-load-applyconfigpatch-py",
-              "fp-hardcoded-secret-server-py"
+              "fp-hardcoded-secret-server-py",
+              "fp-unlabeled-tool-output-rundiagnosticcommand-py"
             ]
           },
           "gate-4-docs-parity": { "count": 0, "fingerprint": [] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 4,
+        "total": 5,
         "exitCode": 1
       }
     },
@@ -234,7 +238,7 @@
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-3-security": {
-          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source — credential leak via repository\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:32\tsubprocess call with shell=True on caller-supplied command string — arbitrary shell command execution\nsrc/incident_mcp_server/tools/apply_config_patch.py:31\tyaml.load with default Loader on untrusted tool-call input — arbitrary object construction / code execution\nsrc/incident_mcp_server/server.py:21\thardcoded crash-reporter token committed to source — credential leak via repository\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source — credential leak via repository\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:32\tsubprocess call with shell=True on caller-supplied command string — arbitrary shell command execution\nsrc/incident_mcp_server/tools/apply_config_patch.py:31\tyaml.load with default Loader on untrusted tool-call input — arbitrary object construction / code execution\nsrc/incident_mcp_server/server.py:21\thardcoded crash-reporter token committed to source — credential leak via repository\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:40\tunlabeled tool output — raw command stdout/stderr spliced into the tool result with no delimiter marking it as data, not instructions; indirect-prompt-injection vector into the connecting LLM\nFAIL (5 issues)\nZERO-TOLERANCE\n",
           "exitCode": 1
         },
         "gate-4-docs-parity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
@@ -248,19 +252,20 @@
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
           "gate-2-completeness": { "count": 0, "fingerprint": [] },
           "gate-3-security": {
-            "count": 4,
+            "count": 5,
             "fingerprint": [
               "fp-hardcoded-secret-config-py",
               "fp-shell-injection-rundiagnosticcommand-py",
               "fp-yaml-unsafe-load-applyconfigpatch-py",
-              "fp-hardcoded-secret-server-py"
+              "fp-hardcoded-secret-server-py",
+              "fp-unlabeled-tool-output-rundiagnosticcommand-py"
             ]
           },
           "gate-4-docs-parity": { "count": 0, "fingerprint": [] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 4,
+        "total": 5,
         "exitCode": 1
       }
     },
@@ -270,7 +275,7 @@
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-3-security": {
-          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source — credential leak via repository\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:32\tsubprocess call with shell=True on caller-supplied command string — arbitrary shell command execution\nsrc/incident_mcp_server/tools/apply_config_patch.py:31\tyaml.load with default Loader on untrusted tool-call input — arbitrary object construction / code execution\nsrc/incident_mcp_server/server.py:21\thardcoded crash-reporter token committed to source — credential leak via repository\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source — credential leak via repository\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:32\tsubprocess call with shell=True on caller-supplied command string — arbitrary shell command execution\nsrc/incident_mcp_server/tools/apply_config_patch.py:31\tyaml.load with default Loader on untrusted tool-call input — arbitrary object construction / code execution\nsrc/incident_mcp_server/server.py:21\thardcoded crash-reporter token committed to source — credential leak via repository\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:40\tunlabeled tool output — raw command stdout/stderr spliced into the tool result with no delimiter marking it as data, not instructions; indirect-prompt-injection vector into the connecting LLM\nFAIL (5 issues)\nZERO-TOLERANCE\n",
           "exitCode": 1
         },
         "gate-4-docs-parity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
@@ -284,19 +289,20 @@
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
           "gate-2-completeness": { "count": 0, "fingerprint": [] },
           "gate-3-security": {
-            "count": 4,
+            "count": 5,
             "fingerprint": [
               "fp-hardcoded-secret-config-py",
               "fp-shell-injection-rundiagnosticcommand-py",
               "fp-yaml-unsafe-load-applyconfigpatch-py",
-              "fp-hardcoded-secret-server-py"
+              "fp-hardcoded-secret-server-py",
+              "fp-unlabeled-tool-output-rundiagnosticcommand-py"
             ]
           },
           "gate-4-docs-parity": { "count": 0, "fingerprint": [] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 4,
+        "total": 5,
         "exitCode": 1
       }
     },
@@ -306,7 +312,7 @@
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-3-security": {
-          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source — credential leak via repository\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:32\tsubprocess call with shell=True on caller-supplied command string — arbitrary shell command execution\nsrc/incident_mcp_server/tools/apply_config_patch.py:31\tyaml.load with default Loader on untrusted tool-call input — arbitrary object construction / code execution\nsrc/incident_mcp_server/server.py:21\thardcoded crash-reporter token committed to source — credential leak via repository\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "stdout": "src/incident_mcp_server/config.py:21\thardcoded API key fallback committed to source — credential leak via repository\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:32\tsubprocess call with shell=True on caller-supplied command string — arbitrary shell command execution\nsrc/incident_mcp_server/tools/apply_config_patch.py:31\tyaml.load with default Loader on untrusted tool-call input — arbitrary object construction / code execution\nsrc/incident_mcp_server/server.py:21\thardcoded crash-reporter token committed to source — credential leak via repository\nsrc/incident_mcp_server/tools/run_diagnostic_command.py:40\tunlabeled tool output — raw command stdout/stderr spliced into the tool result with no delimiter marking it as data, not instructions; indirect-prompt-injection vector into the connecting LLM\nFAIL (5 issues)\nZERO-TOLERANCE\n",
           "exitCode": 1
         },
         "gate-4-docs-parity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
@@ -320,19 +326,20 @@
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
           "gate-2-completeness": { "count": 0, "fingerprint": [] },
           "gate-3-security": {
-            "count": 4,
+            "count": 5,
             "fingerprint": [
               "fp-hardcoded-secret-config-py",
               "fp-shell-injection-rundiagnosticcommand-py",
               "fp-yaml-unsafe-load-applyconfigpatch-py",
-              "fp-hardcoded-secret-server-py"
+              "fp-hardcoded-secret-server-py",
+              "fp-unlabeled-tool-output-rundiagnosticcommand-py"
             ]
           },
           "gate-4-docs-parity": { "count": 0, "fingerprint": [] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 4,
+        "total": 5,
         "exitCode": 2
       }
     }

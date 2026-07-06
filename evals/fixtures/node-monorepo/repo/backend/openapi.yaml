@@ -1,0 +1,57 @@
+# karen:spec-hash d94e6b0
+openapi: 3.0.3
+info:
+  title: signal-avatar-backend
+  version: 1.3.0
+paths:
+  /session:
+    post:
+      summary: Mint a short-lived chat-completion session token.
+      responses:
+        '200':
+          description: A session token and its expiry.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  expiresAt:
+                    type: number
+  /chat:
+    post:
+      summary: Proxy a chat-completion request using a valid session token.
+      security:
+        - bearerSessionToken: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                messages:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      role:
+                        type: string
+                      content:
+                        type: string
+      responses:
+        '200':
+          description: >-
+            The upstream chat-completion response, passed through as-is,
+            plus a server-attached `citations` array added in this
+            revision (d94e6b0) — earlier revisions of this spec (a83f21c)
+            did not have this field.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  citations:
+                    type: array
+                    items:
+                      type: string

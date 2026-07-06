@@ -1,0 +1,12 @@
+[
+  {
+    "subscriberID": "sub-1",
+    "message": "hello",
+    "want": "{\"subscriber\":\"sub-1\",\"message\":\"hello\"}"
+  },
+  {
+    "subscriberID": "sub-2",
+    "message": "digest ready",
+    "want": "{\"subscriber\":\"sub-2\",\"message\":\"digest ready\"}"
+  }
+]

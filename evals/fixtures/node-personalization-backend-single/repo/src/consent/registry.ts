@@ -28,3 +28,39 @@ export async function eraseDataSubject(tenant: string, user: string) {
     await store.eraseUser(tenant, user);
   }
 }
+
+// Real issue (unannotated-intentional-duplication): near-identical export-
+// manifest formatting copy-pasted for two jurisdictions, with no
+// `karen-intentional-duplicate` marker recording whether the duplication is
+// deliberate. A future edit to one (e.g. adding a required disclosure field)
+// has no signal telling the editor whether the other manifest needs the
+// same change or must stay different — the ambiguity itself is the defect.
+export function formatExportManifestGDPR(data: Record<string, unknown>): string {
+  return JSON.stringify({ jurisdiction: 'GDPR', data, generatedAt: Date.now() });
+}
+
+export function formatExportManifestCCPA(data: Record<string, unknown>): string {
+  return JSON.stringify({ jurisdiction: 'CCPA', data, generatedAt: Date.now() });
+}
+
+// Decoy (unannotated-intentional-duplication): also two near-identical
+// per-jurisdiction functions, but this pair carries a
+// karen-intentional-duplicate marker recording *why* they're kept separate
+// — CCPA carves out a financial-records retention exception GDPR does not
+// have, so a future edit adding that exception only to CCPA is expected,
+// not a drift bug. Structurally identical today, but correctly not flagged.
+// karen-intentional-duplicate: GDPR and CCPA erasure eligibility must vary
+// independently — CCPA's financial-records retention exception does not
+// exist under GDPR; merging these would silently apply one regime's
+// exception to the other.
+export function isErasureEligibleGDPR(hasLegalHold: boolean, hasFinancialRecordsHold: boolean): boolean {
+  if (hasLegalHold) return false;
+  if (hasFinancialRecordsHold) return false;
+  return true;
+}
+
+export function isErasureEligibleCCPA(hasLegalHold: boolean, hasFinancialRecordsHold: boolean): boolean {
+  if (hasLegalHold) return false;
+  if (hasFinancialRecordsHold) return false;
+  return true;
+}

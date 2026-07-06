@@ -14,7 +14,7 @@
   {
     "id": "gate-3-security",
     "tool": "bandit",
-    "coversCategories": ["hardcoded-secret", "shell-injection", "yaml-unsafe-load"],
+    "coversCategories": ["hardcoded-secret", "shell-injection", "yaml-unsafe-load", "unlabeled-tool-output"],
     "zeroTolerance": true
   },
   {

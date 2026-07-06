@@ -14,7 +14,7 @@
   {
     "id": "gate-6-test-integrity",
     "tool": "go test",
-    "coversCategories": [],
+    "coversCategories": ["accuracy-overclaim"],
     "zeroTolerance": false
   },
   {

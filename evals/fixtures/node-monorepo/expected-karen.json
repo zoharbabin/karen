@@ -79,6 +79,12 @@
       "pattern": "server holds admin-scoped chat-completion API key, mints short-lived client session token, exposes a session/chat REST API",
       "subprojects": ["apps/teaching-avatar", "apps/support-widget"],
       "invariants": ["origin/CORS check present", "token scope excludes admin operations", "no secret in any response body"]
+    },
+    {
+      "kind": "generated",
+      "pattern": "sdk/src/generated/*.ts REST clients generated from backend/openapi.yaml's route table",
+      "subprojects": ["sdk", "backend"],
+      "invariants": ["generation-marker's spec hash matches backend/openapi.yaml's current karen:spec-hash comment", "no generated file hand-edited after generation"]
     }
   ],
   "knownGaps": [],

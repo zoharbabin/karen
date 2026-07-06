@@ -14,6 +14,16 @@
       "dimension": "reconciliation",
       "description": "init.gateScripts includes a competing full gate-4-docs-parity script, even though fixture-manifest.json's existingGates (check-docs) already marks gate-4-docs-parity as scope:\"full\" -- violates noCompetingGates.",
       "expectedGraderFinding": "competingGatesFound includes gate-4-docs-parity"
+    },
+    {
+      "dimension": "gateIssues",
+      "description": "sdk/src/generated/chatClient.ts:1 stale-codegen-output (real, non-decoy -- the generation-marker naming stale spec revision a83f21c) is never emitted by gate-2-completeness's stdout in any auditRuns entry.",
+      "expectedGraderFinding": "false negative on stale-codegen-output at sdk/src/generated/chatClient.ts:1"
+    },
+    {
+      "dimension": "gateIssues",
+      "description": "sdk/src/generated/sessionClient.ts:1 stale-codegen-output (decoy -- the generation-marker's spec hash d94e6b0 correctly matches backend/openapi.yaml's current revision) IS emitted by gate-2-completeness's stdout in every auditRuns entry.",
+      "expectedGraderFinding": "false positive (decoyFalsePositives) on stale-codegen-output at sdk/src/generated/sessionClient.ts:1"
     }
   ]
 }

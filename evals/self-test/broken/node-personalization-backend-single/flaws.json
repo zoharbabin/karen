@@ -9,6 +9,16 @@
       "dimension": "gateIssues",
       "description": "src/datastores/sessionCache.ts:7 unregistered-personal-data-store (decoy — a TTL'd session-token cache holding no personal data) IS emitted by gate-5-compliance's stdout in every auditRuns entry — added to the issue lines and to runState.gates['gate-5-compliance'].fingerprint/count at every run",
       "expectedGraderFinding": "false positive (decoy hit) on unregistered-personal-data-store"
+    },
+    {
+      "dimension": "gateIssues",
+      "description": "src/consent/registry.ts:42 unannotated-intentional-duplication (real, non-decoy — the unmarked GDPR/CCPA export-manifest duplication) is never emitted by gate-2-completeness's stdout in any auditRuns entry.",
+      "expectedGraderFinding": "false negative on unannotated-intentional-duplication"
+    },
+    {
+      "dimension": "gateIssues",
+      "description": "src/consent/registry.ts:62 unannotated-intentional-duplication (decoy — the karen-intentional-duplicate-marked erasure-eligibility pair) IS emitted by gate-2-completeness's stdout in every auditRuns entry.",
+      "expectedGraderFinding": "false positive (decoy hit) on unannotated-intentional-duplication"
     }
   ]
 }

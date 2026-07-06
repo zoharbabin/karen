@@ -143,7 +143,7 @@
       "gate-3-security": "#!/usr/bin/env bash\n# gate-3-security: semgrep structural scan for hardcoded secrets, shell\n# injection, and path traversal. Zero-tolerance — any finding fails the gate.\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nout=\"\"\nfindings=\"$(semgrep --config p/secrets --config p/nodejsscan --json \"$root\" 2>/dev/null || echo '{\"results\":[]}')\"\nwhile IFS=$'\\t' read -r file line msg; do\n  [ -z \"$file\" ] && continue\n  out+=\"$file:$line\\t$msg\\n\"\n  issues=$((issues+1))\ndone < <(echo \"$findings\" | node -e '\n  let s=\"\"; process.stdin.on(\"data\", d => s+=d);\n  process.stdin.on(\"end\", () => {\n    const j = JSON.parse(s || \"{}\");\n    for (const r of (j.results || [])) {\n      console.log([r.path, r.start.line, r.extra.message].join(\"\\t\"));\n    }\n  });\n')\nprintf \"%b\" \"$out\"\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"; exit 0\nelse\n  echo \"FAIL ($issues issues)\"\n  echo \"ZERO-TOLERANCE\"\n  exit 1\nfi\n",
       "gate-4-docs-parity": "#!/usr/bin/env bash\n# gate-4-docs-parity: markdown doctest (README code blocks tagged\n# karen:runnable) + symbol diff between README and exported tool surface.\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nout=\"\"\nexported_tools=\"$(grep -oh '\"name\": \"[a-z_]*\"' src/tools/*.ts | sed -E 's/.*\"([a-z_]+)\"$/\\1/' | sort -u)\"\nfor tool in $exported_tools; do\n  if ! grep -q \"$tool\" README.md; then\n    out+=\"README.md:1\\ttool '$tool' is not documented in README\\n\"\n    issues=$((issues+1))\n  fi\ndone\nprintf \"%b\" \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
       "gate-6-test-integrity": "#!/usr/bin/env bash\n# gate-6-test-integrity: vitest --coverage, enforce the configured threshold\n# and flag assertion-free \"smoke\" tests.\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nout=\"\"\nnpx vitest run --coverage --reporter=json > /tmp/vitest-out.json 2>/dev/null || true\npct=\"$(node -e '\n  try {\n    const s = require(\"fs\").readFileSync(\"coverage/coverage-summary.json\", \"utf8\");\n    const j = JSON.parse(s);\n    console.log(j.total.lines.pct);\n  } catch { console.log(\"0\"); }\n')\"\nthreshold=80\nif awk \"BEGIN{exit !($pct < $threshold)}\"; then\n  out+=\"coverage/lcov.info:1\\tline coverage ${pct}% is below the ${threshold}% threshold\\n\"\n  issues=$((issues+1))\nfi\nprintf \"%b\" \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
-      "gate-7-agent-context": "#!/usr/bin/env bash\n# gate-7-agent-context: checklist over CLAUDE.md — must state the quality\n# gate command, the stopping condition, and model-selection guidance.\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nout=\"\"\nfile=\"CLAUDE.md\"\nif [ ! -f \"$file\" ]; then\n  echo \"$file:1\\tagent context file is missing\"\n  echo \"FAIL (1 issues)\"\n  exit 1\nfi\ngrep -qi \"karen audit\" \"$file\" || { out+=\"$file:1\\tmissing the karen audit quality-gate command\\n\"; issues=$((issues+1)); }\ngrep -qi \"exit 2\" \"$file\" || { out+=\"$file:1\\tmissing the circuit-breaker escalation (exit 2) stopping rule\\n\"; issues=$((issues+1)); }\ngrep -qi \"model\" \"$file\" || { out+=\"$file:1\\tmissing model-selection guidance\\n\"; issues=$((issues+1)); }\nprintf \"%b\" \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n"
+      "gate-7-agent-context": "#!/usr/bin/env bash\n# gate-7-agent-context: checklist over CLAUDE.md — must state the quality\n# gate command, the stopping condition, and model-selection guidance; also\n# checks any claimed multi-tool audience against the tool-specific files\n# that claim would require.\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nout=\"\"\nfile=\"CLAUDE.md\"\nif [ ! -f \"$file\" ]; then\n  echo \"$file:1\\tagent context file is missing\"\n  echo \"FAIL (1 issues)\"\n  exit 1\nfi\ngrep -qi \"karen audit\" \"$file\" || { out+=\"$file:1\\tmissing the karen audit quality-gate command\\n\"; issues=$((issues+1)); }\ngrep -qi \"exit 2\" \"$file\" || { out+=\"$file:1\\tmissing the circuit-breaker escalation (exit 2) stopping rule\\n\"; issues=$((issues+1)); }\ngrep -qi \"model\" \"$file\" || { out+=\"$file:1\\tmissing model-selection guidance\\n\"; issues=$((issues+1)); }\nclaim_line=$(grep -in \"cursor\" \"$file\" | head -1 | cut -d: -f1)\nif [ -n \"$claim_line\" ] \u0026\u0026 [ ! -f \".cursorrules\" ]; then\n  out+=\"$file:$claim_line\\tagent-context-audience-overclaim: claims Cursor as an audience but no .cursorrules exists anywhere in the repo\\n\"; issues=$((issues+1))\nfi\nprintf \"%b\" \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n"
     }
   },
   "auditRuns": [
@@ -163,16 +163,16 @@
           "exitCode": 1
         },
         "gate-4-docs-parity": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "README.md:15\tretired tool 'apply_patch' mentioned in README is not present in src/tools\nFAIL (1 issues)\n",
+          "exitCode": 1
         },
         "gate-6-test-integrity": {
           "stdout": "PASS (0 issues)\n",
           "exitCode": 0
         },
         "gate-7-agent-context": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "CLAUDE.md:3\tagent-context-audience-overclaim: claims Cursor as an audience but no .cursorrules exists anywhere in the repo\nFAIL (1 issues)\n",
+          "exitCode": 1
         }
       },
       "runState": {
@@ -198,19 +198,21 @@
             ]
           },
           "gate-4-docs-parity": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": [
+              "fp-decoy-doc-contract-drift-readme-md-15"
+            ]
           },
           "gate-6-test-integrity": {
             "count": 0,
             "fingerprint": []
           },
           "gate-7-agent-context": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": ["fp-decoy-agent-context-audience-overclaim-claude-md"]
           }
         },
-        "total": 4,
+        "total": 6,
         "exitCode": 1
       }
     },
@@ -230,16 +232,16 @@
           "exitCode": 1
         },
         "gate-4-docs-parity": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "README.md:15\tretired tool 'apply_patch' mentioned in README is not present in src/tools\nFAIL (1 issues)\n",
+          "exitCode": 1
         },
         "gate-6-test-integrity": {
           "stdout": "PASS (0 issues)\n",
           "exitCode": 0
         },
         "gate-7-agent-context": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "CLAUDE.md:3\tagent-context-audience-overclaim: claims Cursor as an audience but no .cursorrules exists anywhere in the repo\nFAIL (1 issues)\n",
+          "exitCode": 1
         }
       },
       "runState": {
@@ -263,19 +265,21 @@
             ]
           },
           "gate-4-docs-parity": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": [
+              "fp-decoy-doc-contract-drift-readme-md-15"
+            ]
           },
           "gate-6-test-integrity": {
             "count": 0,
             "fingerprint": []
           },
           "gate-7-agent-context": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": ["fp-decoy-agent-context-audience-overclaim-claude-md"]
           }
         },
-        "total": 3,
+        "total": 5,
         "exitCode": 1
       }
     },
@@ -295,16 +299,16 @@
           "exitCode": 1
         },
         "gate-4-docs-parity": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "README.md:15\tretired tool 'apply_patch' mentioned in README is not present in src/tools\nFAIL (1 issues)\n",
+          "exitCode": 1
         },
         "gate-6-test-integrity": {
           "stdout": "PASS (0 issues)\n",
           "exitCode": 0
         },
         "gate-7-agent-context": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "CLAUDE.md:3\tagent-context-audience-overclaim: claims Cursor as an audience but no .cursorrules exists anywhere in the repo\nFAIL (1 issues)\n",
+          "exitCode": 1
         }
       },
       "runState": {
@@ -329,19 +333,21 @@
             ]
           },
           "gate-4-docs-parity": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": [
+              "fp-decoy-doc-contract-drift-readme-md-15"
+            ]
           },
           "gate-6-test-integrity": {
             "count": 0,
             "fingerprint": []
           },
           "gate-7-agent-context": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": ["fp-decoy-agent-context-audience-overclaim-claude-md"]
           }
         },
-        "total": 4,
+        "total": 6,
         "exitCode": 1
       }
     },
@@ -361,16 +367,16 @@
           "exitCode": 1
         },
         "gate-4-docs-parity": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "README.md:15\tretired tool 'apply_patch' mentioned in README is not present in src/tools\nFAIL (1 issues)\n",
+          "exitCode": 1
         },
         "gate-6-test-integrity": {
           "stdout": "PASS (0 issues)\n",
           "exitCode": 0
         },
         "gate-7-agent-context": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "CLAUDE.md:3\tagent-context-audience-overclaim: claims Cursor as an audience but no .cursorrules exists anywhere in the repo\nFAIL (1 issues)\n",
+          "exitCode": 1
         }
       },
       "runState": {
@@ -395,19 +401,21 @@
             ]
           },
           "gate-4-docs-parity": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": [
+              "fp-decoy-doc-contract-drift-readme-md-15"
+            ]
           },
           "gate-6-test-integrity": {
             "count": 0,
             "fingerprint": []
           },
           "gate-7-agent-context": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": ["fp-decoy-agent-context-audience-overclaim-claude-md"]
           }
         },
-        "total": 4,
+        "total": 6,
         "exitCode": 1
       }
     },
@@ -427,16 +435,16 @@
           "exitCode": 1
         },
         "gate-4-docs-parity": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "README.md:15\tretired tool 'apply_patch' mentioned in README is not present in src/tools\nFAIL (1 issues)\n",
+          "exitCode": 1
         },
         "gate-6-test-integrity": {
           "stdout": "PASS (0 issues)\n",
           "exitCode": 0
         },
         "gate-7-agent-context": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "CLAUDE.md:3\tagent-context-audience-overclaim: claims Cursor as an audience but no .cursorrules exists anywhere in the repo\nFAIL (1 issues)\n",
+          "exitCode": 1
         }
       },
       "runState": {
@@ -461,19 +469,21 @@
             ]
           },
           "gate-4-docs-parity": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": [
+              "fp-decoy-doc-contract-drift-readme-md-15"
+            ]
           },
           "gate-6-test-integrity": {
             "count": 0,
             "fingerprint": []
           },
           "gate-7-agent-context": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": ["fp-decoy-agent-context-audience-overclaim-claude-md"]
           }
         },
-        "total": 4,
+        "total": 6,
         "exitCode": 1
       }
     },
@@ -493,16 +503,16 @@
           "exitCode": 1
         },
         "gate-4-docs-parity": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "README.md:15\tretired tool 'apply_patch' mentioned in README is not present in src/tools\nFAIL (1 issues)\n",
+          "exitCode": 1
         },
         "gate-6-test-integrity": {
           "stdout": "PASS (0 issues)\n",
           "exitCode": 0
         },
         "gate-7-agent-context": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "CLAUDE.md:3\tagent-context-audience-overclaim: claims Cursor as an audience but no .cursorrules exists anywhere in the repo\nFAIL (1 issues)\n",
+          "exitCode": 1
         }
       },
       "runState": {
@@ -527,19 +537,21 @@
             ]
           },
           "gate-4-docs-parity": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": [
+              "fp-decoy-doc-contract-drift-readme-md-15"
+            ]
           },
           "gate-6-test-integrity": {
             "count": 0,
             "fingerprint": []
           },
           "gate-7-agent-context": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": ["fp-decoy-agent-context-audience-overclaim-claude-md"]
           }
         },
-        "total": 4,
+        "total": 6,
         "exitCode": 1
       }
     },
@@ -559,16 +571,16 @@
           "exitCode": 1
         },
         "gate-4-docs-parity": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "README.md:15\tretired tool 'apply_patch' mentioned in README is not present in src/tools\nFAIL (1 issues)\n",
+          "exitCode": 1
         },
         "gate-6-test-integrity": {
           "stdout": "PASS (0 issues)\n",
           "exitCode": 0
         },
         "gate-7-agent-context": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "CLAUDE.md:3\tagent-context-audience-overclaim: claims Cursor as an audience but no .cursorrules exists anywhere in the repo\nFAIL (1 issues)\n",
+          "exitCode": 1
         }
       },
       "runState": {
@@ -593,19 +605,21 @@
             ]
           },
           "gate-4-docs-parity": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": [
+              "fp-decoy-doc-contract-drift-readme-md-15"
+            ]
           },
           "gate-6-test-integrity": {
             "count": 0,
             "fingerprint": []
           },
           "gate-7-agent-context": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": ["fp-decoy-agent-context-audience-overclaim-claude-md"]
           }
         },
-        "total": 4,
+        "total": 6,
         "exitCode": 2
       }
     }

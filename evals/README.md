@@ -99,7 +99,15 @@ sample passes every applicable dimension, and every broken sample fails
 exactly its declared flaw(s) — `gate-issues` on all 14 (each plants one false
 negative + one decoy false positive), plus `reconciliation` on `node-monorepo`
 and `karen-json`/`known-gaps` on `python-sdk-single` for their fixture-specific
-swap flaws.
+swap flaws. Six fixtures additionally stack a second `gate-issues` category
+closing gaps found by comparing Karen's design against a real MCP-server
+project: `unlabeled-tool-output` on `python-mcp-server-single`,
+`doc-contract-drift` and `agent-context-audience-overclaim` on
+`node-mcp-server-single`, `unannotated-intentional-duplication` on
+`node-personalization-backend-single`, `accuracy-overclaim` on
+`go-notification-dispatcher-single`, and `stale-codegen-output` on
+`node-monorepo` (whose `crossSubprojectConsistency` array is now also graded
+by `score-karen-json.js`, previously an ungraded field).
 
 ## Status
 

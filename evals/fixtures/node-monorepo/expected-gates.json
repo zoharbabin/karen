@@ -8,7 +8,7 @@
   {
     "id": "gate-2-completeness",
     "tool": "eslint + structural stub scan (gap beyond check-docs.mjs's stub-marker slice)",
-    "coversCategories": ["stub-implementation"],
+    "coversCategories": ["stub-implementation", "stale-codegen-output"],
     "zeroTolerance": false
   },
   {

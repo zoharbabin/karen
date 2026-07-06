@@ -1,5 +1,11 @@
 # ops-mcp-server — Agent Context
 
+This file provides rules for Claude Code — the file itself is `CLAUDE.md`,
+which Claude Code reads directly, so that audience claim is satisfied.
+This file also provides rules for Cursor — Cursor reads `.cursorrules`,
+not `CLAUDE.md`, and no `.cursorrules` file exists anywhere in this repo,
+so that audience claim is not backed.
+
 This is an MCP server exposing `run_shell_command` and `read_config` tools to a
 connected LLM client for SRE runbook automation. It does not call an LLM itself.
 

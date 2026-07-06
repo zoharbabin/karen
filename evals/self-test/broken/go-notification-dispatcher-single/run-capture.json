@@ -146,8 +146,8 @@
           "exitCode": 1
         },
         "gate-6-test-integrity": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "README.md:43\taccuracy-overclaim: claims the json wire-format renderer is validated against a hand-labeled gold set via cmd/scoreformat, reporting 100% match against the v2 spec\nFAIL (1 issues)\n",
+          "exitCode": 1
         },
         "gate-7-agent-context": {
           "stdout": "PASS (0 issues)\n",
@@ -172,15 +172,15 @@
             ]
           },
           "gate-6-test-integrity": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": ["fp-decoy-accuracy-overclaim-readme-md"]
           },
           "gate-7-agent-context": {
             "count": 0,
             "fingerprint": []
           }
         },
-        "total": 4
+        "total": 5
       }
     },
     {
@@ -195,8 +195,8 @@
           "exitCode": 1
         },
         "gate-6-test-integrity": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "README.md:43\taccuracy-overclaim: claims the json wire-format renderer is validated against a hand-labeled gold set via cmd/scoreformat, reporting 100% match against the v2 spec\nFAIL (1 issues)\n",
+          "exitCode": 1
         },
         "gate-7-agent-context": {
           "stdout": "PASS (0 issues)\n",
@@ -220,15 +220,15 @@
             ]
           },
           "gate-6-test-integrity": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": ["fp-decoy-accuracy-overclaim-readme-md"]
           },
           "gate-7-agent-context": {
             "count": 0,
             "fingerprint": []
           }
         },
-        "total": 3
+        "total": 4
       }
     },
     {
@@ -243,8 +243,8 @@
           "exitCode": 1
         },
         "gate-6-test-integrity": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "README.md:43\taccuracy-overclaim: claims the json wire-format renderer is validated against a hand-labeled gold set via cmd/scoreformat, reporting 100% match against the v2 spec\nFAIL (1 issues)\n",
+          "exitCode": 1
         },
         "gate-7-agent-context": {
           "stdout": "PASS (0 issues)\n",
@@ -269,15 +269,15 @@
             ]
           },
           "gate-6-test-integrity": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": ["fp-decoy-accuracy-overclaim-readme-md"]
           },
           "gate-7-agent-context": {
             "count": 0,
             "fingerprint": []
           }
         },
-        "total": 4
+        "total": 5
       }
     },
     {
@@ -292,8 +292,8 @@
           "exitCode": 1
         },
         "gate-6-test-integrity": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "README.md:43\taccuracy-overclaim: claims the json wire-format renderer is validated against a hand-labeled gold set via cmd/scoreformat, reporting 100% match against the v2 spec\nFAIL (1 issues)\n",
+          "exitCode": 1
         },
         "gate-7-agent-context": {
           "stdout": "PASS (0 issues)\n",
@@ -318,15 +318,15 @@
             ]
           },
           "gate-6-test-integrity": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": ["fp-decoy-accuracy-overclaim-readme-md"]
           },
           "gate-7-agent-context": {
             "count": 0,
             "fingerprint": []
           }
         },
-        "total": 4
+        "total": 5
       }
     },
     {
@@ -341,8 +341,8 @@
           "exitCode": 1
         },
         "gate-6-test-integrity": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "README.md:43\taccuracy-overclaim: claims the json wire-format renderer is validated against a hand-labeled gold set via cmd/scoreformat, reporting 100% match against the v2 spec\nFAIL (1 issues)\n",
+          "exitCode": 1
         },
         "gate-7-agent-context": {
           "stdout": "PASS (0 issues)\n",
@@ -367,15 +367,15 @@
             ]
           },
           "gate-6-test-integrity": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": ["fp-decoy-accuracy-overclaim-readme-md"]
           },
           "gate-7-agent-context": {
             "count": 0,
             "fingerprint": []
           }
         },
-        "total": 4
+        "total": 5
       }
     },
     {
@@ -390,8 +390,8 @@
           "exitCode": 1
         },
         "gate-6-test-integrity": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "README.md:43\taccuracy-overclaim: claims the json wire-format renderer is validated against a hand-labeled gold set via cmd/scoreformat, reporting 100% match against the v2 spec\nFAIL (1 issues)\n",
+          "exitCode": 1
         },
         "gate-7-agent-context": {
           "stdout": "PASS (0 issues)\n",
@@ -416,15 +416,15 @@
             ]
           },
           "gate-6-test-integrity": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": ["fp-decoy-accuracy-overclaim-readme-md"]
           },
           "gate-7-agent-context": {
             "count": 0,
             "fingerprint": []
           }
         },
-        "total": 4
+        "total": 5
       }
     },
     {
@@ -439,8 +439,8 @@
           "exitCode": 1
         },
         "gate-6-test-integrity": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "README.md:43\taccuracy-overclaim: claims the json wire-format renderer is validated against a hand-labeled gold set via cmd/scoreformat, reporting 100% match against the v2 spec\nFAIL (1 issues)\n",
+          "exitCode": 1
         },
         "gate-7-agent-context": {
           "stdout": "PASS (0 issues)\n",
@@ -465,15 +465,15 @@
             ]
           },
           "gate-6-test-integrity": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": ["fp-decoy-accuracy-overclaim-readme-md"]
           },
           "gate-7-agent-context": {
             "count": 0,
             "fingerprint": []
           }
         },
-        "total": 4
+        "total": 5
       }
     }
   ]
