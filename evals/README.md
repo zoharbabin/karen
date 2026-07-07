@@ -115,3 +115,13 @@ Grading scripts, fixtures, and self-test pairs are complete and internally
 verified. `mode: 'full'` in the runner is structurally complete but untested
 until a real Karen skill exists to drive it — see
 [EVALS-PLAN.md §9](../EVALS-PLAN.md) for the rollout plan.
+
+This benchmark is a high-priority investment for the project, not an
+internal-only QA tool — see [EVALS-PLAN.md §11](../EVALS-PLAN.md#11-benchmark-integrity--investment-priority)
+for what's still ahead before scores from this suite get used to make the
+implementation-approach decision (§9 step 5) or get published outside this
+repo: a held-out fixture tier never committed to this repo, a per-fixture
+Specificity/Solvability/Integrity audit, judge-rubric calibration against a
+human-labeled reference set, versioning this benchmark itself once the
+fixture matrix stabilizes, and reporting per-dimension results rather than
+one blended score.
