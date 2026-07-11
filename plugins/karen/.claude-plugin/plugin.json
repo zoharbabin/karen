@@ -1,0 +1,16 @@
+{
+  "name": "karen",
+  "displayName": "Karen",
+  "description": "A quality-gate harness architect for AI coding agents. Karen interviews you and surveys your project, then designs a custom audit harness — shell scripts wired to your own tools, committed to your repo, run on every audit. The agent runs them, reads her verdict, and doesn't get to decide \"looks good\" instead.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Zohar Babin",
+    "url": "https://github.com/zoharbabin"
+  },
+  "homepage": "https://github.com/zoharbabin/karen",
+  "repository": "https://github.com/zoharbabin/karen",
+  "license": "MIT",
+  "keywords": ["quality-gate", "code-review", "harness", "audit", "linter", "security", "compliance"],
+  "skills": "./skills/",
+  "commands": "./commands/"
+}

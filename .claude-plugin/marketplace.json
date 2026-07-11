@@ -1,0 +1,15 @@
+{
+  "name": "karen-marketplace",
+  "owner": {
+    "name": "Zohar Babin",
+    "url": "https://github.com/zoharbabin"
+  },
+  "plugins": [
+    {
+      "name": "karen",
+      "source": "./plugins/karen",
+      "description": "Karen is a quality-gate harness architect for AI coding agents. She interviews you, surveys your project, and designs a custom audit harness wired to your own tools — then refuses to sign off until every complaint is resolved.",
+      "version": "0.1.0"
+    }
+  ]
+}

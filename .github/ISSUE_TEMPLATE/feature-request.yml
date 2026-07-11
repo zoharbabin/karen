@@ -1,0 +1,28 @@
+name: Feature request
+description: Propose a new Karen gate, a new deployment profile, a new eval fixture, or any other enhancement.
+title: "[feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What's missing or painful today
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: If this changes Karen's behavior, note whether it belongs in BLUEPRINT.md (design spec) first, per CONTRIBUTING.md.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Karen skill (plugins/karen/)
+        - Eval benchmark (evals/)
+        - Both / unsure
+    validations:
+      required: true

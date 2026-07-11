@@ -1,0 +1,45 @@
+name: Karen skill bug report
+description: Karen misbehaved during karen init or karen audit on your project.
+title: "[skill] "
+labels: ["skill", "bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing this. If you ran `/karen:feedback` inside Claude Code, paste the bundle it
+        showed you into the field below instead of retyping everything by hand.
+  - type: textarea
+    id: feedback-bundle
+    attributes:
+      label: Feedback bundle (from /karen:feedback), or a manual description
+      description: The redacted bundle Karen showed you before you filed this, if you used /karen:feedback.
+      placeholder: |
+        Paste the bundle here, or describe what happened if you filed this manually.
+    validations:
+      required: true
+  - type: input
+    id: karen-version
+    attributes:
+      label: Karen plugin version
+      description: From plugins/karen/.claude-plugin/plugin.json's version, or /plugin list.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What actually happened
+    validations:
+      required: true
+  - type: input
+    id: project-shape
+    attributes:
+      label: Project language / deployment shape
+      description: e.g. "TypeScript monorepo, browser-direct-js", "Go backend service", "Python SDK"
+    validations:
+      required: false

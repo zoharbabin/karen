@@ -1,0 +1,39 @@
+name: Eval benchmark issue
+description: A problem with a fixture, a grading script, or the benchmark's methodology in evals/.
+title: "[evals] "
+labels: ["evals", "bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For issues with a specific fixture (a planted issue that isn't real, a decoy that should be
+        real, a grading script scoring something wrong), please name the exact fixture and dimension —
+        see evals/README.md's grading-dimension table for the `score-*.js` names.
+  - type: input
+    id: fixture
+    attributes:
+      label: Fixture name
+      description: e.g. node-sdk-single, go-monorepo, python-mcp-server-single. Leave blank if this is about the runner or a cross-fixture concern.
+    validations:
+      required: false
+  - type: input
+    id: dimension
+    attributes:
+      label: Grading dimension / script
+      description: e.g. score-gate-issues.js, score-detection.js, or "runner" / "self-test" / "methodology" for non-fixture-specific issues.
+    validations:
+      required: false
+  - type: textarea
+    id: description
+    attributes:
+      label: What's wrong
+      description: What did you expect the fixture/grader to do, and what does it actually do?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: The exact command you ran (e.g. `node grading/score-gate-issues.js fixtures/node-sdk-single self-test/golden/node-sdk-single/run-capture.json`) and its output.
+    validations:
+      required: false

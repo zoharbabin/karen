@@ -1,0 +1,23 @@
+name: Evals self-test
+
+on:
+  push:
+    paths:
+      - "evals/**"
+      - ".github/workflows/evals-selftest.yml"
+  pull_request:
+    paths:
+      - "evals/**"
+      - ".github/workflows/evals-selftest.yml"
+
+jobs:
+  self-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Run self-test graders against golden and broken samples
+        run: node self-test/run-self-test.js
+        working-directory: evals
