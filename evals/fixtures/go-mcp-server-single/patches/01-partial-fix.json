@@ -1,4 +1,4 @@
 {
-  "fixedIssueIds": ["internal/tools/grep.go:28:shell-injection"],
-  "expectedDelta": { "gate-3-security": -1 }
+  "fixedIssueIds": ["internal/tools/notify.go:23:stub-implementation"],
+  "expectedDelta": { "gate-2-completeness": -1 }
 }

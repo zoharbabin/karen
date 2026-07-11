@@ -1,5 +1,5 @@
 {
-  "unaffectedIssueId": "internal/tools/shell.go:28:shell-injection",
-  "note": "Inserts a one-line comment above RunShell's exec.Command call, shifting it from line 28 to line 29. The fingerprint for this issue must stay identical (content-based, not file:line) and staleCount must increment, not reset.",
+  "unaffectedIssueId": "internal/tools/run_shell_command.go:33:shell-injection",
+  "note": "Inserts a one-line comment above RunShellCommand's exec.Command call, shifting it from line 33 to line 36. The fingerprint for this issue must stay identical (content-based, not file:line) and staleCount must increment, not reset.",
   "expectedDelta": { "gate-3-security": 0 }
 }

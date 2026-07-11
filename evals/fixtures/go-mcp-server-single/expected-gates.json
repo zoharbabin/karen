@@ -7,14 +7,14 @@
   },
   {
     "id": "gate-2-completeness",
-    "tool": "go vet",
-    "coversCategories": [],
+    "tool": "go vet + structural stub scan",
+    "coversCategories": ["stub-implementation"],
     "zeroTolerance": false
   },
   {
     "id": "gate-3-security",
     "tool": "gosec",
-    "coversCategories": ["shell-injection"],
+    "coversCategories": ["shell-injection", "path-traversal", "hardcoded-secret"],
     "zeroTolerance": true
   },
   {

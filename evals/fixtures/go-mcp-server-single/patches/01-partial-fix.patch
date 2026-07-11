@@ -1,32 +1,16 @@
-diff --git a/internal/tools/grep.go b/internal/tools/grep.go
-index d8d2dd6..66682f5 100644
---- a/internal/tools/grep.go
-+++ b/internal/tools/grep.go
-@@ -9,23 +9,16 @@ import (
- // itself is caller-supplied.
- const LogPath = "./data/server.log"
- 
--// GrepLogs searches LogPath for the caller's "query" argument. NOTE: like
--// RunShell, this concatenates the caller-supplied query straight into a
--// shell command string with no validation or quoting — a second instance
--// of the same class of vulnerability, in a different handler, so a partial
--// fix to one handler and not the other is a meaningfully distinct state a
--// gate must still catch.
-+// GrepLogs searches LogPath for the caller's "query" argument. Fixed: the
-+// query is now passed as a discrete argv element to grep directly — no
-+// shell is invoked, so there is no command string for the query to escape.
- func GrepLogs(args map[string]any) (string, error) {
- 	query, ok := args["query"].(string)
- 	if !ok || query == "" {
- 		return "", fmt.Errorf("grep_logs: missing required \"query\" argument")
- 	}
- 
--	// Unsanitized input reaching exec.Command via a shell: caller-controlled
--	// `query` is spliced directly into the command string, so a value like
--	// `x; rm -rf /` executes arbitrary shell commands with this process's
--	// privileges.
--	cmd := exec.Command("sh", "-c", "grep "+query+" "+LogPath)
-+	cmd := exec.Command("grep", query, LogPath)
- 	out, err := cmd.CombinedOutput()
- 	if err != nil {
- 		return "", fmt.Errorf("grep_logs: %w", err)
+diff --git a/internal/tools/notify.go b/internal/tools/notify.go
+index b0a4642..310746f 100644
+--- a/internal/tools/notify.go
++++ b/internal/tools/notify.go
+@@ -16,9 +16,7 @@ func LogNotifyStatus(channel string) {
+ // PageOnCall pages a human on-call channel before an irreversible tool
+ // action takes effect.
+ //
+-// Real issue (stub-implementation): exported, reachable from a tool handler
+-// path, but never implemented — panics instead of paging anyone. Any
+-// runbook step that depends on this silently fails to notify a human.
++// Fixed: PageOnCall now actually pages instead of panicking.
+ func PageOnCall(channel string, message string) {
+-	panic("not implemented")
++	fmt.Printf("paging %s: %s\n", channel, message)
+ }

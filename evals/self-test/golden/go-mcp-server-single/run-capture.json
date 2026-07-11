@@ -60,8 +60,8 @@
     },
     "gateScripts": {
       "gate-1-supply-chain": "#!/usr/bin/env bash\nset -euo pipefail\nROOT=\"$1\"\ncd \"$ROOT\"\nissues=0\nout=$(govulncheck ./... 2>/dev/null || true)\nwhile IFS= read -r vuln; do\n  [ -z \"$vuln\" ] && continue\n  echo -e \"go.mod\\t${vuln}\"\n  issues=$((issues + 1))\ndone < <(echo \"$out\" | grep -oE 'Vulnerability #[0-9]+: .*' || true)\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nelse\n  echo \"FAIL (${issues} issues)\"\n  exit 1\nfi\n",
-      "gate-2-completeness": "#!/usr/bin/env bash\nset -euo pipefail\nROOT=\"$1\"\ncd \"$ROOT\"\nissues=0\nout=$(go vet ./... 2>&1 || true)\nwhile IFS=: read -r file line rest; do\n  [ -z \"$file\" ] && continue\n  echo -e \"${file}:${line}\\t${rest# }\"\n  issues=$((issues + 1))\ndone < <(echo \"$out\" | grep -E '^\\./.*\\.go:[0-9]+:' || true)\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nelse\n  echo \"FAIL (${issues} issues)\"\n  exit 1\nfi\n",
-      "gate-3-security": "#!/usr/bin/env bash\nset -euo pipefail\nROOT=\"$1\"\ncd \"$ROOT\"\nissues=0\nwhile IFS=$'\\t' read -r file line msg; do\n  [ -z \"$file\" ] && continue\n  echo -e \"${file}:${line}\\t${msg}\"\n  issues=$((issues + 1))\ndone < <(gosec -fmt json ./... 2>/dev/null | python3 -c '\nimport json, sys\ndata = json.load(sys.stdin)\nfor issue in data.get(\"Issues\", []):\n    if issue.get(\"rule_id\") == \"G204\":\n        print(f\"{issue[\\\"file\\\"]}\\t{issue[\\\"line\\\"]}\\t{issue[\\\"details\\\"]}\")\n')\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nelse\n  echo \"FAIL (${issues} issues)\"\n  echo \"ZERO-TOLERANCE\"\n  exit 1\nfi\n",
+      "gate-2-completeness": "#!/usr/bin/env bash\nset -euo pipefail\nROOT=\"$1\"\ncd \"$ROOT\"\nissues=0\nout=$(go vet ./... 2>&1 || true)\nwhile IFS=: read -r file line rest; do\n  [ -z \"$file\" ] && continue\n  echo -e \"${file}:${line}\\t${rest# }\"\n  issues=$((issues + 1))\ndone < <(echo \"$out\" | grep -E '^\\./.*\\.go:[0-9]+:' || true)\nwhile IFS=: read -r file line _; do\n  [ -z \"$file\" ] && continue\n  echo -e \"${file}:${line}\\tstub implementation left in exported function\"\n  issues=$((issues + 1))\ndone < <(grep -rn --include='*.go' -B1 'panic(\"not implemented\")' . | grep -oE '^[^ ]+\\.go-[0-9]+' | tr '-' ':' || true)\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nelse\n  echo \"FAIL (${issues} issues)\"\n  exit 1\nfi\n",
+      "gate-3-security": "#!/usr/bin/env bash\nset -euo pipefail\nROOT=\"$1\"\ncd \"$ROOT\"\nissues=0\nwhile IFS=$'\\t' read -r file line msg; do\n  [ -z \"$file\" ] && continue\n  echo -e \"${file}:${line}\\t${msg}\"\n  issues=$((issues + 1))\ndone < <(gosec -fmt json ./... 2>/dev/null | python3 -c '\nimport json, sys\ndata = json.load(sys.stdin)\nfor issue in data.get(\"Issues\", []):\n    if issue.get(\"rule_id\") in (\"G204\", \"G304\", \"G101\"):\n        print(f\"{issue[\\\"file\\\"]}\\t{issue[\\\"line\\\"]}\\t{issue[\\\"details\\\"]}\")\n')\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nelse\n  echo \"FAIL (${issues} issues)\"\n  echo \"ZERO-TOLERANCE\"\n  exit 1\nfi\n",
       "gate-6-test-integrity": "#!/usr/bin/env bash\nset -euo pipefail\nROOT=\"$1\"\ncd \"$ROOT\"\nissues=0\nout=$(go test -coverprofile=coverage.out ./... 2>&1 || true)\nwhile IFS= read -r line; do\n  echo -e \"cmd/server\\tgo test failure: ${line}\"\n  issues=$((issues + 1))\ndone < <(echo \"$out\" | grep -E '^--- FAIL' || true)\npct=$(go tool cover -func=coverage.out 2>/dev/null | tail -1 | awk '{print $NF}' | tr -d '%')\nif [ -n \"$pct\" ] && awk \"BEGIN{exit !($pct < 80)}\"; then\n  echo -e \"coverage.out\\tcoverage ${pct}% below 80% threshold\"\n  issues=$((issues + 1))\nfi\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nelse\n  echo \"FAIL (${issues} issues)\"\n  exit 1\nfi\n",
       "gate-7-agent-context": "#!/usr/bin/env bash\nset -euo pipefail\nROOT=\"$1\"\ncd \"$ROOT\"\nissues=0\nif [ ! -f AGENTS.md ]; then\n  echo -e \"AGENTS.md\\tmissing agent context file at repo root\"\n  issues=$((issues + 1))\nelse\n  grep -q \"karen-mcp-go\" AGENTS.md || {\n    echo -e \"AGENTS.md\\tmissing project-identity summary agents need before making changes\"\n    issues=$((issues + 1))\n  }\nfi\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"\n  exit 0\nelse\n  echo \"FAIL (${issues} issues)\"\n  exit 1\nfi\n"
     }
@@ -71,8 +71,8 @@
       "trigger": "initial",
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-3-security": { "stdout": "internal/tools/shell.go:28\tshell-injection: args.Command spliced directly into `sh -c` with no validation — arbitrary command execution via any connected MCP client\ninternal/tools/grep.go:28\tshell-injection: caller-supplied query spliced directly into `sh -c` with no validation — arbitrary command execution via grep_logs\nFAIL (2 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
+        "gate-2-completeness": { "stdout": "internal/tools/notify.go:23\tstub implementation left in exported function\nFAIL (1 issues)\n", "exitCode": 1 },
+        "gate-3-security": { "stdout": "internal/tools/run_shell_command.go:33\tshell-injection: args.Command spliced directly into `sh -c` with no validation — arbitrary command execution via any connected MCP client\ninternal/tools/read_config.go:26\tpath-traversal: args.Filename joined directly onto cfg.RootDir with no containment check — arbitrary file read via read_config\ninternal/config/config.go:29\thardcoded-secret: live-looking API token committed to source as the default admin credential\nFAIL (3 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
         "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
       },
@@ -81,12 +81,12 @@
         "timestamp": "2026-06-25T10:00:00Z",
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
-          "gate-2-completeness": { "count": 0, "fingerprint": [] },
-          "gate-3-security": { "count": 2, "fingerprint": ["fp-shellinj-tools-shell", "fp-shellinj-tools-grep"] },
+          "gate-2-completeness": { "count": 1, "fingerprint": ["fp-stub-notify"] },
+          "gate-3-security": { "count": 3, "fingerprint": ["fp-shellinj-run-shell-command", "fp-pathtrav-read-config", "fp-secret-config"] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 2
+        "total": 4
       }
     },
     {
@@ -94,7 +94,7 @@
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-3-security": { "stdout": "internal/tools/shell.go:28\tshell-injection: args.Command spliced directly into `sh -c` with no validation — arbitrary command execution via any connected MCP client\nFAIL (1 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
+        "gate-3-security": { "stdout": "internal/tools/run_shell_command.go:33\tshell-injection: args.Command spliced directly into `sh -c` with no validation — arbitrary command execution via any connected MCP client\ninternal/tools/read_config.go:26\tpath-traversal: args.Filename joined directly onto cfg.RootDir with no containment check — arbitrary file read via read_config\ninternal/config/config.go:29\thardcoded-secret: live-looking API token committed to source as the default admin credential\nFAIL (3 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
         "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
       },
@@ -104,11 +104,11 @@
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
           "gate-2-completeness": { "count": 0, "fingerprint": [] },
-          "gate-3-security": { "count": 1, "fingerprint": ["fp-shellinj-tools-shell"] },
+          "gate-3-security": { "count": 3, "fingerprint": ["fp-shellinj-run-shell-command", "fp-pathtrav-read-config", "fp-secret-config"] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 1
+        "total": 3
       }
     },
     {
@@ -116,7 +116,7 @@
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-3-security": { "stdout": "internal/tools/shell.go:28\tshell-injection: args.Command spliced directly into `sh -c` with no validation — arbitrary command execution via any connected MCP client\ninternal/tools/config.go:18\tshell-injection: caller-supplied dest path spliced directly into `sh -c` with no validation — arbitrary command execution via backup_config\nFAIL (2 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
+        "gate-3-security": { "stdout": "internal/tools/run_shell_command.go:33\tshell-injection: args.Command spliced directly into `sh -c` with no validation — arbitrary command execution via any connected MCP client\ninternal/tools/read_config.go:26\tpath-traversal: args.Filename joined directly onto cfg.RootDir with no containment check — arbitrary file read via read_config\ninternal/config/config.go:29\thardcoded-secret: live-looking API token committed to source as the default admin credential\ninternal/tools/backup_config.go:24\tshell-injection: args.Dest spliced directly into `sh -c` with no validation — arbitrary command execution via backup_config\nFAIL (4 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
         "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
       },
@@ -126,11 +126,11 @@
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
           "gate-2-completeness": { "count": 0, "fingerprint": [] },
-          "gate-3-security": { "count": 2, "fingerprint": ["fp-shellinj-tools-shell", "fp-shellinj-tools-config"] },
+          "gate-3-security": { "count": 4, "fingerprint": ["fp-shellinj-run-shell-command", "fp-pathtrav-read-config", "fp-secret-config", "fp-shellinj-backup-config"] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 2
+        "total": 4
       }
     },
     {
@@ -138,7 +138,7 @@
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-3-security": { "stdout": "internal/tools/shell.go:29\tshell-injection: args.Command spliced directly into `sh -c` with no validation — arbitrary command execution via any connected MCP client\ninternal/tools/config.go:18\tshell-injection: caller-supplied dest path spliced directly into `sh -c` with no validation — arbitrary command execution via backup_config\nFAIL (2 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
+        "gate-3-security": { "stdout": "internal/tools/run_shell_command.go:36\tshell-injection: args.Command spliced directly into `sh -c` with no validation — arbitrary command execution via any connected MCP client\ninternal/tools/read_config.go:26\tpath-traversal: args.Filename joined directly onto cfg.RootDir with no containment check — arbitrary file read via read_config\ninternal/config/config.go:29\thardcoded-secret: live-looking API token committed to source as the default admin credential\ninternal/tools/backup_config.go:24\tshell-injection: args.Dest spliced directly into `sh -c` with no validation — arbitrary command execution via backup_config\nFAIL (4 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
         "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
       },
@@ -148,11 +148,11 @@
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
           "gate-2-completeness": { "count": 0, "fingerprint": [] },
-          "gate-3-security": { "count": 2, "fingerprint": ["fp-shellinj-tools-shell", "fp-shellinj-tools-config"] },
+          "gate-3-security": { "count": 4, "fingerprint": ["fp-shellinj-run-shell-command", "fp-pathtrav-read-config", "fp-secret-config", "fp-shellinj-backup-config"] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 2
+        "total": 4
       }
     },
     {
@@ -160,7 +160,7 @@
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-3-security": { "stdout": "internal/tools/shell.go:29\tshell-injection: args.Command spliced directly into `sh -c` with no validation — arbitrary command execution via any connected MCP client\ninternal/tools/config.go:18\tshell-injection: caller-supplied dest path spliced directly into `sh -c` with no validation — arbitrary command execution via backup_config\nFAIL (2 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
+        "gate-3-security": { "stdout": "internal/tools/run_shell_command.go:36\tshell-injection: args.Command spliced directly into `sh -c` with no validation — arbitrary command execution via any connected MCP client\ninternal/tools/read_config.go:26\tpath-traversal: args.Filename joined directly onto cfg.RootDir with no containment check — arbitrary file read via read_config\ninternal/config/config.go:29\thardcoded-secret: live-looking API token committed to source as the default admin credential\ninternal/tools/backup_config.go:24\tshell-injection: args.Dest spliced directly into `sh -c` with no validation — arbitrary command execution via backup_config\nFAIL (4 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
         "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
       },
@@ -170,11 +170,11 @@
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
           "gate-2-completeness": { "count": 0, "fingerprint": [] },
-          "gate-3-security": { "count": 2, "fingerprint": ["fp-shellinj-tools-shell", "fp-shellinj-tools-config"] },
+          "gate-3-security": { "count": 4, "fingerprint": ["fp-shellinj-run-shell-command", "fp-pathtrav-read-config", "fp-secret-config", "fp-shellinj-backup-config"] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 2
+        "total": 4
       }
     },
     {
@@ -182,7 +182,7 @@
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-3-security": { "stdout": "internal/tools/shell.go:29\tshell-injection: args.Command spliced directly into `sh -c` with no validation — arbitrary command execution via any connected MCP client\ninternal/tools/config.go:18\tshell-injection: caller-supplied dest path spliced directly into `sh -c` with no validation — arbitrary command execution via backup_config\nFAIL (2 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
+        "gate-3-security": { "stdout": "internal/tools/run_shell_command.go:36\tshell-injection: args.Command spliced directly into `sh -c` with no validation — arbitrary command execution via any connected MCP client\ninternal/tools/read_config.go:26\tpath-traversal: args.Filename joined directly onto cfg.RootDir with no containment check — arbitrary file read via read_config\ninternal/config/config.go:29\thardcoded-secret: live-looking API token committed to source as the default admin credential\ninternal/tools/backup_config.go:24\tshell-injection: args.Dest spliced directly into `sh -c` with no validation — arbitrary command execution via backup_config\nFAIL (4 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
         "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
       },
@@ -192,11 +192,11 @@
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
           "gate-2-completeness": { "count": 0, "fingerprint": [] },
-          "gate-3-security": { "count": 2, "fingerprint": ["fp-shellinj-tools-shell", "fp-shellinj-tools-config"] },
+          "gate-3-security": { "count": 4, "fingerprint": ["fp-shellinj-run-shell-command", "fp-pathtrav-read-config", "fp-secret-config", "fp-shellinj-backup-config"] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 2
+        "total": 4
       }
     },
     {
@@ -204,7 +204,7 @@
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-3-security": { "stdout": "internal/tools/shell.go:29\tshell-injection: args.Command spliced directly into `sh -c` with no validation — arbitrary command execution via any connected MCP client\ninternal/tools/config.go:18\tshell-injection: caller-supplied dest path spliced directly into `sh -c` with no validation — arbitrary command execution via backup_config\nFAIL (2 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
+        "gate-3-security": { "stdout": "internal/tools/run_shell_command.go:36\tshell-injection: args.Command spliced directly into `sh -c` with no validation — arbitrary command execution via any connected MCP client\ninternal/tools/read_config.go:26\tpath-traversal: args.Filename joined directly onto cfg.RootDir with no containment check — arbitrary file read via read_config\ninternal/config/config.go:29\thardcoded-secret: live-looking API token committed to source as the default admin credential\ninternal/tools/backup_config.go:24\tshell-injection: args.Dest spliced directly into `sh -c` with no validation — arbitrary command execution via backup_config\nFAIL (4 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
         "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
       },
@@ -214,11 +214,11 @@
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
           "gate-2-completeness": { "count": 0, "fingerprint": [] },
-          "gate-3-security": { "count": 2, "fingerprint": ["fp-shellinj-tools-shell", "fp-shellinj-tools-config"] },
+          "gate-3-security": { "count": 4, "fingerprint": ["fp-shellinj-run-shell-command", "fp-pathtrav-read-config", "fp-secret-config", "fp-shellinj-backup-config"] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 2
+        "total": 4
       }
     }
   ]

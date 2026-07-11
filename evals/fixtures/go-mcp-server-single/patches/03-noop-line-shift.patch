@@ -1,12 +1,14 @@
-diff --git a/internal/tools/shell.go b/internal/tools/shell.go
-index 7c7819b..3b38b8c 100644
---- a/internal/tools/shell.go
-+++ b/internal/tools/shell.go
-@@ -16,6 +16,7 @@ import (
- // a shell command string with no validation — the planted vulnerability
- // this fixture exists to catch.
- func RunShell(args map[string]any) (string, error) {
-+	// Default to the current directory when no "dir" argument is supplied.
- 	dir, ok := args["dir"].(string)
- 	if !ok || dir == "" {
- 		dir = "."
+diff --git a/internal/tools/run_shell_command.go b/internal/tools/run_shell_command.go
+index c667eb8..4843c63 100644
+--- a/internal/tools/run_shell_command.go
++++ b/internal/tools/run_shell_command.go
+@@ -30,6 +30,9 @@ type RunShellCommandArgs struct {
+ // tool-call input) can run arbitrary shell commands with this process's
+ // privileges.
+ func RunShellCommand(args RunShellCommandArgs) (string, error) {
++	// Noop: this comment is purely cosmetic, added to shift the line number
++	// below without changing any behavior — the shell-injection issue on
++	// the exec.Command call underneath is still present and unfixed.
+ 	cmd := exec.Command("sh", "-c", args.Command)
+ 	out, err := cmd.CombinedOutput()
+ 	if err != nil {

@@ -229,7 +229,7 @@ Every script prints exactly one JSON object to stdout and exits `0` regardless o
 
 - `metrics` shape varies per dimension (precision/recall/f1 for set-detection dimensions; boolean-list pass/fail for contract-conformance dimensions; delta-correctness booleans for §4.6–4.8) — each script defines its own `metrics` keys, documented in a header comment, but every script has `dimension`, `fixture`, `pass`, `details` at minimum.
 - `pass` is that dimension's own binary pass/fail per the thresholds defined in that script (documented in-file) — aggregate-report.js does not redefine per-dimension pass criteria, only rolls them up.
-- Shared parsing/diffing helpers live in `evals/grading/lib/` (`parse-gate-output.js`, `set-metrics.js`, `issue-id.js`) — every scorer requires from there rather than reimplementing gate-output parsing or precision/recall math.
+- Shared parsing/diffing helpers live in `evals/grading/lib/` (`parse-gate-output.js` — exports both `parseGateOutput()` and `issueId()`; `set-metrics.js`) — every scorer requires from there rather than reimplementing gate-output parsing or precision/recall math.
 
 `aggregate-report.js` takes N score-JSON files (one run's worth, or across k repeated runs for a fixture) and prints a combined report: per-dimension mean ± SD across runs where k>1, plus overall pass/fail per fixture and across the fixture suite.
 

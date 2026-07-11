@@ -1,18 +1,22 @@
-diff --git a/src/storage.ts b/src/storage.ts
-new file mode 100644
-index 0000000..bb69b89
---- /dev/null
-+++ b/src/storage.ts
-@@ -0,0 +1,12 @@
-+/**
-+ * @internal
-+ * Persists the "remember me" login preference across sessions.
-+ */
-+const REMEMBER_ME_KEY = 'teaching-avatar-remember-me';
-+// New issue (hardcoded-secret): static encryption key used to obscure the
-+// stored preference value, committed directly to source.
-+const STORAGE_ENCRYPTION_KEY = 'ta_enc_9f3d7c1b8a4e0f2d6c5b9a3e7f1d0c4b';
-+
-+export function persistRememberMe(value: boolean): void {
-+  localStorage.setItem(REMEMBER_ME_KEY, `${STORAGE_ENCRYPTION_KEY}:${value}`);
-+}
+diff --git a/src/analytics.ts b/src/analytics.ts
+index 5d65ba7..0c897ff 100644
+--- a/src/analytics.ts
++++ b/src/analytics.ts
+@@ -6,6 +6,9 @@
+ const ANALYTICS_ENDPOINT = 'https://telemetry.example-avatar.com/v1/beacon';
+ // Static write-only ingest key for the telemetry beacon endpoint.
+ const ANALYTICS_API_KEY = 'FAKE-NOT-A-REAL-SECRET-51HZ2z9Kj3mQ7pR8tYw0aC6dEf1GhIjKlMnOpQr';
++// New issue (hardcoded-secret): fallback signing key for retry-queue
++// payloads, committed directly to source, used only within this module.
++const RETRY_QUEUE_SIGNING_KEY = 'ta_retry_7c1b9f3d8a4e0f2d6c5b3e7f1d0c4b9a';
+
+ export function sendUsageBeacon(event: string): void {
+   void fetch(ANALYTICS_ENDPOINT, {
+@@ -14,6 +17,7 @@ export function sendUsageBeacon(event: string): void {
+     headers: {
+       'content-type': 'application/json',
+       authorization: `Bearer ${ANALYTICS_API_KEY}`,
++      'x-retry-signature': RETRY_QUEUE_SIGNING_KEY,
+     },
+     body: JSON.stringify({ event, ts: Date.now() }),
+   });

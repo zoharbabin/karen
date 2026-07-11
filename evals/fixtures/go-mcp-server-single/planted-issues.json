@@ -1,20 +1,44 @@
 [
   {
-    "file": "internal/tools/shell.go",
-    "line": 28,
+    "file": "internal/tools/run_shell_command.go",
+    "line": 33,
     "category": "shell-injection",
     "isDecoy": false
   },
   {
-    "file": "internal/tools/grep.go",
-    "line": 28,
-    "category": "shell-injection",
+    "file": "internal/tools/read_config.go",
+    "line": 26,
+    "category": "path-traversal",
     "isDecoy": false
   },
   {
-    "file": "internal/tools/read_file.go",
-    "line": 55,
+    "file": "internal/tools/read_config.go",
+    "line": 43,
     "category": "shell-injection",
+    "isDecoy": true
+  },
+  {
+    "file": "internal/tools/notify.go",
+    "line": 23,
+    "category": "stub-implementation",
+    "isDecoy": false
+  },
+  {
+    "file": "internal/tools/notify.go",
+    "line": 13,
+    "category": "stub-implementation",
+    "isDecoy": true
+  },
+  {
+    "file": "internal/config/config.go",
+    "line": 29,
+    "category": "hardcoded-secret",
+    "isDecoy": false
+  },
+  {
+    "file": "internal/config/config.go",
+    "line": 21,
+    "category": "hardcoded-secret",
     "isDecoy": true
   }
 ]

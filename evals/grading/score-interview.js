@@ -79,7 +79,9 @@ function keywordsOf(topic) {
 // if it contains the full topic phrase as a case-insensitive substring, or
 // (fallback, since real questions rarely echo a ground-truth phrase
 // verbatim) contains any of the topic's significant keywords as a whole
-// word, case-insensitive.
+// word, case-insensitive. Used for mustAskRecall, where a generous match is
+// the safer failure direction — a missed match wrongly penalizes a question
+// Karen actually asked.
 function findMatchingMessage(topic, karenMessages) {
   const topicLower = topic.toLowerCase();
   const keywords = keywordsOf(topic);
@@ -91,6 +93,45 @@ function findMatchingMessage(topic, karenMessages) {
     for (const keyword of keywords) {
       const wordBoundary = new RegExp(`\\b${keyword}\\b`, 'i');
       if (wordBoundary.test(message)) {
+        return message;
+      }
+    }
+  }
+  return null;
+}
+
+// Stricter match for mustNotAsk violations, where a false accusation is the
+// costly failure direction. A single shared overloaded word (e.g. "runtime"
+// meaning "at runtime" in an LLM question vs. "runtime dependencies" in a
+// package.json question; "coverage" meaning the coverage bar vs. the
+// coverage tool) produces a false-positive violation under any-keyword
+// matching. Requiring every significant keyword to appear means a genuine
+// re-ask of an already-known fact — which naturally echoes most of that
+// fact's own words — still matches, while an incidental one-word collision
+// does not.
+//
+// Matched within a single sentence, not the whole message. A karen turn
+// routinely states an already-known fact ("...with zero runtime
+// dependencies.") and then asks a separate, legitimate question in the next
+// sentence of the same turn ("...and whether there's any compliance
+// requirement?"). Whole-message matching lets "whether" from the unrelated
+// question combine with "runtime"/"dependencies" from the fact statement
+// into a false violation; splitting on sentence boundaries keeps each
+// keyword set scoped to the sentence that actually asked or stated it.
+function splitSentences(message) {
+  return message.split(/(?<=[.?!])\s+/);
+}
+
+function findViolatingMessage(topic, karenMessages) {
+  const topicLower = topic.toLowerCase();
+  const keywords = keywordsOf(topic);
+  for (const message of karenMessages) {
+    for (const sentence of splitSentences(message)) {
+      const sentenceLower = sentence.toLowerCase();
+      if (topicLower.length > 0 && sentenceLower.includes(topicLower)) {
+        return message;
+      }
+      if (keywords.length > 0 && keywords.every((keyword) => new RegExp(`\\b${keyword}\\b`, 'i').test(sentence))) {
         return message;
       }
     }
@@ -151,7 +192,7 @@ const mustNotAskTopics = mustNotAskSection ? extractTopics(mustNotAskSection) : 
 
 const violations = [];
 for (const topic of mustNotAskTopics) {
-  const matchedMessage = findMatchingMessage(topic, karenMessages);
+  const matchedMessage = findViolatingMessage(topic, karenMessages);
   if (matchedMessage) {
     violations.push({ topic, matchedMessage });
   }

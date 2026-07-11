@@ -182,18 +182,25 @@ function scoreGate(gateId, entries, threshold, trippedExitCode, details) {
     (v) => v === true
   );
 
+  // The expected trip point is wherever staleCount (already pinned down by
+  // incrementCorrect above, recursively grounded at the baseline entry)
+  // first reaches the threshold — NOT always 04-repeat-noop-3. §4.7's
+  // 03-noop-line-shift step deliberately does not reset staleCount (that's
+  // what fingerprint stability means), so a gate whose issue also survived
+  // that step arrives at the repeat-noop trio already partway to threshold,
+  // and legitimately trips on run 1 or 2 instead of run 3.
   let trippedAtCorrectRun = null;
   if (staysStuck && step1.staleCount !== undefined && step2.staleCount !== undefined && step3.staleCount !== undefined) {
-    const notTrippedAfterRun1 = step1.staleCount < threshold;
-    const notTrippedAfterRun2 = step2.staleCount < threshold;
-    const trippedAfterRun3 = step3.staleCount >= threshold;
-    trippedAtCorrectRun = notTrippedAfterRun1 && notTrippedAfterRun2 && trippedAfterRun3;
+    const expectedTripped = [step1.staleCount >= threshold, step2.staleCount >= threshold, step3.staleCount >= threshold];
+    // Once tripped, staleCount only grows (fingerprint stays unchanged for
+    // the rest of the window), so a legitimate trip never un-trips.
+    trippedAtCorrectRun = expectedTripped.every((tripped, i) => !tripped || expectedTripped.slice(i).every(Boolean));
     if (!trippedAtCorrectRun) {
       details.push({
         field: `${gateId}.trippedAtCorrectRun`,
         threshold,
         staleCountSequence,
-        issue: 'circuit did not trip exactly on 04-repeat-noop-3 (tripped early, late, or never)',
+        issue: 'staleCount crossed the threshold and then dropped back below it — circuit must stay tripped once staleCount reaches threshold',
       });
     }
   }
@@ -203,17 +210,25 @@ function scoreGate(gateId, entries, threshold, trippedExitCode, details) {
   const exitCode2 = auditLevelExitCode(run2Entry);
   const exitCode3 = auditLevelExitCode(run3Entry);
   if (trippedAtCorrectRun !== null && (exitCode1 !== undefined || exitCode2 !== undefined || exitCode3 !== undefined)) {
-    const beforeTripOk = (exitCode1 === undefined || exitCode1 !== trippedExitCode) && (exitCode2 === undefined || exitCode2 !== trippedExitCode);
-    const atTripOk = exitCode3 === undefined || exitCode3 === trippedExitCode;
-    auditExitCodeCorrect = beforeTripOk && atTripOk;
+    // expectedTripped[i] is only defined inside the trippedAtCorrectRun
+    // branch above; recompute here from the same staleCount data rather
+    // than assuming the trip point is always run 3.
+    const expected = [step1.staleCount >= threshold, step2.staleCount >= threshold, step3.staleCount >= threshold];
+    const actual = [exitCode1, exitCode2, exitCode3];
+    auditExitCodeCorrect = expected.every((tripped, i) => {
+      const code = actual[i];
+      if (code === undefined) return true;
+      return tripped ? code === trippedExitCode : code !== trippedExitCode;
+    });
     if (!auditExitCodeCorrect) {
       details.push({
         field: `${gateId}.auditExitCodeCorrect`,
         expectedExitCodeAtTrip: trippedExitCode,
+        expectedTrippedPerRun: expected,
         exitCode1,
         exitCode2,
         exitCode3,
-        issue: 'audit-level exit code did not match circuitBreaker.exitCode exactly at the trip run',
+        issue: 'audit-level exit code did not match circuitBreaker.exitCode on exactly the runs where staleCount reached threshold',
       });
     }
   }

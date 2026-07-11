@@ -294,7 +294,7 @@
           "exitCode": 0
         },
         "gate-3-security": {
-          "stdout": "src/sdk.ts:34\tglobal write to window.__teachingAvatarSDKInstances outside constructor's own opt-in config — violates CLAUDE.md's no-window-write rule\nsrc/analytics.ts:8\thardcoded API key committed to source — static bearer token for the telemetry beacon endpoint\nsrc/analytics.ts:13\tfetch call sets credentials: 'include' — violates CLAUDE.md's no-credentials-include rule\nsrc/storage.ts:8\thardcoded encryption key committed to source — static key used to obscure a stored preference value\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "stdout": "src/sdk.ts:34\tglobal write to window.__teachingAvatarSDKInstances outside constructor's own opt-in config — violates CLAUDE.md's no-window-write rule\nsrc/analytics.ts:8\thardcoded API key committed to source — static bearer token for the telemetry beacon endpoint\nsrc/analytics.ts:13\tfetch call sets credentials: 'include' — violates CLAUDE.md's no-credentials-include rule\nsrc/analytics.ts:11\thardcoded signing key committed to source — static retry-queue signature key\nFAIL (4 issues)\nZERO-TOLERANCE\n",
           "exitCode": 1
         }
       },
@@ -328,7 +328,7 @@
               "fp-global-scope-write-sdk",
               "fp-hardcoded-secret-analytics",
               "fp-credentials-include-analytics",
-              "fp-hardcoded-secret-storage"
+              "fp-hardcoded-secret-retry-key"
             ]
           }
         },
@@ -359,7 +359,7 @@
           "exitCode": 0
         },
         "gate-3-security": {
-          "stdout": "src/sdk.ts:38\tglobal write to window.__teachingAvatarSDKInstances outside constructor's own opt-in config — violates CLAUDE.md's no-window-write rule\nsrc/analytics.ts:8\thardcoded API key committed to source — static bearer token for the telemetry beacon endpoint\nsrc/analytics.ts:13\tfetch call sets credentials: 'include' — violates CLAUDE.md's no-credentials-include rule\nsrc/storage.ts:8\thardcoded encryption key committed to source — static key used to obscure a stored preference value\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "stdout": "src/sdk.ts:38\tglobal write to window.__teachingAvatarSDKInstances outside constructor's own opt-in config — violates CLAUDE.md's no-window-write rule\nsrc/analytics.ts:8\thardcoded API key committed to source — static bearer token for the telemetry beacon endpoint\nsrc/analytics.ts:13\tfetch call sets credentials: 'include' — violates CLAUDE.md's no-credentials-include rule\nsrc/analytics.ts:11\thardcoded signing key committed to source — static retry-queue signature key\nFAIL (4 issues)\nZERO-TOLERANCE\n",
           "exitCode": 1
         }
       },
@@ -393,7 +393,7 @@
               "fp-global-scope-write-sdk",
               "fp-hardcoded-secret-analytics",
               "fp-credentials-include-analytics",
-              "fp-hardcoded-secret-storage"
+              "fp-hardcoded-secret-retry-key"
             ]
           }
         },
@@ -424,7 +424,7 @@
           "exitCode": 0
         },
         "gate-3-security": {
-          "stdout": "src/sdk.ts:38\tglobal write to window.__teachingAvatarSDKInstances outside constructor's own opt-in config — violates CLAUDE.md's no-window-write rule\nsrc/analytics.ts:8\thardcoded API key committed to source — static bearer token for the telemetry beacon endpoint\nsrc/analytics.ts:13\tfetch call sets credentials: 'include' — violates CLAUDE.md's no-credentials-include rule\nsrc/storage.ts:8\thardcoded encryption key committed to source — static key used to obscure a stored preference value\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "stdout": "src/sdk.ts:38\tglobal write to window.__teachingAvatarSDKInstances outside constructor's own opt-in config — violates CLAUDE.md's no-window-write rule\nsrc/analytics.ts:8\thardcoded API key committed to source — static bearer token for the telemetry beacon endpoint\nsrc/analytics.ts:13\tfetch call sets credentials: 'include' — violates CLAUDE.md's no-credentials-include rule\nsrc/analytics.ts:11\thardcoded signing key committed to source — static retry-queue signature key\nFAIL (4 issues)\nZERO-TOLERANCE\n",
           "exitCode": 1
         }
       },
@@ -458,7 +458,7 @@
               "fp-global-scope-write-sdk",
               "fp-hardcoded-secret-analytics",
               "fp-credentials-include-analytics",
-              "fp-hardcoded-secret-storage"
+              "fp-hardcoded-secret-retry-key"
             ]
           }
         },
@@ -489,7 +489,7 @@
           "exitCode": 0
         },
         "gate-3-security": {
-          "stdout": "src/sdk.ts:38\tglobal write to window.__teachingAvatarSDKInstances outside constructor's own opt-in config — violates CLAUDE.md's no-window-write rule\nsrc/analytics.ts:8\thardcoded API key committed to source — static bearer token for the telemetry beacon endpoint\nsrc/analytics.ts:13\tfetch call sets credentials: 'include' — violates CLAUDE.md's no-credentials-include rule\nsrc/storage.ts:8\thardcoded encryption key committed to source — static key used to obscure a stored preference value\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "stdout": "src/sdk.ts:38\tglobal write to window.__teachingAvatarSDKInstances outside constructor's own opt-in config — violates CLAUDE.md's no-window-write rule\nsrc/analytics.ts:8\thardcoded API key committed to source — static bearer token for the telemetry beacon endpoint\nsrc/analytics.ts:13\tfetch call sets credentials: 'include' — violates CLAUDE.md's no-credentials-include rule\nsrc/analytics.ts:11\thardcoded signing key committed to source — static retry-queue signature key\nFAIL (4 issues)\nZERO-TOLERANCE\n",
           "exitCode": 1
         }
       },
@@ -523,7 +523,7 @@
               "fp-global-scope-write-sdk",
               "fp-hardcoded-secret-analytics",
               "fp-credentials-include-analytics",
-              "fp-hardcoded-secret-storage"
+              "fp-hardcoded-secret-retry-key"
             ]
           }
         },
@@ -554,7 +554,7 @@
           "exitCode": 0
         },
         "gate-3-security": {
-          "stdout": "src/sdk.ts:38\tglobal write to window.__teachingAvatarSDKInstances outside constructor's own opt-in config — violates CLAUDE.md's no-window-write rule\nsrc/analytics.ts:8\thardcoded API key committed to source — static bearer token for the telemetry beacon endpoint\nsrc/analytics.ts:13\tfetch call sets credentials: 'include' — violates CLAUDE.md's no-credentials-include rule\nsrc/storage.ts:8\thardcoded encryption key committed to source — static key used to obscure a stored preference value\nFAIL (4 issues)\nZERO-TOLERANCE\n",
+          "stdout": "src/sdk.ts:38\tglobal write to window.__teachingAvatarSDKInstances outside constructor's own opt-in config — violates CLAUDE.md's no-window-write rule\nsrc/analytics.ts:8\thardcoded API key committed to source — static bearer token for the telemetry beacon endpoint\nsrc/analytics.ts:13\tfetch call sets credentials: 'include' — violates CLAUDE.md's no-credentials-include rule\nsrc/analytics.ts:11\thardcoded signing key committed to source — static retry-queue signature key\nFAIL (4 issues)\nZERO-TOLERANCE\n",
           "exitCode": 1
         }
       },
@@ -588,7 +588,7 @@
               "fp-global-scope-write-sdk",
               "fp-hardcoded-secret-analytics",
               "fp-credentials-include-analytics",
-              "fp-hardcoded-secret-storage"
+              "fp-hardcoded-secret-retry-key"
             ]
           }
         },

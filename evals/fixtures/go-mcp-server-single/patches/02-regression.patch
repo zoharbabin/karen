@@ -1,21 +1,37 @@
-diff --git a/cmd/server/main.go b/cmd/server/main.go
-index 765f405..c175538 100644
---- a/cmd/server/main.go
-+++ b/cmd/server/main.go
-@@ -17,6 +17,7 @@ func main() {
- 	server.Register("run_shell", tools.RunShell)
- 	server.Register("read_file", tools.ReadFile)
- 	server.Register("grep_logs", tools.GrepLogs)
-+	server.Register("backup_config", tools.BackupConfig)
+diff --git a/internal/mcpserver/server.go b/internal/mcpserver/server.go
+index 00de49b..9f85cd5 100644
+--- a/internal/mcpserver/server.go
++++ b/internal/mcpserver/server.go
+@@ -81,6 +81,16 @@ func dispatchToolCall(req request) response {
+ 	}
  
- 	if err := server.Serve(os.Stdin, os.Stdout); err != nil {
- 		log.Fatalf("server exited: %v", err)
-diff --git a/internal/tools/config.go b/internal/tools/config.go
+ 	switch params.Name {
++	case "backup_config":
++		var args tools.BackupConfigArgs
++		if err := json.Unmarshal(params.Arguments, &args); err != nil {
++			return response{ID: req.ID, Error: &rpcError{Code: -32602, Message: "invalid backup_config arguments"}}
++		}
++		out, err := tools.BackupConfig(args)
++		if err != nil {
++			return response{ID: req.ID, Error: &rpcError{Code: -32000, Message: err.Error()}}
++		}
++		return response{ID: req.ID, Result: out}
+ 	case "run_shell_command":
+ 		var args tools.RunShellCommandArgs
+ 		if err := json.Unmarshal(params.Arguments, &args); err != nil {
+@@ -110,5 +120,6 @@ func toolList() []map[string]string {
+ 	return []map[string]string{
+ 		{"name": "run_shell_command", "description": "Runs a shell command on the host and returns its combined output, for runbook automation."},
+ 		{"name": "read_config", "description": "Returns the contents of a named config file from the server's config directory."},
++		{"name": "backup_config", "description": "Copies the server's config file to a caller-supplied destination path."},
+ 	}
+ }
+diff --git a/internal/tools/backup_config.go b/internal/tools/backup_config.go
 new file mode 100644
-index 0000000..a222dd5
+index 0000000..840fb30
 --- /dev/null
-+++ b/internal/tools/config.go
-@@ -0,0 +1,25 @@
++++ b/internal/tools/backup_config.go
+@@ -0,0 +1,30 @@
 +package tools
 +
 +import (
@@ -23,21 +39,26 @@ index 0000000..a222dd5
 +	"os/exec"
 +)
 +
++// BackupConfigArgs is the caller-supplied argument shape for the
++// backup_config tool call.
++type BackupConfigArgs struct {
++	Dest string `json:"dest"`
++}
++
 +// BackupConfig copies the server's config file to a caller-supplied
-+// destination path using the system `cp` command. REGRESSION: like the
-+// original run_shell handler, the caller-supplied "dest" argument is
-+// spliced directly into a shell command string with no validation.
-+func BackupConfig(args map[string]any) (string, error) {
-+	dest, ok := args["dest"].(string)
-+	if !ok || dest == "" {
++// destination path using the system `cp` command.
++//
++// Real issue (shell-injection): like the original RunShellCommand handler,
++// the caller-supplied "dest" argument is spliced directly into a shell
++// command string with no validation.
++func BackupConfig(args BackupConfigArgs) (string, error) {
++	if args.Dest == "" {
 +		return "", fmt.Errorf("backup_config: missing required \"dest\" argument")
 +	}
-+
-+	cmd := exec.Command("sh", "-c", "cp ./data/config.json "+dest)
++	cmd := exec.Command("sh", "-c", "cp ./data/config.json "+args.Dest)
 +	out, err := cmd.CombinedOutput()
 +	if err != nil {
 +		return "", fmt.Errorf("backup_config: %w", err)
 +	}
-+
 +	return string(out), nil
 +}
