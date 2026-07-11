@@ -2,7 +2,7 @@
 
 > Build the yardstick before the thing it measures. Whatever implementation Karen ends up with — Node scripts, an MCP server, or something else — this benchmark stays the same and scores it the same way.
 
-Status: **fixtures, graders, and self-test are built and internally verified; the runner's `mode: 'full'` path is untested until Karen exists.** See [evals/README.md](./evals/README.md) for the current state of everything under `evals/`. This document is the design rationale and the plan for what's still ahead of it.
+Status: **fixtures, graders, and self-test are built and internally verified; Karen herself is built as a Claude Code plugin (`plugins/karen/`). The runner's `mode: 'full'` path has completed a real validation run against her for one fixture (`node-sdk-single`, 100% pass@1 across all 11 dimensions after fixing two defects the run surfaced) — the other 13 fixtures haven't run yet.** See [evals/README.md](./evals/README.md) for the current state of everything under `evals/`. This document is the design rationale and the plan for what's still ahead of it.
 
 **This benchmark is a first-class investment for this project, not a QA side-quest.** Karen's entire pitch is that she catches things a human reviewer would miss and doesn't flag things a naive regex-matcher would — both of those are empirical claims, and empirical claims need a benchmark, not a demo. A benchmark that's "good enough to unblock building Karen" and a benchmark that's "good enough to be the public evidence for why Karen is trustworthy" are different bars. §11 below sets out what closing that gap requires, on top of everything already built.
 
@@ -23,7 +23,7 @@ BLUEPRINT.md §"The Skill Architecture" describes a tool surface — `detect_pro
 - **Node.js CLI scripts** — small scripts invoked via `Bash`, taking JSON in and emitting JSON out, each one implementing one blueprint tool function directly.
 - **A bundled MCP server** — a long-running process exposing the blueprint's tool functions as real typed MCP tool calls, giving the agent structured inputs and outputs instead of shell-command conventions.
 
-This project's v1 starts with the first approach — no dedicated tool scripts — for speed and zero added dependencies, with a plan to test it against several real projects over the following days before deciding whether the added structure of the other two approaches is worth the implementation cost. **The only way to compare that starting choice against either alternative later, on equal footing, is a fixed, repeatable benchmark that doesn't change when the implementation does.** Building the benchmark first, and validating the benchmark's own correctness before Karen exists (§6), keeps that future comparison evidence-based instead of impression-based.
+This project's v1 starts with the first approach — no dedicated tool scripts — for speed and zero added dependencies, with a plan to test it against several real projects over the following days before deciding whether the added structure of the other two approaches is worth the implementation cost. **The only way to compare that starting choice against either alternative later, on equal footing, is a fixed, repeatable benchmark that doesn't change when the implementation does.** Building the benchmark first, and validating the benchmark's own correctness before Karen was built (§6), keeps that future comparison evidence-based instead of impression-based.
 
 This also matches the explicit project instruction already in this repo's `CLAUDE.md`/`AGENTS.md` conventions: define a verifiable goal and a concrete check per step before building.
 
@@ -179,7 +179,7 @@ Deterministic check that the tracker-backed, no-expiry gap lands in `knownGaps` 
 
 The full transcript (every question Karen asked, every answer given, the resulting `.karen.json`, the generated gate scripts) is captured and handed to the deterministic graders in §4, plus the judge for §4.2's follow-up-quality sub-part.
 
-**Execution mechanism:** this two-agent conversation plus the patch/rerun sequence (§4.6–4.8) is exactly the shape the `Workflow` tool exists for — per-fixture independent pipelines (`pipeline()`, not `parallel()`, since fixtures don't share state), each running init → audit → patch → audit → regress → audit → repeat-noop ×3 → audit, with a deterministic grading stage immediately after each fixture's transcript completes. This is deferred until Karen exists to run against (§6) — the benchmark itself does not require the Workflow tool to be *buildable*, only to be *run*.
+**Execution mechanism:** this two-agent conversation plus the patch/rerun sequence (§4.6–4.8) is exactly the shape the `Workflow` tool exists for — per-fixture independent pipelines (`pipeline()`, not `parallel()`, since fixtures don't share state), each running init → audit → patch → audit → regress → audit → repeat-noop ×3 → audit, with a deterministic grading stage immediately after each fixture's transcript completes. Real `mode: 'full'` runs against the built plugin are how this gets exercised now — the benchmark itself does not require the Workflow tool to be *buildable*, only to be *run*.
 
 **Isolation:** each fixture run copies `repo/` to a fresh scratch directory; nothing is ever run in place against the committed fixture. This follows Anthropic's own documented incident of an agent gaining an unfair advantage from prior-trial state leakage when isolation wasn't enforced [5] — the exact failure mode this guards against.
 
@@ -187,7 +187,7 @@ The full transcript (every question Karen asked, every answer given, the resulti
 
 ## 6. Self-Test — Validating the Benchmark Before Karen Exists
 
-Karen (the skill) doesn't exist yet. The benchmark must still be verifiably correct on its own before it's ever pointed at a real implementation — otherwise a broken grader could silently report "0 issues" against a broken Karen, or reject a correct one.
+Karen (the skill) was built after this benchmark, deliberately. The benchmark had to be verifiably correct on its own before it was ever pointed at a real implementation — otherwise a broken grader could silently report "0 issues" against a broken Karen, or reject a correct one.
 
 For each fixture, hand-author two static, non-agent-generated sample outputs (a captured `.karen.json` + gate script + transcript, written by a human, not run through any agent):
 
@@ -200,8 +200,8 @@ This is the same "validate any model-based grader by manually reading samples" p
 
 ## 7. Statistical Methodology
 
-- **Per-fixture, deterministic dimensions (§4.1, 4.3–4.10):** single run is sufficient once the runner's isolation is correct — these have no LLM-sampling variance in the grading step itself, though the *thing being graded* (Karen's output) does vary run to run once Karen exists.
-- **Once graded against a real Karen implementation:** report **pass@1** (did this specific run succeed) and, per Anthropic's agent-eval framing [5], **pass@k** (probability of ≥1 success in k runs) for exploratory "can it work at all" questions, and **pass^k** (all k runs succeed) for anything safety-critical — the circuit breaker and zero-tolerance gates specifically, where "usually works" is not an acceptable bar.
+- **Per-fixture, deterministic dimensions (§4.1, 4.3–4.10):** single run is sufficient once the runner's isolation is correct — these have no LLM-sampling variance in the grading step itself, though the *thing being graded* (Karen's output) does vary run to run against the live plugin.
+- **When graded against the real Karen implementation:** report **pass@1** (did this specific run succeed) and, per Anthropic's agent-eval framing [5], **pass@k** (probability of ≥1 success in k runs) for exploratory "can it work at all" questions, and **pass^k** (all k runs succeed) for anything safety-critical — the circuit breaker and zero-tolerance gates specifically, where "usually works" is not an acceptable bar.
 - **Repetition count:** start at **k=3** for cost during the initial exploratory week, when the goal is testing broadly across many real projects rather than squeezing precision out of any one score; scale to **k=5** (OpenAI/Terminal-Bench precedent [7, 8]) once a specific implementation is a serious candidate, and to **k≥10** (Madaan et al.'s floor for small benchmarks [9]) before using benchmark scores to make a final architecture decision. Report **95% confidence intervals alongside every point estimate** once k≥5, matching Terminal-Bench 2.0's reporting convention [8] — a bare mean pass rate across 14 fixtures invites over-reading noise as signal.
 - **Don't over-invest repetition count in the judge specifically.** Per §4.2's note on Rating Roulette [13], judge self-consistency plateaus by k=3 for most tasks — pushing the *judge* to k=10 mostly buys majority-vote stability among already-converged runs, not new information. Reserve k≥10 budget for dimensions where the thing varying is Karen's own behavior (detection, generated gates, circuit breaker), not the judge's rating of a fixed transcript.
 
@@ -257,8 +257,8 @@ All grading and runner code is plain Node.js with no external dependencies — c
 1. **Build the 14 fixtures** (repo trees, planted issues + decoys, ground truth files, answer keys, patches).
 2. **Build the grading scripts**, validate each against hand-authored golden/broken pairs (§6) — the benchmark must pass its own self-test before touching Karen.
 3. **Build the runner** (`fixture-workflow.js`) — dry-run it against the `self-test/golden` outputs (bypassing real agent execution) to confirm the pipeline plumbing works end to end.
-4. Only then: build the Karen skill using the "no dedicated tool scripts" approach described in §1, point the runner at it, and start a multi-day testing phase across several real projects — using this benchmark alongside that ad hoc real-project testing, not instead of it.
-5. Revisit the implementation-approach decision from §1 — no dedicated tool scripts vs. Node.js CLI scripts vs. a bundled MCP server — using benchmark scores as one input, not the only input.
+4. **Done:** the Karen skill is built using the "no dedicated tool scripts" approach described in §1 (`plugins/karen/`). **In progress:** pointing the runner at it (`mode: 'full'`) and the multi-day testing phase across several real projects — using this benchmark alongside that ad hoc real-project testing, not instead of it.
+5. **Not yet started:** revisit the implementation-approach decision from §1 — no dedicated tool scripts vs. Node.js CLI scripts vs. a bundled MCP server — using benchmark scores as one input, not the only input. Depends on step 4 completing.
 
 ---
 

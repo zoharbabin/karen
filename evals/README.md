@@ -19,9 +19,12 @@ evals/
   schema/CONTRACT.md      the interface everything above agrees on
 ```
 
-Karen doesn't exist yet, so every grader consumes one common artifact —
-`run-capture.json` — never a live agent session directly. That decoupling is
-what lets `self-test/` validate the benchmark itself before Karen is built.
+Every grader consumes one common artifact — `run-capture.json` — never a
+live agent session directly, whether that capture was hand-authored
+(`self-test/`) or produced by a real run against the installed Karen plugin
+(`mode: 'full'`). That decoupling is what let `self-test/` validate the
+benchmark itself before Karen was built, and lets the same graders score her
+now that she is.
 
 ## Running the benchmark
 
@@ -38,10 +41,10 @@ Run the full two-agent simulation + all dimensions for one or more fixtures
 Workflow({ scriptPath: 'evals/runner/fixture-workflow.js', args: { mode: 'grade-only', source: 'golden' } })
 ```
 
-`mode: 'grade-only'` (default) grades the hand-authored self-test samples —
-this works today. `mode: 'full'` drives a real `karen init`/`karen audit`
-session once Karen exists as an installed skill; until then it prints
-`KAREN_NOT_INSTALLED` and returns null.
+`mode: 'grade-only'` (default) grades the hand-authored self-test samples.
+`mode: 'full'` drives a real `karen init`/`karen audit` session against the
+installed Karen plugin (`plugins/karen/`); if no karen skill/plugin is found
+it prints `KAREN_NOT_INSTALLED` and returns null instead of a capture.
 
 Aggregate multiple score-JSON outputs (e.g. across repeated judge runs):
 
@@ -90,9 +93,13 @@ Every fixture ships a hand-authored `self-test/golden/<name>/run-capture.json`
 (what a perfect Karen run produces) and a
 `self-test/broken/<name>/run-capture.json` + `flaws.json` (the same run with a
 small number of declared, isolated flaws). This validates the benchmark
-against itself before Karen exists: golden must score at/above the pass
-threshold on every applicable dimension, and broken must fail exactly the
-dimensions `flaws.json` declares and nothing else.
+against itself, independent of whatever the live plugin actually produces:
+golden must score at/above the pass threshold on every applicable dimension,
+and broken must fail exactly the dimensions `flaws.json` declares and nothing
+else.
+
+Run it with `node self-test/run-self-test.js` (also wired into CI via
+`.github/workflows/evals-selftest.yml` on every push/PR touching `evals/`).
 
 Verified: across all 14 fixtures × 10 dimensions (280 checks), every golden
 sample passes every applicable dimension, and every broken sample fails
@@ -112,9 +119,14 @@ by `score-karen-json.js`, previously an ungraded field).
 ## Status
 
 Grading scripts, fixtures, and self-test pairs are complete and internally
-verified. `mode: 'full'` in the runner is structurally complete but untested
-until a real Karen skill exists to drive it — see
-[EVALS-PLAN.md §9](../EVALS-PLAN.md) for the rollout plan.
+verified. Karen herself is built (`plugins/karen/`), and `mode: 'full'` in
+the runner has completed a real validation run against her for one fixture
+(`node-sdk-single`): 100% pass@1 across all 11 grading dimensions, after
+fixing two defects that run surfaced (a gate-invocation ambiguity for
+non-shell gates, and an undocumented `run-all.sh` orchestrator — both fixed
+in the skill and the runner). The other 13 fixtures haven't run in `mode:
+'full'` yet — see [EVALS-PLAN.md §9](../EVALS-PLAN.md) for the rollout plan
+and current step.
 
 This benchmark is a high-priority investment for the project, not an
 internal-only QA tool — see [EVALS-PLAN.md §11](../EVALS-PLAN.md#11-benchmark-integrity--investment-priority)

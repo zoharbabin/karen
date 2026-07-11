@@ -37,7 +37,16 @@ Full transcript examples and the reasoning behind every gate live in [BLUEPRINT.
 
 ## Status
 
-This repository is currently a **design specification and eval benchmark**, not an installable skill. [BLUEPRINT.md](BLUEPRINT.md) is the authoritative spec — every gate, every mechanic, every piece of Karen's voice is defined there before a line of the skill itself gets written. [`evals/`](evals/) is a working benchmark that scores whatever Karen implementation eventually exists against 14 hand-built fixtures across 10 grading dimensions, built and self-validated ahead of Karen so the benchmark can't be accused of grading itself favorably. See [EVALS-PLAN.md](EVALS-PLAN.md) for why this order matters and what's still ahead of it.
+Karen is built and installable as a Claude Code plugin ([`plugins/karen/`](plugins/karen/)), ported section-by-section from [BLUEPRINT.md](BLUEPRINT.md), the authoritative spec. A first real `mode: 'full'` eval run plus manual dogfooding, both against one fixture, have completed — 100% pass@1 across all 11 grading dimensions, after fixing two defects that run surfaced (a gate-invocation ambiguity for non-shell gates, and an undocumented orchestrator script). Broader validation — the other 13 fixtures, and real non-fixture projects — hasn't happened yet, so treat that part as still ahead. [`evals/`](evals/) is the benchmark scoring her against 14 hand-built fixtures across 10 grading dimensions — it's built and self-validated (280/280) independent of what Karen produces, so it can't be accused of grading itself favorably. See [EVALS-PLAN.md](EVALS-PLAN.md) §9 for the rollout plan and what's still ahead.
+
+## Quickstart
+
+```
+/plugin marketplace add zoharbabin/karen
+/plugin install karen@karen-marketplace
+```
+
+Then, in any project: tell the agent "karen init" (or run `/karen:init`) to start the interview, and "karen audit" (or `/karen:audit`) on every run after that. This install flow is Claude-Code-specific — Codex and Cursor both support the underlying [Agent Skills](https://agentskills.io) format `SKILL.md` uses, but not this plugin/marketplace packaging, so on those tools you'd copy `plugins/karen/skills/karen/` into their own skills directory by hand rather than running the commands above.
 
 ## How she works
 
@@ -59,6 +68,7 @@ Karen's whole pitch is a set of empirical claims — she catches real issues, sh
 | Path | What's in it |
 |---|---|
 | [`BLUEPRINT.md`](BLUEPRINT.md) | The authoritative design spec — read this first |
+| [`plugins/karen/`](plugins/karen/) | The installable plugin — `skills/karen/SKILL.md` + reference files, commands, feedback tooling |
 | [`EVALS-PLAN.md`](EVALS-PLAN.md) | Eval benchmark design rationale, methodology, citations |
 | [`evals/`](evals/) | The benchmark itself — fixtures, graders, runner, self-test |
 | [`brand/`](brand/BRAND.md) | Voice, palette, typography, and logo assets |
@@ -69,7 +79,7 @@ Karen has a specific voice and a specific look. [`brand/BRAND.md`](brand/BRAND.m
 
 ## Contributing
 
-This project is early and design-first: most contributions should engage with [BLUEPRINT.md](BLUEPRINT.md) or [EVALS-PLAN.md](EVALS-PLAN.md) before touching code. Open an issue or PR against whichever doc your change affects.
+This project is early and design-first: most contributions should engage with [BLUEPRINT.md](BLUEPRINT.md) or [EVALS-PLAN.md](EVALS-PLAN.md) before touching code. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to file feedback (including from an installed Karen via `/karen:feedback`) and how `BLUEPRINT.md` stays in sync with the shipped skill.
 
 ## License
 

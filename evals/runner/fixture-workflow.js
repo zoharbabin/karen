@@ -57,6 +57,132 @@ const GRADE_RESULT_SCHEMA = {
   required: ['dimension', 'fixture', 'pass'],
 }
 
+// Deterministic grader-runner, embedded verbatim and run once per fixture so
+// gradeDeterministic needs a single combined relay call instead of one per
+// dimension. Runs all 10 score-*.js scripts itself (each is already a fast,
+// independent, side-effect-free read of the same run-capture file) and writes
+// one {dimension: result, ...} object to outPath — same "mechanical piece
+// stays byte-for-byte reproducible, not left to model judgment" rationale as
+// RUN_STATE_UPDATER_SRC below. Declared here (ahead of gradeDeterministic
+// further down) for the same temporal-dead-zone reason as GRADE_RESULT_SCHEMA
+// above.
+const GRADE_MERGE_SRC = [
+  "const { execFileSync } = require('child_process');",
+  "const fs = require('fs');",
+  '',
+  'const evalsDir = process.argv[2];',
+  'const fixtureDir = process.argv[3];',
+  'const runCaptureFile = process.argv[4];',
+  'const outPath = process.argv[5];',
+  '',
+  `const DIMENSION_SCRIPT = ${JSON.stringify(DIMENSION_SCRIPT)};`,
+  '',
+  'const results = {};',
+  'for (const [dim, script] of Object.entries(DIMENSION_SCRIPT)) {',
+  '  try {',
+  "    const out = execFileSync('node', [evalsDir + '/grading/' + script, fixtureDir, runCaptureFile], { encoding: 'utf8' });",
+  "    const lines = out.trim().split('\\n').filter(function (l) { return l.length > 0; });",
+  '    results[dim] = JSON.parse(lines[lines.length - 1]);',
+  '  } catch (err) {',
+  '    results[dim] = { dimension: dim, fixture: null, pass: false, error: String((err && err.message) || err) };',
+  '  }',
+  '}',
+  '',
+  'fs.writeFileSync(outPath, JSON.stringify(results));',
+].join('\n')
+
+// Deterministic run-state.json writer, embedded verbatim into each audit
+// trigger's scratch dir and run there via `node`. Implements
+// reference/run-state.md's write_run_state procedure (content-based
+// fingerprint per issue — a short hash of (file, message-with-digits-
+// stripped) — plus per-gate count/staleCount, carried forward from the
+// previous run's run-state.json when the fingerprint set is unchanged, reset
+// to 0 otherwise) so delta/circuit-breaker/fingerprint-stability grading has
+// real run-state data to compare across triggers, using the exact same
+// parsing rules as grading/lib/parse-gate-output.js. Written as one plain
+// string (no backticks or template interpolation) so it can sit inside this
+// file's own template-literal prompts without escaping. Declared here
+// (ahead of the top-level pipeline() calls below), not next to
+// runAuditSequence further down — same temporal-dead-zone reason as
+// GRADE_RESULT_SCHEMA above; a const (unlike a function declaration) is not
+// hoisted, so it must sit above every call site that runs before it.
+const RUN_STATE_UPDATER_SRC = [
+  "const fs = require('fs');",
+  "const path = require('path');",
+  "const crypto = require('crypto');",
+  '',
+  'const scratchDir = process.argv[2];',
+  'const captureDir = process.argv[3];',
+  'const outPath = process.argv[4];',
+  '',
+  'function parseGateOutput(stdout) {',
+  "  const lines = stdout.split('\\n').filter(function (l) { return l.length > 0; });",
+  '  const issues = [];',
+  '  let summary = null;',
+  '  for (const line of lines) {',
+  "    const summaryMatch = line.match(/^(PASS|FAIL) \\((\\d+) issues?\\)$/);",
+  '    if (summaryMatch) { summary = { status: summaryMatch[1], count: Number(summaryMatch[2]) }; continue; }',
+  "    if (line.trim() === 'ZERO-TOLERANCE') continue;",
+  "    const issueMatch = line.match(/^([^\\t]+?):(\\d+)\\t(.+)$/);",
+  '    if (issueMatch) { issues.push({ file: issueMatch[1], line: Number(issueMatch[2]), message: issueMatch[3] }); continue; }',
+  "    const noLineMatch = line.match(/^([^\\t]+?)\\t(.+)$/);",
+  '    if (noLineMatch) { issues.push({ file: noLineMatch[1], line: null, message: noLineMatch[2] }); }',
+  '  }',
+  '  return { issues: issues, summary: summary };',
+  '}',
+  '',
+  'function fingerprintFor(issue) {',
+  "  const normalized = issue.message.replace(/\\d+/g, '').replace(/\\s+/g, ' ').trim();",
+  "  const hash = crypto.createHash('md5').update(issue.file + '::' + normalized).digest('hex').slice(0, 6);",
+  "  return hash + ':' + issue.file;",
+  '}',
+  '',
+  "const runStatePath = path.join(scratchDir, '.karen', 'run-state.json');",
+  'let previous = null;',
+  'if (fs.existsSync(runStatePath)) {',
+  "  previous = JSON.parse(fs.readFileSync(runStatePath, 'utf8'));",
+  '}',
+  'const previousGates = (previous && previous.gates) || {};',
+  '',
+  "const gateFiles = fs.readdirSync(captureDir).filter(function (f) { return f.endsWith('.out'); });",
+  'const gateResults = {};',
+  'const gates = {};',
+  'let total = 0;',
+  '',
+  'for (const outFile of gateFiles) {',
+  '  const gateId = outFile.slice(0, -4);',
+  "  const stdout = fs.readFileSync(path.join(captureDir, outFile), 'utf8');",
+  "  const exitPath = path.join(captureDir, gateId + '.exit');",
+  "  const exitCode = fs.existsSync(exitPath) ? parseInt(fs.readFileSync(exitPath, 'utf8').trim(), 10) : null;",
+  '  gateResults[gateId] = { stdout: stdout, exitCode: exitCode };',
+  '',
+  '  const parsed = parseGateOutput(stdout);',
+  '  const count = parsed.summary ? parsed.summary.count : parsed.issues.length;',
+  '  const fingerprint = parsed.issues.map(fingerprintFor).sort();',
+  '',
+  '  const prevGate = previousGates[gateId];',
+  '  const prevFingerprint = (prevGate && Array.isArray(prevGate.fingerprint)) ? prevGate.fingerprint.slice().sort() : null;',
+  '  const unchanged = prevFingerprint !== null && prevFingerprint.length === fingerprint.length &&',
+  '    prevFingerprint.every(function (v, i) { return v === fingerprint[i]; });',
+  '  const staleCount = unchanged ? ((prevGate.staleCount || 0) + 1) : 0;',
+  '',
+  '  gates[gateId] = { count: count, fingerprint: fingerprint, staleCount: staleCount };',
+  '  total += count;',
+  '}',
+  '',
+  'const runState = {',
+  '  run: ((previous && previous.run) || 0) + 1,',
+  '  timestamp: new Date().toISOString(),',
+  '  gates: gates,',
+  '  total: total,',
+  '};',
+  '',
+  "fs.mkdirSync(path.dirname(runStatePath), { recursive: true });",
+  'fs.writeFileSync(runStatePath, JSON.stringify(runState, null, 2));',
+  '',
+  'fs.writeFileSync(outPath, JSON.stringify({ gateResults: gateResults, runState: runState }));',
+].join('\n')
+
 // Observed empirically: args sometimes arrives JSON-encoded as a string
 // rather than as the object it was invoked with — parse defensively so
 // mode/source/fixtures/repeatJudge resolve correctly either way.
@@ -181,13 +307,18 @@ function captureFromLiveKaren(fixtureName) {
   return agent(
     `Set up a scratch copy of the fixture repo for a live Karen evaluation run.
 1. Remove ${scratchDir} if it exists, then copy ${fixtureDir}/repo/ to ${scratchDir}/ fresh.
-2. Confirm a "karen" skill/plugin is available in this environment (check for a registered skill named karen, or an installed Karen plugin per BLUEPRINT.md's "The Skill Architecture"). If none is found, print exactly KAREN_NOT_INSTALLED and stop.
-3. Otherwise print exactly SCRATCH_READY:${scratchDir}
+2. Install the project's real dependencies so gate scripts that shell out to the project's own toolchain (npm test, tsc, eslint, pytest, go vet, etc.) actually have something to run instead of silently failing: if ${scratchDir}/package.json exists, run \`npm install\` there; if ${scratchDir}/requirements.txt or ${scratchDir}/pyproject.toml exists, create a venv and install it (or \`pip install -e .\`/\`pip install -r requirements.txt\` into the environment already active); if ${scratchDir}/go.mod exists, run \`go mod download\`. Do this for every subproject with its own manifest, not just the root. If an install step fails, print exactly DEPS_INSTALL_FAILED:<manifest path> and stop.
+3. Confirm a "karen" skill/plugin is available in this environment (check for a registered skill named karen, or an installed Karen plugin per BLUEPRINT.md's "The Skill Architecture"). If none is found, print exactly KAREN_NOT_INSTALLED and stop.
+4. Otherwise print exactly SCRATCH_READY:${scratchDir}
 Return only that one line.`,
     { label: `setup:${fixtureName}`, phase: 'Capture', model: 'sonnet' }
   ).then(async (setupResult) => {
     if (!setupResult || setupResult.includes('KAREN_NOT_INSTALLED')) {
       log(`${fixtureName}: Karen is not installed in this environment — full mode cannot run yet. Use mode:"grade-only" against self-test samples instead.`)
+      return null
+    }
+    if (setupResult.includes('DEPS_INSTALL_FAILED')) {
+      log(`${fixtureName}: dependency install failed during scratch setup — ${setupResult}`)
       return null
     }
 
@@ -196,19 +327,42 @@ Return only that one line.`,
     let karenDone = false
     let finalKarenJson = null
     let finalGateScripts = null
+    let finalHarnessJson = null
     let detectProjectOutput = null
 
     for (let turn = 0; turn < MAX_TURNS && !karenDone; turn++) {
       const karenTurn = await agent(
-        `You are Karen, running "karen init" against the project at ${scratchDir} (BLUEPRINT.md "The Init Conversation"). Call detect_project-equivalent analysis on the real files there first if this is turn 0. Conversation so far:\n${JSON.stringify(transcript)}\n\nAsk your next interview question, OR if you have everything you need, respond with a JSON object {"done": true, "detectProjectOutput": {...}, "karenJson": {...}, "gateScripts": {"gate-id": "script source", ...}} representing the final .karen.json and generated gate scripts written to ${scratchDir}/.karen/. Otherwise respond with {"done": false, "question": "..."}. Respond with ONLY that JSON object.`,
+        `You are Karen, running "karen init" against the project at ${scratchDir} (BLUEPRINT.md "The Init Conversation"). Call detect_project-equivalent analysis on the real files there first if this is turn 0. Conversation so far:\n${JSON.stringify(transcript)}\n\nAsk your next interview question, OR if you have everything you need, respond with a JSON object {"done": true, "detectProjectOutput": {...}, "karenJson": {...}, "gateScripts": {"gate-id": "script source", ...}, "harnessJson": {...}} representing the final .karen.json, generated gate scripts, and .karen/harness.json (per write-harness.md's "Registering everything in .karen/harness.json" — id/name/script path/run order/zeroTolerance for every gate in gateScripts, script paths relative to ${scratchDir} matching exactly where you'll write each one under .karen/gates/) all written to ${scratchDir}/.karen/. detectProjectOutput MUST use exactly this field shape (evals/schema/CONTRACT.md §1's fixture-manifest.json contract — this is graded by exact field name against ground truth, not free-form): {"languages": [...string], "manifests": [{"path": "...", "language": "..."}, ...], "frameworks": [...string], "ciConfig": [...string paths], "existingTestSetup": {"runner": "...", "coverageTool": "...", "coverageReport": "..."}, "agentContextFiles": [...string paths], "existingGates": [{"id": "...", "command": "...", "outputFormat": "...", "coverage": [...]}], "subprojects": [{"path": "...", "manifestPath": "...", "language": "..."}, ...] (empty array for single-package projects), "unclaimedPaths": [...string paths] (empty array if nothing is unowned)}. Otherwise respond with {"done": false, "question": "..."}. Respond with ONLY that JSON object.`,
         { label: `karen-turn-${turn}:${fixtureName}`, phase: 'Capture', model: 'sonnet',
-          schema: { type: 'object', properties: { done: { type: 'boolean' }, question: { type: 'string' }, detectProjectOutput: { type: 'object' }, karenJson: { type: 'object' }, gateScripts: { type: 'object' } }, required: ['done'] } }
+          // detectProjectOutput's nested shape is pinned here (not just described
+          // in the prompt prose above) because a plain {type:'object'} lets the
+          // tool-call validator accept any shape without retrying — confirmed
+          // empirically on node-monorepo, whose live output used "language"
+          // (singular) and bare-string manifests instead of CONTRACT.md §1's
+          // "languages"/{path,language} shape, silently zeroing detection's f1
+          // for those fields despite the prompt already stating the contract.
+          schema: { type: 'object', properties: { done: { type: 'boolean' }, question: { type: 'string' }, detectProjectOutput: {
+            type: 'object',
+            properties: {
+              languages: { type: 'array', items: { type: 'string' } },
+              manifests: { type: 'array', items: { type: 'object', properties: { path: { type: 'string' }, language: { type: 'string' } }, required: ['path', 'language'] } },
+              frameworks: { type: 'array', items: { type: 'string' } },
+              ciConfig: { type: 'array', items: { type: 'string' } },
+              existingTestSetup: { type: 'object', properties: { runner: { type: 'string' }, coverageTool: { type: 'string' }, coverageReport: { type: 'string' } } },
+              agentContextFiles: { type: 'array', items: { type: 'string' } },
+              existingGates: { type: 'array', items: { type: 'object', properties: { id: { type: 'string' }, command: { type: 'string' }, outputFormat: { type: 'string' }, coverage: { type: 'array', items: { type: 'string' } } } } },
+              subprojects: { type: 'array', items: { type: 'object', properties: { path: { type: 'string' }, manifestPath: { type: 'string' }, language: { type: 'string' } }, required: ['path', 'manifestPath', 'language'] } },
+              unclaimedPaths: { type: 'array', items: { type: 'string' } },
+            },
+            required: ['languages', 'manifests', 'frameworks', 'ciConfig', 'existingTestSetup', 'agentContextFiles', 'existingGates', 'subprojects', 'unclaimedPaths'],
+          }, karenJson: { type: 'object' }, gateScripts: { type: 'object' }, harnessJson: { type: 'object' } }, required: ['done'] } }
       )
       if (!karenTurn) break
       if (karenTurn.done) {
         karenDone = true
         finalKarenJson = karenTurn.karenJson
         finalGateScripts = karenTurn.gateScripts
+        finalHarnessJson = karenTurn.harnessJson
         detectProjectOutput = karenTurn.detectProjectOutput
         break
       }
@@ -226,19 +380,48 @@ Return only that one line.`,
       return null
     }
 
+    // The interview turn only reports what Karen *would* write as JSON fields —
+    // nothing before this point has actually created scratchDir/.karen/ on disk.
+    // Without this step the "initial" audit trigger below finds no .karen/ at
+    // all (confirmed empirically: gateResults comes back {} with a "no .karen/
+    // directory found" runState error) and every downstream grader scores a
+    // false 0, since it's grading a harness that was never persisted rather
+    // than one that's actually broken.
+    const persisted = await agent(
+      `Write the following files under ${scratchDir}:
+1. ${scratchDir}/.karen.json — this exact JSON:\n${JSON.stringify(finalKarenJson)}
+2. This harness.json object's "gates" array is the ONLY source of truth for each gate script's destination filename — it is what \`run_gate\`/\`karen audit\` reads later to find each gate by its "script" path, so the file you write MUST land at exactly that path, byte-for-byte including the extension (do not add, remove, or infer a ".sh"/".js"/etc. extension yourself; copy the "script" string verbatim). For each entry in harnessJson.gates below, look up its script source by matching entry.id against a key in this gateScripts object, then write that source verbatim to ${scratchDir}/<entry.script> (create parent directories as needed) and make it executable (chmod +x). harnessJson:\n${JSON.stringify(finalHarnessJson)}\ngateScripts:\n${JSON.stringify(finalGateScripts)}
+3. ${scratchDir}/.karen/harness.json — this exact harnessJson object again, unchanged.
+Then print WRITTEN.`,
+      { label: `persist-harness:${fixtureName}`, phase: 'Capture', model: 'sonnet' }
+    )
+    if (!persisted || !persisted.includes('WRITTEN')) {
+      log(`${fixtureName}: failed to persist .karen/ to scratch dir — aborting capture`)
+      return null
+    }
+
     const auditRuns = await runAuditSequence(fixtureDir, scratchDir, fixtureName)
     if (!auditRuns) return null
 
     const runCapture = {
       fixture: fixtureName,
-      init: { detectProjectOutput, transcript, karenJson: finalKarenJson, gateScripts: finalGateScripts },
+      init: { detectProjectOutput, transcript, karenJson: finalKarenJson, gateScripts: finalGateScripts, harnessJson: finalHarnessJson },
       auditRuns,
     }
 
     const runCapturePath = `/tmp/karen-eval-${fixtureName}-run-capture.json`
+    // model:'sonnet' (not haiku/low-effort) deliberately — this blob is the
+    // largest and most deeply nested one persisted anywhere in this file
+    // (fixture/init/{4 fields}/auditRuns), and a haiku+low-effort attempt at
+    // this exact step was observed silently "helpfully" restructuring it
+    // (nesting auditRuns inside init) rather than writing it byte-for-byte,
+    // which corrupted every downstream grader reading auditRuns from the
+    // top level. persist-harness above (same file, model:'sonnet') writes
+    // comparably large content correctly — match that, not this file's
+    // faster/cheaper tier used for small fixed-shape writes elsewhere.
     await agent(
-      `Write this exact JSON to ${runCapturePath} (create parent dirs if needed):\n${JSON.stringify(runCapture)}\nThen print WRITTEN.`,
-      { label: `persist:${fixtureName}`, phase: 'Capture', model: 'haiku', effort: 'low' }
+      `Write this exact JSON to ${runCapturePath} (create parent dirs if needed), byte-for-byte — do not reformat, reorder, or restructure any part of it, especially not the top-level keys ("fixture", "init", "auditRuns" must all remain siblings at the top level, exactly as given):\n${JSON.stringify(runCapture)}\nThen print WRITTEN.`,
+      { label: `persist:${fixtureName}`, phase: 'Capture', model: 'sonnet' }
     )
 
     return { fixtureDir, runCapturePath, runCapture }
@@ -256,18 +439,78 @@ async function runAuditSequence(fixtureDir, scratchDir, fixtureName) {
     '04-repeat-noop-3': '04-repeat-noop.patch',
   }
 
-  const auditRuns = []
+  // The :run step per trigger is genuinely sequential and can't be batched:
+  // each trigger's patch applies cumulatively against the same working tree,
+  // and RUN_STATE_UPDATER_SRC's staleCount carry-forward explicitly reads
+  // the PREVIOUS trigger's on-disk run-state.json, not anything the :relay
+  // step below returns. But nothing downstream of a given loop iteration
+  // consumes the :relay step's *return value* either — the next iteration's
+  // :run step only ever reads files on disk. So the 7 relay calls have no
+  // cross-iteration dependency among themselves and can be deferred to one
+  // combined call after the loop, while the 7 :run calls stay one-per-
+  // iteration.
+  const outPaths = {}
   for (const trigger of triggers) {
     const patchFile = patchForTrigger[trigger]
-    const result = await agent(
+    const captureDir = `/tmp/karen-eval-${fixtureName}-${trigger}-gateout`
+    const outPath = `/tmp/karen-eval-${fixtureName}-${trigger}-audit.json`
+    outPaths[trigger] = outPath
+    const updaterPath = `${scratchDir}/.karen/_update-run-state.js`
+    // Redirect each gate script's real stdout/exit code to files first, then
+    // assemble the JSON via a fixed Node script reading those files — asking
+    // the agent to run a gate script AND retype its raw (often multi-line,
+    // tab-containing) stdout into a schema response in the same turn was
+    // observed to silently drop the stdout content (captured "" with the
+    // correct exitCode), which zeroed out gate-issues/gate-contract/
+    // fingerprint-stability even though the gate script itself was correct.
+    // Same fix as gradeDeterministic's redirect-then-relay pattern above.
+    //
+    // run-state.json itself also needs writing every trigger — per
+    // reference/run-state.md this is Karen's own write_run_state procedure
+    // (content-based fingerprint hash per issue, staleCount carried forward
+    // from the previous run when the fingerprint set is unchanged, reset to
+    // 0 otherwise). Leaving that hashing/carry-forward logic to fresh model
+    // judgment on every one of the 7 independent trigger turns risks
+    // inconsistent hashing between turns even when the underlying issue is
+    // identical, which would corrupt delta/circuit-breaker/fingerprint-
+    // stability scoring for reasons that have nothing to do with whether
+    // Karen's *gate scripts* are correct. Writing the exact same small
+    // updater script verbatim every trigger keeps that one mechanical piece
+    // byte-for-byte reproducible, the same way collect-feedback-bundle.sh is
+    // the one deliberate bundled script in the plugin itself.
+    const ran = await agent(
       `Working in ${scratchDir} (a scratch copy of a fixture repo mid-Karen-eval):
-${patchFile ? `1. Apply the patch at ${fixtureDir}/patches/${patchFile} with \`git apply\` (init a throwaway git repo first with \`git init -q\` and \`git add -A && git commit -q -m init\` if one doesn't exist yet, so git apply has a tree to work against). If it fails to apply, print exactly PATCH_FAILED:${patchFile} and stop.\n2. ` : '1. '}Run every gate script in ${scratchDir}/.karen/gates/ (one per file) against ${scratchDir}, and read ${scratchDir}/.karen/run-state.json after running them all.
-Respond with ONLY a JSON object: {"gateResults": {"<gate-id>": {"stdout": "<raw stdout of that gate script>", "exitCode": <int>}}, "runState": <contents of run-state.json>}`,
-      { label: `audit:${trigger}:${fixtureName}`, phase: 'Capture', model: 'sonnet',
-        schema: { type: 'object', properties: { gateResults: { type: 'object' }, runState: { type: 'object' } }, required: ['gateResults', 'runState'] } }
+${patchFile ? `1. Apply the patch at ${fixtureDir}/patches/${patchFile} with \`git apply --allow-empty\` (init a throwaway git repo first with \`git init -q\` and \`git add -A && git commit -q -m init\` if one doesn't exist yet, so git apply has a tree to work against; \`--allow-empty\` is required because some of these fixture patches are deliberately empty zero-hunk diffs used to test no-op-repeat handling, not a sign of a broken patch). If it fails to apply even with --allow-empty, print exactly PATCH_FAILED:${patchFile} and stop.\n2. ` : '1. '}\`rm -rf ${captureDir} && mkdir -p ${captureDir}\` (this path is reused across separate eval runs, so it must start empty — a stale .out/.exit file left over from a prior run would get double-counted alongside this run's fresh output). Then read ${scratchDir}/.karen/harness.json and run exactly the gates listed in its "gates" array (using each entry's own "id" and "script" path, resolved relative to ${scratchDir}) against ${scratchDir} — never every file physically present under ${scratchDir}/.karen/gates/, since a stale or duplicate file left in that directory that isn't registered in harness.json must NOT be executed. A gate script can be written in any language (bash, Node, Python, ...) and always starts with its own shebang and is already chmod +x — invoke it by DIRECT EXECUTION of its own path, never by guessing an interpreter from the extension and prefixing it (do NOT prefix with \`bash\`, \`node\`, \`python3\`, etc. — that breaks the moment the guess is wrong; the shebang picks the interpreter). Redirect each gate's raw stdout+stderr to its own file under ${captureDir}/<gate-id>.out (using the gate's "id" from harness.json, not its filename) and its exit code to ${captureDir}/<gate-id>.exit — e.g. for each gate entry: \`${scratchDir}/<script-path-from-harness.json> ${scratchDir} > ${captureDir}/<gate-id>.out 2>&1; echo $? > ${captureDir}/<gate-id>.exit\`. Never retype, summarize, or paraphrase a gate's output yourself.
+2. Write the exact JavaScript below to ${updaterPath} verbatim, character-for-character, between the START/END markers (excluding the marker lines themselves — do not add, remove, or reformat anything):
+---SCRIPT START---
+${RUN_STATE_UPDATER_SRC}
+---SCRIPT END---
+3. Run: node ${updaterPath} ${scratchDir} ${captureDir} ${outPath}
+This reads ${scratchDir}/.karen/run-state.json if it exists (from a previous trigger), computes updated per-gate fingerprints/counts/staleCounts, writes the new run-state.json, and writes {"gateResults": ..., "runState": ...} to ${outPath}.
+Then print DONE.`,
+      { label: `audit:${trigger}:${fixtureName}:run`, phase: 'Capture', model: 'sonnet' }
     )
+    if (!ran || (patchFile && ran.includes(`PATCH_FAILED:${patchFile}`))) {
+      log(`${fixtureName}: audit run "${trigger}" failed to execute — aborting capture for this fixture`)
+      return null
+    }
+  }
+
+  const relayed = await agent(
+    `Read each of these files (one per audit trigger, each a JSON object matching the required output fields) and report every trigger's exact field values through the required output — do not summarize, reword, or drop any nested content under any trigger's "gateResults" or "runState":\n${triggers.map((t) => `${t}: ${outPaths[t]}`).join('\n')}`,
+    { label: `audit:${fixtureName}:relay`, phase: 'Capture', model: 'haiku', effort: 'low',
+      schema: { type: 'object', properties: Object.fromEntries(triggers.map((t) => [t, { type: 'object', properties: { gateResults: { type: 'object' }, runState: { type: 'object' } } }])), required: triggers } }
+  )
+  if (!relayed) {
+    log(`${fixtureName}: audit relay failed — aborting capture for this fixture`)
+    return null
+  }
+
+  const auditRuns = []
+  for (const trigger of triggers) {
+    const result = relayed[trigger]
     if (!result) {
-      log(`${fixtureName}: audit run "${trigger}" failed — aborting capture for this fixture`)
+      log(`${fixtureName}: audit run "${trigger}" missing from relay — aborting capture for this fixture`)
       return null
     }
     auditRuns.push({ trigger, gateResults: result.gateResults, runState: result.runState })
@@ -275,29 +518,37 @@ Respond with ONLY a JSON object: {"gateResults": {"<gate-id>": {"stdout": "<raw 
   return auditRuns
 }
 
-function gradeDeterministic(capture, fixtureName) {
-  return parallel(DIMENSIONS.map((dim) => () => {
-    const outPath = `/tmp/karen-eval-grade-${fixtureName}-${dim}.json`
-    // Redirect to a file first (no long verbatim relay needed for the run
-    // step itself). The relay step then reports the file's content through
-    // the `schema` option rather than free text: asking a model to
-    // character-for-character retype a large JSON blob as chat text is
-    // unreliable even split out on its own (observed dropping a single `}`
-    // from an 800-byte payload) — `schema` forces the content into
-    // structured tool-call fields, which the harness validates and retries
-    // on mismatch, so there is no "valid-looking but truncated JSON string"
-    // failure mode left to hit.
-    return agent(
-      `Run: node ${EVALS}/grading/${DIMENSION_SCRIPT[dim]} ${capture.fixtureDir} ${capture.runCapturePath} > ${outPath}\nThen print DONE.`,
-      { label: `grade:${dim}:${fixtureName}:run`, phase: 'Grade', model: 'sonnet' }
-    ).then(() => agent(
-      `Read the file at ${outPath} (a JSON object matching the required output fields) and report its exact field values through the required output — do not summarize, reword, or drop any nested content under "metrics" or "details".`,
-      { label: `grade:${dim}:${fixtureName}:relay`, phase: 'Grade', model: 'haiku', effort: 'low', schema: GRADE_RESULT_SCHEMA }
-    )).then((parsed) => {
-      if (!parsed) return { dimension: dim, fixture: fixtureName, pass: false, error: 'no output' }
-      return parsed
-    })
-  })).then((results) => results.filter(Boolean))
+async function gradeDeterministic(capture, fixtureName) {
+  // All 10 dimensions read the same already-written runCapturePath file and
+  // have no cross-dimension dependency, so — unlike runAuditSequence's
+  // per-trigger relay below — the run step itself can be merged into one
+  // call too, not just the relay: one Sonnet turn runs GRADE_MERGE_SRC (which
+  // shells out to all 10 grader scripts itself) and writes one combined file,
+  // then one Haiku call relays that whole file through a schema accepting
+  // all 10 results at once. This replaces 10 run + 10 relay calls/fixture
+  // with 1 + 1.
+  const mergePath = `/tmp/karen-eval-grade-merge-${fixtureName}.js`
+  const outPath = `/tmp/karen-eval-grade-${fixtureName}.json`
+  const ran = await agent(
+    `Write the exact JavaScript below to ${mergePath} verbatim, character-for-character, between the START/END markers (excluding the marker lines themselves):
+---SCRIPT START---
+${GRADE_MERGE_SRC}
+---SCRIPT END---
+Then run: node ${mergePath} ${EVALS} ${capture.fixtureDir} ${capture.runCapturePath} ${outPath}
+Then print DONE.`,
+    { label: `grade:${fixtureName}:run`, phase: 'Grade', model: 'sonnet' }
+  )
+  if (!ran) return DIMENSIONS.map((dim) => ({ dimension: dim, fixture: fixtureName, pass: false, error: 'no output' }))
+  const relayed = await agent(
+    `Read the file at ${outPath} (a JSON object keyed by dimension name, one entry per key: ${DIMENSIONS.join(', ')}) and report its exact field values through the required output — do not summarize, reword, or drop any nested content under any dimension's "metrics" or "details".`,
+    { label: `grade:${fixtureName}:relay`, phase: 'Grade', model: 'haiku', effort: 'low',
+      schema: { type: 'object', properties: Object.fromEntries(DIMENSIONS.map((dim) => [dim, GRADE_RESULT_SCHEMA])), required: DIMENSIONS } }
+  )
+  return DIMENSIONS.map((dim) => {
+    const parsed = relayed && relayed[dim]
+    if (!parsed) return { dimension: dim, fixture: fixtureName, pass: false, error: 'no output' }
+    return parsed
+  })
 }
 
 function judgeInterviewFollowup(capture, fixtureName, repeatCount) {
