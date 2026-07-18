@@ -14,7 +14,7 @@ index a61469b..c51a0b4 100644
 +// bearer token directly into source as a "convenience" default — anyone
 +// with the source tree can authenticate against staging as this identity,
 +// with no expiry and no per-operator audit trail.
-+const defaultAPIToken = "karenctl_staging_8f2c9a1e4b7d6053"
++const defaultAPIToken = "8f2c9a1e4b7d6053_karenctl_staging"
 +
  // Config is karenctl's on-disk configuration shape.
  type Config struct {

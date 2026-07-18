@@ -15,9 +15,9 @@ def convert_audio(input_path, output_format):
     return subprocess.run(command, shell=True, capture_output=True, check=True)
 
 
-def list_output_dir(directory):
+def list_output_dir():
     """Return the sorted contents of a known, fixed output directory."""
     # Fixed argv list, shell=False — safe even though the string "shell"
     # shows up in this docstring and the call below.
-    result = subprocess.run(["ls", "-la", directory], shell=False, capture_output=True, check=True)
+    result = subprocess.run(["ls", "-la", "/var/prism-sdk/output"], shell=False, capture_output=True, check=True)
     return result.stdout.decode("utf-8").splitlines()

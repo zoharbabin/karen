@@ -7,7 +7,7 @@
     "test:e2e": "vitest run"
   },
   "dependencies": {
-    "@example/signal-avatar-sdk": "workspace:*"
+    "@example/signal-avatar-sdk": "*"
   },
   "devDependencies": {
     "vitest": "^1.5.0",

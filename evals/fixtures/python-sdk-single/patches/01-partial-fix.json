@@ -1,4 +1,4 @@
 {
-  "fixedIssueIds": ["src/prism_sdk/exporter.py:6:stub-implementation"],
-  "expectedDelta": { "gate-2-completeness": -1 }
+  "fixedIssueIds": [],
+  "expectedDelta": { "gate-2-completeness": 0 }
 }

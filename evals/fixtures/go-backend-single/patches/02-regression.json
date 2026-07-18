@@ -1,0 +1,4 @@
+{
+  "newIssue": { "file": "internal/api/purge.go", "line": 63, "category": "shell-injection" },
+  "expectedDelta": { "gate-3-security": 1 }
+}

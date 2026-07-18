@@ -1,4 +1,4 @@
 {
-  "newIssue": { "file": "src/beacon_ingest/server.py", "line": 57, "category": "shell-injection" },
-  "expectedDelta": { "gate-3-security": 1 }
+  "newIssue": { "file": "src/beacon_ingest/server.py", "line": 58, "category": "shell-injection" },
+  "expectedDelta": { "gate-3-security": 1, "gate-2-completeness": 1 }
 }

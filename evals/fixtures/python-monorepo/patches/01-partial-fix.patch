@@ -9,7 +9,7 @@ index 42e556e..a922104 100644
  import subprocess
  
  from fastapi import FastAPI, HTTPException
-@@ -22,12 +23,13 @@ async def submit_telemetry(payload: dict):
+@@ -22,12 +23,14 @@ async def submit_telemetry(payload: dict):
  async def run_diagnostics(payload: dict):
      """Run an operator-requested diagnostic probe against the ingest host.
  
@@ -23,7 +23,8 @@ index 42e556e..a922104 100644
      """
      probe = payload.get("probe", "")
 -    result = subprocess.run(f"diag-tool --check {probe}", shell=True, capture_output=True)
-+    result = subprocess.run(["diag-tool", "--check", *shlex.split(probe)], shell=False, capture_output=True)
++    args = ["diag-tool", "--check", *shlex.split(probe)]
++    result = subprocess.run(args, shell=False, capture_output=True)
      return {"stdout": result.stdout.decode("utf-8", errors="replace")}
  
  

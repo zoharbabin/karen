@@ -12,6 +12,12 @@
     "zeroTolerance": false
   },
   {
+    "id": "gate-3-security",
+    "tool": "gosec",
+    "coversCategories": ["gosec-G114-no-timeout", "gosec-G104-unhandled-error"],
+    "zeroTolerance": true
+  },
+  {
     "id": "gate-6-test-integrity",
     "tool": "go test",
     "coversCategories": ["accuracy-overclaim"],

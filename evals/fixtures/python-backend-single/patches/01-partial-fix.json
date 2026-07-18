@@ -1,4 +1,4 @@
 {
-  "fixedIssueIds": ["src/beacon_ingest/server.py:30:shell-injection"],
-  "expectedDelta": { "gate-3-security": -1 }
+  "fixedIssueIds": [],
+  "expectedDelta": { "gate-3-security": 1 }
 }

@@ -1,0 +1,5 @@
+{
+  "unchangedIssueId": "internal/api/webhook.go:47:shell-injection",
+  "note": "Zero-hunk empty diff, applied 3 consecutive times with no code change — tests circuit breaker trip at threshold 3 on gate-3-security. Issue is at line 47 post-03-noop-line-shift (was line 44 before that patch).",
+  "expectedDelta": {}
+}

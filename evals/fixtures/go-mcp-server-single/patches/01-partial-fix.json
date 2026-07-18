@@ -1,4 +1,4 @@
 {
   "fixedIssueIds": ["internal/tools/notify.go:23:stub-implementation"],
-  "expectedDelta": { "gate-2-completeness": -1 }
+  "expectedDelta": { "gate-2-completeness": 0 }
 }

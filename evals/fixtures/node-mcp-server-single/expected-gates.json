@@ -8,7 +8,7 @@
   {
     "id": "gate-2-completeness",
     "tool": "eslint + structural stub scan",
-    "coversCategories": ["stub-implementation"],
+    "coversCategories": ["stub-implementation", "untested-symbol"],
     "zeroTolerance": false
   },
   {

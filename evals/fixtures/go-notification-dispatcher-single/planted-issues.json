@@ -13,7 +13,7 @@
   },
   {
     "file": "internal/dispatch/dispatcher.go",
-    "line": 29,
+    "line": 30,
     "category": "no-retry",
     "isDecoy": false
   },
@@ -58,5 +58,29 @@
     "line": 43,
     "category": "accuracy-overclaim",
     "isDecoy": true
+  },
+  {
+    "file": "cmd/dispatcher/main.go",
+    "line": 30,
+    "category": "gosec-G114-no-timeout",
+    "isDecoy": false
+  },
+  {
+    "file": "cmd/dispatcher/main.go",
+    "line": 17,
+    "category": "gosec-G104-unhandled-error",
+    "isDecoy": false
+  },
+  {
+    "file": "internal/dispatch/attachments.go",
+    "line": 38,
+    "category": "dead-code",
+    "isDecoy": false
+  },
+  {
+    "file": "SECURITY.md",
+    "line": 11,
+    "category": "accuracy-overclaim",
+    "isDecoy": false
   }
 ]

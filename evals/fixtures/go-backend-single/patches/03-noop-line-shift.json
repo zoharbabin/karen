@@ -1,0 +1,6 @@
+{
+  "unchangedIssueId": "internal/api/webhook.go:44:shell-injection",
+  "previousLine": 44,
+  "newLine": 47,
+  "expectedDelta": {}
+}

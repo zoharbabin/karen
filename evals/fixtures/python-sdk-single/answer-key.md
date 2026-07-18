@@ -6,7 +6,7 @@ Q: what's the deployment context and runtime environment?
 A: "Plain pip-installed library, runs inside whatever Python process imports it — batch jobs, notebooks, internal services. No browser, no CDN."
 
 Q: what's the audience and does it handle sensitive data?
-A: "External — any data engineering team that installs it from PyPI. The `api_key` it sends as a bearer token is a real production credential once a customer sets one."
+A: "Enterprise — data engineering teams at customer organizations install it from PyPI. The `api_key` it sends as a bearer token is a real production credential once a customer sets one."
 
 Q: any compliance or regulatory requirements?
 A: "No. It's a client library — no SOC2, HIPAA, or PCI requirement of its own."

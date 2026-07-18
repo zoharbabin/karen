@@ -1,11 +1,23 @@
+diff --git a/README.md b/README.md
+index a1b2c3d..e4f5a6b 100644
+--- a/README.md
++++ b/README.md
+@@ -16,6 +16,7 @@
+ - `POST /admin/diagnostics` — run an operator-requested diagnostic probe
+   against the ingest host.
+ - `GET /admin/restart-status` — report the last restart outcome.
++- `POST /admin/purge-cache` — purge cached job entries matching a key pattern.
+
+ ## Running
+
 diff --git a/src/beacon_ingest/server.py b/src/beacon_ingest/server.py
 index c926d1a..fdfd347 100644
 --- a/src/beacon_ingest/server.py
 +++ b/src/beacon_ingest/server.py
-@@ -44,6 +44,20 @@ async def restart_status():
+@@ -44,6 +44,21 @@ async def restart_status():
      return {"active": result.stdout.decode("utf-8").strip() == "active"}
- 
- 
+
+
 +@app.post("/admin/purge-cache")
 +async def purge_cache(payload: dict):
 +    """Purge cached job entries matching a caller-supplied key pattern.
@@ -16,7 +28,8 @@ index c926d1a..fdfd347 100644
 +    (now-fixed) /admin/diagnostics probe, reintroduced in a new handler.
 +    """
 +    key_pattern = payload.get("key_pattern", "*")
-+    result = subprocess.run(f"redis-cli --scan --pattern {key_pattern} | xargs redis-cli del", shell=True, capture_output=True)
++    cmd = f"redis-cli --scan --pattern {key_pattern} | xargs redis-cli del"
++    result = subprocess.run(cmd, shell=True, capture_output=True)
 +    return {"stdout": result.stdout.decode("utf-8", errors="replace")}
 +
 +

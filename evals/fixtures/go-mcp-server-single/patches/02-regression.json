@@ -1,4 +1,4 @@
 {
   "newIssue": { "file": "internal/tools/backup_config.go", "line": 24, "category": "shell-injection" },
-  "expectedDelta": { "gate-3-security": 1 }
+  "expectedDelta": { "gate-3-security": 2 }
 }

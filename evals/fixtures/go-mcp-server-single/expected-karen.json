@@ -4,7 +4,7 @@
     "type": "mcp-server",
     "language": ["go"],
     "deployment": ["mcp-stdio"],
-    "audience": "developer-tooling",
+    "audience": "internal",
     "aiPowered": true,
     "aiPoweredReason": "BLUEPRINT.md's ai-agent profile is satisfied by EITHER condition, not just the 'calls an LLM at runtime' one — this server is invoked by an LLM's tool-calling loop, runs agentic tool-call handlers (run_shell_command, read_config), and exposes a conversational-adjacent surface (a connecting LLM client drives it end to end) even though it never itself makes an outbound call to an LLM API. The blueprint's own excessive-agency check (LLM06/ASI 01-02) is specifically about 'agent-initiated actions... with no gate/allow-list/human-in-the-loop checkpoint before they take effect' — that threat class exists precisely because *some* agent (here, the connecting LLM client) is initiating the actions this server executes. Classifying this as aiPowered: false because the server has no outbound LLM call would silently exempt run_shell_command and read_config from the excessive-agency, unbounded-consumption, and prompt-injection checks this project needs most. Decided per EVALS-PLAN.md section 10's open question, held to parity with fixtures 3 (node-mcp-server-single) and 11 (python-mcp-server-single) — fixture 7 was the one inconsistency in that parity set, corrected after cross-referencing web-researcher-mcp, a real Go MCP server with the identical shape (tool-call handlers invoked by a connecting LLM client, no outbound LLM call of its own) whose own security docs place it squarely inside OWASP LLM01/Agentic Top 10 scope for exactly this reason.",
     "subprojects": []
