@@ -296,6 +296,104 @@ not-yet-investigated issue. A fresh live re-run across all 14 fixtures to
 confirm this fix and re-check `python-sdk-single` is the next step before
 100% confidence.
 
+A tightened-matcher pass over `score-interview.js` found and fixed two
+benchmark-integrity bugs in the grader itself, not any fixture: a
+non-balancing parenthetical-strip regex left justification prose attached
+to a topic when its own justification contained nested parens, inflating
+keyword counts; and a single-incidental-keyword-hit fallback let one
+overloaded filler word (`"actually"`) falsely credit an unrelated topic as
+asked (added to `OVERLOADED_KEYWORDS`, joining `reachable`/`mcp`/`runtime`).
+Re-scoring all 10 then-available live captures against the fixed matcher
+surfaced two further findings, one in each direction. First, an opposite
+false-miss bug in the same matcher: whole-word regex matching had no
+word-form normalization, so `python-sdk-single`'s "audience and
+distribution scope" topic was reported missed even though Karen's turn 2
+genuinely asked it, because the topic's keyword "distribution" doesn't
+whole-word-match the transcript's "distributed." Fixed with a minimum
+8-character shared-prefix match alongside the exact-word check, tuned so no
+unrelated keyword pair in any fixture collides — validated with zero
+regressions across all 14 fixtures' golden/broken self-test samples and
+confirmed against all 10 live captures. Second, a genuine, real interview
+defect in `node-client-app-single`, the same defect class already
+documented for `go-mcp-server-single`: Karen's opening turn asserts the
+`browser-direct-js` deployment context as a given fact ("I can see this is
+an embeddable chat-widget SDK that loads directly into a customer's
+page...") instead of confirming it, and no later turn ever asks the
+required standalone instance-isolation/`destroy()` follow-up — a real
+`mustAskRecall` miss, not a matcher artifact. `interview.md` already
+carries a bad/good example for exactly this pattern (added in a prior fix
+round), but that fix had only landed in `interview.md`, not `BLUEPRINT.md`
+— a sync gap this round closed by porting the same example (and a second,
+unrelated one for the AI-powered/LLM-coding-agent-authorship split) back
+into `BLUEPRINT.md`, restoring the required both-files-in-one-change
+parity.
+
+Follow-up triage against `go-monorepo`'s previously-failing `karen-json`
+dimension surfaced two more real, now-fixed causes. First, its `knownGaps`
+mismatch was stale fixture ground truth, not a Karen defect: the live
+transcript showed Karen correctly following the documented known-gaps
+procedure end to end (asking whether `buildRevision` is dead code or
+unfinished work, confirming no tracker artifact existed, offering to create
+one, writing the entry once the user agreed), but `expected-karen.json`
+never anticipated that the shell-injection decoy function planted in
+`version.go` would also, legitimately, trip `staticcheck`'s U1000
+unused-function check — confirmed directly by running `staticcheck ./...`
+against the fixture's own `backend` module. Fixed by adding the matching
+`knownGaps` entry to `expected-karen.json` (and both self-test run-captures).
+Second, its `exceedsBaseline` miss traced to a genuine, previously-
+undocumented gap in `monorepo.md`/`BLUEPRINT.md`: the per-gate subproject-
+scoping table covered gates 1 through 7 but never said `knownGaps` and
+`exceedsBaseline` need the same per-subproject scoping — a strength true for
+one subproject (`backend`'s zero runtime dependencies) isn't automatically
+true for a sibling subproject (`cli`, which has a real dependency) just
+because they share one root `.karen.json`. Fixed by adding that scoping rule
+to both docs; re-confirming it against a fresh live run is still pending.
+
+Separately, re-checking `node-personalization-backend-single`'s previously
+low `interviewFollowupJudge` score (mean 0.510 across 5 judge runs, below
+the 0.7 pass threshold) against its live transcript surfaced the same defect
+class as `go-mcp-server-single`/`node-client-app-single`'s deployment-context
+misses, but on a different axis: the "must ask unprompted" topic (does
+every personal-data-store-shaped file register with the consent registry)
+requires checking *each* structurally-identical store individually, not just
+one. Karen's turn 2 asks a well-targeted, well-reasoned question about
+`userTable.ts` (already registered — a real ambiguity about README
+accuracy, correctly resolved), but the interview never once mentions
+`eventStore.ts`, the structurally identical sibling store that is the
+fixture's actual planted `unregistered-personal-data-store` issue. The
+deterministic `mustAskRecall` matcher passes this transcript because the
+topic's ground-truth wording is generic enough to match keywords from the
+`userTable.ts` discussion, but the qualitative judge dimension exists
+precisely to catch a resolved-the-wrong-instance follow-up like this one.
+Fixed by adding a bad/good example to `interview.md`/`BLUEPRINT.md`'s
+existing "ask each distinct candidate topic individually" rule, making
+explicit that resolving one instance of a repeated signal doesn't confirm
+the others even when the question asked was itself well-targeted;
+re-verifying against a fresh judge run is still pending.
+
+A follow-up audit of every fixture's `patches/01-partial-fix.json` for
+sibling-fixture-parity broke on `gate-2-completeness`'s `expectedDelta`: the
+stub-implementation fix nets `-1` in `node-vendored-single` and
+`python-mcp-server-single`'s sidecars, but `go-mcp-server-single` and
+`node-mcp-server-single` declared `0` — and a real live `mode: 'full'` run
+had already shown both producing an actual `-1`, contradicting their own
+fixtures. Tracing this further than the sidecar value alone surfaced the
+real root cause: both fixtures' self-test golden/broken `run-capture.json`
+samples had hand-authored `gate-2-completeness` stdout/counts that netted to
+zero by fabricating a fresh "untested public symbol" finding for the
+newly-fixed function — a finding neither fixture's own embedded
+`init.gateScripts.gate-2-completeness` bash script has any logic to produce
+(`go-mcp-server-single`'s only runs `go vet` plus a `panic("not
+implemented")` grep; `node-mcp-server-single`'s only checks the `throw new
+Error("not implemented")` stub pattern, never doc-comment/no-test patterns),
+and that also contradicted real live-run gate-output artifacts already on
+disk showing a clean `-1` drop for both. Fixed by correcting both sidecars'
+`expectedDelta` to `-1` and rewriting both fixtures' golden and broken
+`run-capture.json` samples so `gate-2-completeness`'s recorded stdout/count/
+fingerprint/total values are consistent with what their own embedded gate
+script actually produces and with the real live capture. All 14 fixtures
+still pass self-test after the fix.
+
 This benchmark is a high-priority investment for the project, not an
 internal-only QA tool — see [EVALS-PLAN.md §11](../EVALS-PLAN.md#11-benchmark-integrity--investment-priority)
 for what's still ahead before scores from this suite get used to make the

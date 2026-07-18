@@ -45,17 +45,35 @@ function parseSections(markdown) {
   return sections;
 }
 
+// Strips a trailing parenthetical justification (e.g. "(source has
+// `getUserMedia` calls)") from a bullet's raw text, balancing nested
+// parens so a justification that itself contains parenthetical asides
+// (common in this benchmark's answer-key style) doesn't leave a truncated
+// close-paren-less remainder attached to the topic.
+function stripTrailingParenthetical(raw) {
+  const trimmed = raw.trimEnd();
+  if (!trimmed.endsWith(')')) return raw;
+  let depth = 0;
+  for (let i = trimmed.length - 1; i >= 0; i--) {
+    if (trimmed[i] === ')') depth++;
+    else if (trimmed[i] === '(') {
+      depth--;
+      if (depth === 0) return trimmed.slice(0, i).trimEnd();
+    }
+  }
+  return raw;
+}
+
 // Extracts each `- ` bullet's topic string from a section, stripping the
-// trailing parenthetical justification (e.g. "(source has `getUserMedia`
-// calls)") since that explanatory text is authoring rationale, not part of
-// the topic a real question would echo.
+// trailing parenthetical justification since that explanatory text is
+// authoring rationale, not part of the topic a real question would echo.
 function extractTopics(section) {
   const topics = [];
   for (const line of section.lines) {
     const bulletMatch = line.match(/^\s*-\s+(.+)$/);
     if (!bulletMatch) continue;
     const raw = bulletMatch[1].trim();
-    const topic = raw.replace(/\s*\([^)]*\)\s*$/, '').trim();
+    const topic = stripTrailingParenthetical(raw);
     topics.push(topic.length > 0 ? topic : raw);
   }
   return topics;
@@ -79,18 +97,50 @@ function keywordsOf(topic) {
 // ground-truth topics in this benchmark's answer keys (e.g. "coverage"
 // meaning "test coverage threshold" in one fixture and "vendored-file
 // provenance coverage" in another; "reachable"/"mcp" appearing once in an
-// unrelated scene-setting sentence). A single hit on one of these is not
-// enough evidence a topic was actually covered — require it alongside at
-// least one other, more specific keyword from the same topic.
-const OVERLOADED_KEYWORDS = new Set(['reachable', 'mcp', 'runtime']);
+// unrelated scene-setting sentence; "actually" as common filler inside an
+// unrelated clarifying question, e.g. "Is that user table actually part of
+// the always-on core tier..." falsely hitting a topic about feature flags).
+// A single hit on one of these is not enough evidence a topic was actually
+// covered — require it alongside at least one other, more specific keyword
+// from the same topic.
+const OVERLOADED_KEYWORDS = new Set(['reachable', 'mcp', 'runtime', 'actually']);
+
+// Minimum shared-prefix length for findMatchingMessage's word-form match
+// below. 8 is long enough that unrelated words never collide (checked
+// against every topic keyword across all 14 fixtures) but short enough to
+// bridge real inflections this benchmark's answer keys use, e.g. topic
+// keyword "distribution" vs. a transcript's "distributed".
+const STEM_PREFIX_MIN = 8;
+
+function tokenize(sentence) {
+  return sentence.toLowerCase().match(/[a-z0-9]+/g) || [];
+}
+
+// A keyword "matches" a sentence token either exactly, or by sharing a long
+// enough prefix to be the same word in a different inflection (plural, verb
+// tense, -ion/-ing/-ive form). Whole-word regex matching alone missed these
+// — see STEM_PREFIX_MIN above.
+function keywordMatchesTokens(keyword, tokens) {
+  for (const token of tokens) {
+    if (token === keyword) return true;
+    if (
+      keyword.length >= STEM_PREFIX_MIN
+      && token.length >= STEM_PREFIX_MIN
+      && token.slice(0, STEM_PREFIX_MIN) === keyword.slice(0, STEM_PREFIX_MIN)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
 
 // Deterministic keyword/topic match: a karen-role message "matches" a topic
 // if it contains the full topic phrase as a case-insensitive substring, or
 // (fallback, since real questions rarely echo a ground-truth phrase
-// verbatim) contains one of the topic's significant keywords as a whole
-// word. Used for mustAskRecall, where a generous match is the safer failure
-// direction — a missed match wrongly penalizes a question Karen actually
-// asked.
+// verbatim) contains one of the topic's significant keywords, in the same or
+// a closely related word form. Used for mustAskRecall, where a generous
+// match is the safer failure direction — a missed match wrongly penalizes a
+// question Karen actually asked.
 //
 // Matched within a single sentence, not the whole message, mirroring
 // findViolatingMessage below — a message that states one already-known fact
@@ -110,7 +160,8 @@ function findMatchingMessage(topic, karenMessages) {
       if (topicLower.length > 0 && sentenceLower.includes(topicLower)) {
         return message;
       }
-      const hits = keywords.filter((keyword) => new RegExp(`\\b${keyword}\\b`, 'i').test(sentence));
+      const tokens = tokenize(sentence);
+      const hits = keywords.filter((keyword) => keywordMatchesTokens(keyword, tokens));
       const hasSpecificHit = hits.some((keyword) => !OVERLOADED_KEYWORDS.has(keyword));
       if (hasSpecificHit || hits.length >= 2) {
         return message;

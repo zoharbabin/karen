@@ -45,7 +45,15 @@
   "expiryWarningDays": 7,
   "existingGates": [],
   "crossSubprojectConsistency": [],
-  "knownGaps": [],
+  "knownGaps": [
+    {
+      "kind": "dead-code",
+      "pattern": "func buildRevision is unused",
+      "scope": "backend/internal/server/version.go",
+      "reason": "Leftover from an earlier, unfinished pass at wiring build-revision info into /healthz. No plan to complete it right now.",
+      "tracker": "docs/KNOWN-GAPS.md"
+    }
+  ],
   "exceedsBaseline": [
     {
       "gate": "gate-1-supply-chain",
