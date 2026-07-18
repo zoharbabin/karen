@@ -110,6 +110,10 @@ The manifest written after `karen init`. Captures what was learned and what choi
 
 Overrides the root profile for a poly-repo with mixed risk surfaces. A single global `type`/`deployment`/`audience`/`aiPowered` assumes the whole repo carries one risk profile — false the moment a repo mixes, say, a zero-dependency enterprise library with a demo app that calls an LLM at runtime and a throwaway internal CLI tool. Each entry is scoped by `path` and overrides only the fields it sets; anything omitted inherits the root profile. This is what lets the security gate add OWASP LLM checks to one subproject specifically without forcing every other subproject through the same runtime-AI checklist, and what lets the compliance gate hold only the SOC2-scoped subproject to SBOM/audit-log requirements instead of the whole repo. During `karen init`, once `detect_project` reports multiple manifests, ask the profile questions (type, deployment, audience, AI-powered) once per subproject that looks structurally independent (own manifest, own lifecycle) rather than assuming the first answer applies everywhere.
 
+**Root `project.type` must always be one of the same software-kind labels used for subprojects** (`service`, `library`, `application`, `cli-tool`, `mcp-server`, `root-utility`, or a project-specific label) — never a structural shape like `"monorepo"`. Monorepo-ness is already conveyed by a populated `subprojects[]` array; `project.type` answers "what kind of thing is the root profile," a different question. When subprojects are explicit peers with no primary (the interview surfaces no reason to treat one as dominant), pick one of the peers' own kind labels for the root rather than inventing a new enum value.
+
+**Every `subprojects[].deployment` (and the root `project.deployment`) draws only from the fixed profile list in `deployment-profiles.md`** (`browser-direct-js`, `browser-iframe`, `node-server`, `python`, `ai-agent`, `mcp-stdio`) — never append the project's implementation language into this array. Language belongs solely in `project.language`.
+
 **`subprojects[].codeRole`** answers "what kind of code is this, independent of type/deployment/audience" — `reference-app`, `debug-tool`, `root-utility`, or a project-specific label the interview settles on. Distinct from `testRunner.packages[].role` (below), which is about coverage-reporting role, not what the subproject's code is for. It's what lets a security zero-tolerance check flex per subproject (see the `browser-direct-js` profile in `deployment-profiles.md`) without touching the check's rationale for every other subproject.
 
 **`subprojects[].agentActions.scope`** (`least-privilege` vs. `maximal`, each with a `reason`) tells the excessive-agency check which bar applies to that subproject's tool-calling surface — a customer-facing app is held to a narrow allow-list; an internal "everything-agent" test harness is expected to be broad and checked against a different, explicitly-declared bar instead.
@@ -118,6 +122,8 @@ Overrides the root profile for a poly-repo with mixed risk surfaces. A single gl
 
 Entries are either unconditional (a plain string) or feature-gated (an object with `activatesWhen`) — see Tiered, Feature-Gated Compliance in `quality-dimensions.md`. A gated entry's artifact requirements only join the harness once the named feature is confirmed built; until then it's tracked and surfaced in the `karen init` summary but not yet enforced.
 
+**When a compliance regime is scoped to one subproject only** (the interview identifies it as that subproject's own distinct regime, not repo-wide — see Gate 5 in `monorepo.md`), it belongs solely in that subproject's own `compliance[]` entry. Do not also duplicate it into the root-level `compliance[]` array — root `compliance[]` is reserved for regimes that apply repo-wide. A regime that gates on a feature flag not yet built still needs its own `activatesWhen` entry (not just a `knownGaps`/notes mention) wherever it's scoped — the entry itself is the mechanism `karen init`'s summary surfaces it through; prose-only tracking defeats that purpose.
+
 ## `personalDataRegistry`
 
 Names the registry (or fan-out mechanism) every personal-data store is expected to join — see Personal-Data Registry Pattern in `quality-dimensions.md`. `path` is the registry's own source file; `stores` is a best-effort list of personal-data stores found during `detect_project`/interview, checked each run against the registry to catch a new store that never joined. Omit entirely for projects with at most one personal-data store, where fan-out has nothing to miss.
@@ -125,6 +131,8 @@ Names the registry (or fan-out mechanism) every personal-data store is expected 
 ## Exceptions are first-class, not workarounds
 
 Every exception needs a reason and an expiry date. Expired exceptions are gate failures.
+
+**`exceptions[].pattern` is a short, minimal matchable token** — e.g. `"console.log"`, `"TODO"` — not the full offending line or sentence. The gate's own exception matcher does substring containment against this pattern, so a short token still matches correctly; a verbose pattern (the entire offending statement copied verbatim) works too but is needlessly brittle to reformat and harder to review. Keep it to the shortest string that uniquely identifies the exempted construct.
 
 ## Five mechanisms, easy to confuse
 

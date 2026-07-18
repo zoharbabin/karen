@@ -36,7 +36,7 @@
       },
       {
         "role": "user",
-        "text": "beacon-ingest is our internal telemetry ingestion backend \u2014 other Beacon platform services POST beacons to it over HTTP, a separate worker processes them, and callers poll job status back. Internal only, not customer-facing."
+        "text": "beacon-ingest is our internal telemetry ingestion backend — other Beacon platform services POST beacons to it over HTTP, a separate worker processes them, and callers poll job status back. Internal only, not customer-facing."
       },
       {
         "role": "karen",
@@ -44,7 +44,7 @@
       },
       {
         "role": "user",
-        "text": "Runs as a standalone FastAPI service under uvicorn, talks to a shared Redis instance for job caching. No browser context, nothing client-side \u2014 plain backend service."
+        "text": "Runs as a standalone FastAPI service under uvicorn, talks to a shared Redis instance for job caching. No browser context, nothing client-side — plain backend service."
       },
       {
         "role": "karen",
@@ -52,7 +52,7 @@
       },
       {
         "role": "user",
-        "text": "Internal only \u2014 other services in our own infra call it. No SOC2/HIPAA/PCI requirement, no customer PII flows through this service directly."
+        "text": "Internal only — other services in our own infra call it. No SOC2/HIPAA/PCI requirement, no customer PII flows through this service directly."
       },
       {
         "role": "karen",
@@ -60,19 +60,19 @@
       },
       {
         "role": "user",
-        "text": "No LLM calls at runtime at all \u2014 it's telemetry ingestion plumbing. CLAUDE.md is there for contributors using coding agents, but the service itself never calls a model."
+        "text": "No LLM calls at runtime at all — it's telemetry ingestion plumbing. CLAUDE.md is there for contributors using coding agents, but the service itself never calls a model."
       },
       {
         "role": "karen",
-        "text": "Your suite here is E2E-only \u2014 Playwright-driven, end-to-end, nothing at unit level touching beacon_ingest.cache or beacon_ingest.config. Is that a deliberate choice for this kind of service, or should this get flagged as a coverage gap?"
+        "text": "Your suite here is E2E-only — Playwright-driven, end-to-end, nothing at unit level touching beacon_ingest.cache or beacon_ingest.config. Is that a deliberate choice for this kind of service, or should this get flagged as a coverage gap?"
       },
       {
         "role": "user",
-        "text": "Intentional. There's not much internal branching logic worth unit-testing in isolation here \u2014 it's a thin pass-through between HTTP and Redis. We'd rather exercise the real request/response contract end to end than mock Redis just to produce a coverage percentage. Run coverage-less, assertion-density-only is fine."
+        "text": "Intentional. There's not much internal branching logic worth unit-testing in isolation here — it's a thin pass-through between HTTP and Redis. We'd rather exercise the real request/response contract end to end than mock Redis just to produce a coverage percentage. Run coverage-less, assertion-density-only is fine."
       },
       {
         "role": "karen",
-        "text": "Got it \u2014 I'll record coverage as intentionally disabled with that rationale, and gate-6 will still check assertion density on the E2E suite. Anything else before I generate the gates?"
+        "text": "Got it — I'll record coverage as intentionally disabled with that rationale, and gate-6 will still check assertion density on the E2E suite. Anything else before I generate the gates?"
       },
       {
         "role": "user",
@@ -96,7 +96,7 @@
       "compliance": [],
       "coverage": {
         "enabled": false,
-        "reason": "Only an E2E suite exists (Playwright driving the live FastAPI service over real HTTP against a live Redis) \u2014 there is no unit-level import of beacon_ingest.cache or beacon_ingest.config anywhere, so pytest-cov would report near-zero function-level coverage even though the request/response contract is genuinely exercised. Interview confirmed this is intentional: beacon-ingest is a thin ingestion/cache pass-through with little internal branching logic to unit-test in isolation, and the team explicitly chose not to mock Redis just to produce a coverage number. Gate-6 still enforces assertion density on the E2E suite."
+        "reason": "Only an E2E suite exists (Playwright driving the live FastAPI service over real HTTP against a live Redis) — there is no unit-level import of beacon_ingest.cache or beacon_ingest.config anywhere, so pytest-cov would report near-zero function-level coverage even though the request/response contract is genuinely exercised. Interview confirmed this is intentional: beacon-ingest is a thin ingestion/cache pass-through with little internal branching logic to unit-test in isolation, and the team explicitly chose not to mock Redis just to produce a coverage number. Gate-6 still enforces assertion density on the E2E suite."
       },
       "testRunner": {
         "command": "pytest tests/e2e",
@@ -133,8 +133,8 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "src/beacon_ingest/cache.py:37\tunused function 'default_pickle_shelf' -- dead code, no test or caller reaches it\nFAIL (1 issues)\n",
+          "exitCode": 1
         },
         "gate-3-security": {
           "stdout": "src/beacon_ingest/server.py:30\tsubprocess call with shell=True on unsanitized user-supplied `probe` value\nsrc/beacon_ingest/cache.py:28\tpickle.loads on Redis-cached bytes lets any writer execute arbitrary code via __reduce__\nsrc/beacon_ingest/server.py:43\tsubprocess call flagged near shell=True pattern (decoy: fixed argv, shell=False)\nFAIL (3 issues)\nZERO-TOLERANCE\n",
@@ -162,8 +162,10 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": [
+              "fp-dead-code-cache-defaultpickleshelf"
+            ]
           },
           "gate-3-security": {
             "count": 3,
@@ -186,7 +188,7 @@
             "fingerprint": []
           }
         },
-        "total": 3
+        "total": 4
       }
     },
     {
@@ -197,11 +199,11 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "src/beacon_ingest/cache.py:37\tunused function 'default_pickle_shelf' -- dead code, no test or caller reaches it\nFAIL (1 issues)\n",
+          "exitCode": 1
         },
         "gate-3-security": {
-          "stdout": "src/beacon_ingest/cache.py:28\tpickle.loads on Redis-cached bytes lets any writer execute arbitrary code via __reduce__\nsrc/beacon_ingest/server.py:43\tsubprocess call flagged near shell=True pattern (decoy: fixed argv, shell=False)\nFAIL (2 issues)\nZERO-TOLERANCE\n",
+          "stdout": "src/beacon_ingest/cache.py:28\tpickle.loads on Redis-cached bytes lets any writer execute arbitrary code via __reduce__\nsrc/beacon_ingest/server.py:30\tstarting a process with a partial executable path\nsrc/beacon_ingest/server.py:30\tsubprocess call with a variable-derived `probe` argv element — shell=True was removed, but `probe` is still not a literal argv element, so bandit's B603/B607 keep flagging it\nsrc/beacon_ingest/server.py:43\tsubprocess call flagged near shell=True pattern (decoy: fixed argv, shell=False)\nFAIL (4 issues)\nZERO-TOLERANCE\n",
           "exitCode": 1
         },
         "gate-4-docs-parity": {
@@ -226,13 +228,17 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": [
+              "fp-dead-code-cache-defaultpickleshelf"
+            ]
           },
           "gate-3-security": {
-            "count": 2,
+            "count": 4,
             "fingerprint": [
               "fp-unsafedeser-cache",
+              "fp-partialpath-server-probe",
+              "fp-argvvar-server-probe",
               "fp-shellinj-server-restartstatus-decoy"
             ]
           },
@@ -249,7 +255,7 @@
             "fingerprint": []
           }
         },
-        "total": 2
+        "total": 5
       }
     },
     {
@@ -260,11 +266,11 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "src/beacon_ingest/cache.py:40\tunused function 'default_pickle_shelf' -- dead code, no test or caller reaches it\nsrc/beacon_ingest/server.py:48\tPOST /admin/purge-cache (purge_cache) has no test in tests/e2e -- untested public API entry point\nFAIL (2 issues)\n",
+          "exitCode": 1
         },
         "gate-3-security": {
-          "stdout": "src/beacon_ingest/cache.py:28\tpickle.loads on Redis-cached bytes lets any writer execute arbitrary code via __reduce__\nsrc/beacon_ingest/server.py:57\tsubprocess call with shell=True on unsanitized user-supplied `key_pattern` value\nsrc/beacon_ingest/server.py:43\tsubprocess call flagged near shell=True pattern (decoy: fixed argv, shell=False)\nFAIL (3 issues)\nZERO-TOLERANCE\n",
+          "stdout": "src/beacon_ingest/cache.py:28\tpickle.loads on Redis-cached bytes lets any writer execute arbitrary code via __reduce__\nsrc/beacon_ingest/server.py:30\tstarting a process with a partial executable path\nsrc/beacon_ingest/server.py:30\tsubprocess call with a variable-derived `probe` argv element — shell=True was removed, but `probe` is still not a literal argv element, so bandit's B603/B607 keep flagging it\nsrc/beacon_ingest/server.py:57\tsubprocess call with shell=True on unsanitized user-supplied `key_pattern` value\nsrc/beacon_ingest/server.py:43\tsubprocess call flagged near shell=True pattern (decoy: fixed argv, shell=False)\nFAIL (5 issues)\nZERO-TOLERANCE\n",
           "exitCode": 1
         },
         "gate-4-docs-parity": {
@@ -289,13 +295,18 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 2,
+            "fingerprint": [
+              "fp-dead-code-cache-defaultpickleshelf",
+              "fp-untested-route-server-purgecache"
+            ]
           },
           "gate-3-security": {
-            "count": 3,
+            "count": 5,
             "fingerprint": [
               "fp-unsafedeser-cache",
+              "fp-partialpath-server-probe",
+              "fp-argvvar-server-probe",
               "fp-shellinj-server-keypattern",
               "fp-shellinj-server-restartstatus-decoy"
             ]
@@ -313,7 +324,7 @@
             "fingerprint": []
           }
         },
-        "total": 3
+        "total": 7
       }
     },
     {
@@ -324,11 +335,11 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "src/beacon_ingest/cache.py:40\tunused function 'default_pickle_shelf' -- dead code, no test or caller reaches it\nsrc/beacon_ingest/server.py:48\tPOST /admin/purge-cache (purge_cache) has no test in tests/e2e -- untested public API entry point\nFAIL (2 issues)\n",
+          "exitCode": 1
         },
         "gate-3-security": {
-          "stdout": "src/beacon_ingest/cache.py:31\tpickle.loads on Redis-cached bytes lets any writer execute arbitrary code via __reduce__\nsrc/beacon_ingest/server.py:57\tsubprocess call with shell=True on unsanitized user-supplied `key_pattern` value\nsrc/beacon_ingest/server.py:43\tsubprocess call flagged near shell=True pattern (decoy: fixed argv, shell=False)\nFAIL (3 issues)\nZERO-TOLERANCE\n",
+          "stdout": "src/beacon_ingest/cache.py:31\tpickle.loads on Redis-cached bytes lets any writer execute arbitrary code via __reduce__\nsrc/beacon_ingest/server.py:30\tstarting a process with a partial executable path\nsrc/beacon_ingest/server.py:30\tsubprocess call with a variable-derived `probe` argv element — shell=True was removed, but `probe` is still not a literal argv element, so bandit's B603/B607 keep flagging it\nsrc/beacon_ingest/server.py:57\tsubprocess call with shell=True on unsanitized user-supplied `key_pattern` value\nsrc/beacon_ingest/server.py:43\tsubprocess call flagged near shell=True pattern (decoy: fixed argv, shell=False)\nFAIL (5 issues)\nZERO-TOLERANCE\n",
           "exitCode": 1
         },
         "gate-4-docs-parity": {
@@ -353,13 +364,18 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 2,
+            "fingerprint": [
+              "fp-dead-code-cache-defaultpickleshelf",
+              "fp-untested-route-server-purgecache"
+            ]
           },
           "gate-3-security": {
-            "count": 3,
+            "count": 5,
             "fingerprint": [
               "fp-unsafedeser-cache",
+              "fp-partialpath-server-probe",
+              "fp-argvvar-server-probe",
               "fp-shellinj-server-keypattern",
               "fp-shellinj-server-restartstatus-decoy"
             ]
@@ -377,7 +393,7 @@
             "fingerprint": []
           }
         },
-        "total": 3
+        "total": 7
       }
     },
     {
@@ -388,11 +404,11 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "src/beacon_ingest/cache.py:40\tunused function 'default_pickle_shelf' -- dead code, no test or caller reaches it\nsrc/beacon_ingest/server.py:48\tPOST /admin/purge-cache (purge_cache) has no test in tests/e2e -- untested public API entry point\nFAIL (2 issues)\n",
+          "exitCode": 1
         },
         "gate-3-security": {
-          "stdout": "src/beacon_ingest/cache.py:31\tpickle.loads on Redis-cached bytes lets any writer execute arbitrary code via __reduce__\nsrc/beacon_ingest/server.py:57\tsubprocess call with shell=True on unsanitized user-supplied `key_pattern` value\nsrc/beacon_ingest/server.py:43\tsubprocess call flagged near shell=True pattern (decoy: fixed argv, shell=False)\nFAIL (3 issues)\nZERO-TOLERANCE\n",
+          "stdout": "src/beacon_ingest/cache.py:31\tpickle.loads on Redis-cached bytes lets any writer execute arbitrary code via __reduce__\nsrc/beacon_ingest/server.py:30\tstarting a process with a partial executable path\nsrc/beacon_ingest/server.py:30\tsubprocess call with a variable-derived `probe` argv element — shell=True was removed, but `probe` is still not a literal argv element, so bandit's B603/B607 keep flagging it\nsrc/beacon_ingest/server.py:57\tsubprocess call with shell=True on unsanitized user-supplied `key_pattern` value\nsrc/beacon_ingest/server.py:43\tsubprocess call flagged near shell=True pattern (decoy: fixed argv, shell=False)\nFAIL (5 issues)\nZERO-TOLERANCE\n",
           "exitCode": 1
         },
         "gate-4-docs-parity": {
@@ -417,13 +433,18 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 2,
+            "fingerprint": [
+              "fp-dead-code-cache-defaultpickleshelf",
+              "fp-untested-route-server-purgecache"
+            ]
           },
           "gate-3-security": {
-            "count": 3,
+            "count": 5,
             "fingerprint": [
               "fp-unsafedeser-cache",
+              "fp-partialpath-server-probe",
+              "fp-argvvar-server-probe",
               "fp-shellinj-server-keypattern",
               "fp-shellinj-server-restartstatus-decoy"
             ]
@@ -441,7 +462,7 @@
             "fingerprint": []
           }
         },
-        "total": 3
+        "total": 7
       }
     },
     {
@@ -452,11 +473,11 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "src/beacon_ingest/cache.py:40\tunused function 'default_pickle_shelf' -- dead code, no test or caller reaches it\nsrc/beacon_ingest/server.py:48\tPOST /admin/purge-cache (purge_cache) has no test in tests/e2e -- untested public API entry point\nFAIL (2 issues)\n",
+          "exitCode": 1
         },
         "gate-3-security": {
-          "stdout": "src/beacon_ingest/cache.py:31\tpickle.loads on Redis-cached bytes lets any writer execute arbitrary code via __reduce__\nsrc/beacon_ingest/server.py:57\tsubprocess call with shell=True on unsanitized user-supplied `key_pattern` value\nsrc/beacon_ingest/server.py:43\tsubprocess call flagged near shell=True pattern (decoy: fixed argv, shell=False)\nFAIL (3 issues)\nZERO-TOLERANCE\n",
+          "stdout": "src/beacon_ingest/cache.py:31\tpickle.loads on Redis-cached bytes lets any writer execute arbitrary code via __reduce__\nsrc/beacon_ingest/server.py:30\tstarting a process with a partial executable path\nsrc/beacon_ingest/server.py:30\tsubprocess call with a variable-derived `probe` argv element — shell=True was removed, but `probe` is still not a literal argv element, so bandit's B603/B607 keep flagging it\nsrc/beacon_ingest/server.py:57\tsubprocess call with shell=True on unsanitized user-supplied `key_pattern` value\nsrc/beacon_ingest/server.py:43\tsubprocess call flagged near shell=True pattern (decoy: fixed argv, shell=False)\nFAIL (5 issues)\nZERO-TOLERANCE\n",
           "exitCode": 1
         },
         "gate-4-docs-parity": {
@@ -481,13 +502,18 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 2,
+            "fingerprint": [
+              "fp-dead-code-cache-defaultpickleshelf",
+              "fp-untested-route-server-purgecache"
+            ]
           },
           "gate-3-security": {
-            "count": 3,
+            "count": 5,
             "fingerprint": [
               "fp-unsafedeser-cache",
+              "fp-partialpath-server-probe",
+              "fp-argvvar-server-probe",
               "fp-shellinj-server-keypattern",
               "fp-shellinj-server-restartstatus-decoy"
             ]
@@ -505,7 +531,7 @@
             "fingerprint": []
           }
         },
-        "total": 3
+        "total": 7
       }
     },
     {
@@ -516,11 +542,11 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "src/beacon_ingest/cache.py:40\tunused function 'default_pickle_shelf' -- dead code, no test or caller reaches it\nsrc/beacon_ingest/server.py:48\tPOST /admin/purge-cache (purge_cache) has no test in tests/e2e -- untested public API entry point\nFAIL (2 issues)\n",
+          "exitCode": 1
         },
         "gate-3-security": {
-          "stdout": "src/beacon_ingest/cache.py:31\tpickle.loads on Redis-cached bytes lets any writer execute arbitrary code via __reduce__\nsrc/beacon_ingest/server.py:57\tsubprocess call with shell=True on unsanitized user-supplied `key_pattern` value\nsrc/beacon_ingest/server.py:43\tsubprocess call flagged near shell=True pattern (decoy: fixed argv, shell=False)\nFAIL (3 issues)\nZERO-TOLERANCE\n",
+          "stdout": "src/beacon_ingest/cache.py:31\tpickle.loads on Redis-cached bytes lets any writer execute arbitrary code via __reduce__\nsrc/beacon_ingest/server.py:30\tstarting a process with a partial executable path\nsrc/beacon_ingest/server.py:30\tsubprocess call with a variable-derived `probe` argv element — shell=True was removed, but `probe` is still not a literal argv element, so bandit's B603/B607 keep flagging it\nsrc/beacon_ingest/server.py:57\tsubprocess call with shell=True on unsanitized user-supplied `key_pattern` value\nsrc/beacon_ingest/server.py:43\tsubprocess call flagged near shell=True pattern (decoy: fixed argv, shell=False)\nFAIL (5 issues)\nZERO-TOLERANCE\n",
           "exitCode": 1
         },
         "gate-4-docs-parity": {
@@ -545,13 +571,18 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 2,
+            "fingerprint": [
+              "fp-dead-code-cache-defaultpickleshelf",
+              "fp-untested-route-server-purgecache"
+            ]
           },
           "gate-3-security": {
-            "count": 3,
+            "count": 5,
             "fingerprint": [
               "fp-unsafedeser-cache",
+              "fp-partialpath-server-probe",
+              "fp-argvvar-server-probe",
               "fp-shellinj-server-keypattern",
               "fp-shellinj-server-restartstatus-decoy"
             ]
@@ -569,7 +600,7 @@
             "fingerprint": []
           }
         },
-        "total": 3
+        "total": 7
       }
     }
   ]

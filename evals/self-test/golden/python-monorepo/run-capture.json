@@ -170,7 +170,7 @@
     },
     "gateScripts": {
       "gate-1-supply-chain": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nout=\"\"\nfor mod in backend client-lib; do\n  report=\"$(cd \"$root/$mod\" && pip-audit --format json 2>/dev/null || true)\"\n  while IFS=$'\\t' read -r file line msg; do\n    [ -z \"$file\" ] && continue\n    out+=\"$mod/$file:$line\"$'\\t'\"$msg\"$'\\n'\n    issues=$((issues+1))\n  done < <(echo \"$report\" | python3 \"$root/.karen/gates/format_pip_audit.py\")\ndone\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
-      "gate-2-completeness": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nout=\"\"\nfor mod in backend client-lib; do\n  while IFS=$'\\t' read -r file line msg; do\n    [ -z \"$file\" ] && continue\n    out+=\"$file:$line\"$'\\t'\"$msg\"$'\\n'\n    issues=$((issues+1))\n  done < <(cd \"$root/$mod\" && ruff check src --select F,E --output-format=concise 2>/dev/null | python3 \"$root/.karen/gates/format_ruff.py\")\n  while IFS=$'\\t' read -r file line msg; do\n    [ -z \"$file\" ] && continue\n    out+=\"$file:$line\"$'\\t'\"$msg\"$'\\n'\n    issues=$((issues+1))\n  done < <(python3 \"$root/.karen/gates/stub_scan.py\" \"$root/$mod/src\")\ndone\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
+      "gate-2-completeness": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nout=\"\"\nfor mod in backend client-lib; do\n  while IFS=$'\\t' read -r file line msg; do\n    [ -z \"$file\" ] && continue\n    out+=\"$file:$line\"$'\\t'\"$msg\"$'\\n'\n    issues=$((issues+1))\n  done < <(cd \"$root/$mod\" && ruff check src --select F,E --output-format=concise 2>/dev/null | python3 \"$root/.karen/gates/format_ruff.py\")\n  while IFS=$'\\t' read -r file line msg; do\n    [ -z \"$file\" ] && continue\n    out+=\"$file:$line\"$'\\t'\"$msg\"$'\\n'\n    issues=$((issues+1))\n  done < <(python3 \"$root/.karen/gates/stub_scan.py\" \"$root/$mod/src\")\n  # Structural: public module-level functions under this subproject's src/\n  # with no test referencing their name anywhere in its own tests/ tree.\n  while IFS=$'\\t' read -r file line msg; do\n    [ -z \"$file\" ] && continue\n    out+=\"$file:$line\"$'\\t'\"$msg\"$'\\n'\n    issues=$((issues+1))\n  done < <(python3 \"$root/.karen/gates/untested_symbol_scan.py\" \"$root/$mod\" src)\ndone\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
       "gate-3-security": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nout=\"\"\nfor mod in backend client-lib; do\n  while IFS=$'\\t' read -r file line msg; do\n    [ -z \"$file\" ] && continue\n    out+=\"$file:$line\"$'\\t'\"$msg\"$'\\n'\n    issues=$((issues+1))\n  done < <(cd \"$root/$mod\" && bandit -r src -f json 2>/dev/null | python3 \"$root/.karen/gates/format_bandit.py\")\ndone\n# working-tree secret scan, root-wide, not scoped to tracked files only\nwhile IFS=$'\\t' read -r file line msg; do\n  [ -z \"$file\" ] && continue\n  out+=\"$file:$line\"$'\\t'\"$msg\"$'\\n'\n  issues=$((issues+1))\ndone < <(gitleaks detect --source \"$root\" --no-git --report-format json 2>/dev/null | python3 \"$root/.karen/gates/format_gitleaks.py\")\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; echo \"ZERO-TOLERANCE\"; exit 1; fi\n",
       "gate-4-docs-parity": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nout=\"\"\nfor mod in backend client-lib; do\n  while IFS=$'\\t' read -r file line msg; do\n    [ -z \"$file\" ] && continue\n    out+=\"$file:$line\"$'\\t'\"$msg\"$'\\n'\n    issues=$((issues+1))\n  done < <(node \"$root/.karen/gates/doctest-and-symbol-diff.js\" \"$root/$mod\")\ndone\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
       "gate-5-compliance": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nout=\"\"\n# SOC2 artifacts checked against backend/ only -- client-lib is explicitly\n# out of SOC2 scope per the interview.\nrequired=(\"backend/docs/compliance/SOC2-CONTROLS.md\")\nfor f in \"${required[@]}\"; do\n  if [ ! -f \"$root/$f\" ]; then\n    out+=\"$f:0\"$'\\t'\"required SOC2 artifact missing\"$'\\n'\n    issues=$((issues+1))\n  fi\ndone\nif ! grep -q \"Generate SBOM\" \"$root/.github/workflows/ci.yml\" 2>/dev/null; then\n  out+=\".github/workflows/ci.yml:0\"$'\\t'\"no SBOM generation step found for backend release artifact\"$'\\n'\n  issues=$((issues+1))\nfi\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
@@ -187,8 +187,8 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "backend/src/signal_relay_backend/server.py:13\tsubmit_telemetry() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/server.py:22\trun_diagnostics() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/server.py:35\trestart_status() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/server.py:48\tget_job() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/config.py:6\tload_runtime_config() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/config.py:19\tload_feature_flags() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/cache.py:25\tstore_job() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/audit_log.py:23\twrite_audit_entry() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/audit_log.py:30\tverify_password_reset_flow() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/config.py:20\tload_config_from_env() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/client.py:26\tget_job() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/client.py:43\tclose() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/filters.py:6\tcompile_field_filter() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/filters.py:22\trender_filter_docs_example() is a public symbol with no test covering it\nFAIL (14 issues)\n",
+          "exitCode": 1
         },
         "gate-4-docs-parity": {
           "stdout": "PASS (0 issues)\n",
@@ -220,8 +220,23 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 14,
+            "fingerprint": [
+              "fp-untested-symbol-backend-server-submit_telemetry",
+              "fp-untested-symbol-backend-server-run_diagnostics",
+              "fp-untested-symbol-backend-server-restart_status",
+              "fp-untested-symbol-backend-server-get_job",
+              "fp-untested-symbol-backend-config-load_runtime_config",
+              "fp-untested-symbol-backend-config-load_feature_flags",
+              "fp-untested-symbol-backend-cache-store_job",
+              "fp-untested-symbol-backend-audit_log-write_audit_entry",
+              "fp-untested-symbol-backend-audit_log-verify_password_reset_flow",
+              "fp-untested-symbol-clientlib-config-load_config_from_env",
+              "fp-untested-symbol-clientlib-client-get_job",
+              "fp-untested-symbol-clientlib-client-close",
+              "fp-untested-symbol-clientlib-filters-compile_field_filter",
+              "fp-untested-symbol-clientlib-filters-render_filter_docs_example"
+            ]
           },
           "gate-3-security": {
             "count": 6,
@@ -251,7 +266,7 @@
             "fingerprint": []
           }
         },
-        "total": 6
+        "total": 20
       }
     },
     {
@@ -262,8 +277,8 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "backend/src/signal_relay_backend/server.py:14\tsubmit_telemetry() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/server.py:23\trun_diagnostics() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/server.py:38\trestart_status() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/server.py:51\tget_job() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/config.py:6\tload_runtime_config() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/config.py:19\tload_feature_flags() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/cache.py:25\tstore_job() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/audit_log.py:23\twrite_audit_entry() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/audit_log.py:30\tverify_password_reset_flow() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/config.py:20\tload_config_from_env() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/client.py:26\tget_job() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/client.py:43\tclose() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/filters.py:6\tcompile_field_filter() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/filters.py:22\trender_filter_docs_example() is a public symbol with no test covering it\nFAIL (14 issues)\n",
+          "exitCode": 1
         },
         "gate-4-docs-parity": {
           "stdout": "PASS (0 issues)\n",
@@ -295,8 +310,23 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 14,
+            "fingerprint": [
+              "fp-untested-symbol-backend-server-submit_telemetry",
+              "fp-untested-symbol-backend-server-run_diagnostics",
+              "fp-untested-symbol-backend-server-restart_status",
+              "fp-untested-symbol-backend-server-get_job",
+              "fp-untested-symbol-backend-config-load_runtime_config",
+              "fp-untested-symbol-backend-config-load_feature_flags",
+              "fp-untested-symbol-backend-cache-store_job",
+              "fp-untested-symbol-backend-audit_log-write_audit_entry",
+              "fp-untested-symbol-backend-audit_log-verify_password_reset_flow",
+              "fp-untested-symbol-clientlib-config-load_config_from_env",
+              "fp-untested-symbol-clientlib-client-get_job",
+              "fp-untested-symbol-clientlib-client-close",
+              "fp-untested-symbol-clientlib-filters-compile_field_filter",
+              "fp-untested-symbol-clientlib-filters-render_filter_docs_example"
+            ]
           },
           "gate-3-security": {
             "count": 5,
@@ -325,7 +355,7 @@
             "fingerprint": []
           }
         },
-        "total": 5
+        "total": 19
       }
     },
     {
@@ -336,8 +366,8 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "backend/src/signal_relay_backend/server.py:14\tsubmit_telemetry() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/server.py:23\trun_diagnostics() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/server.py:38\trestart_status() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/server.py:51\tget_job() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/config.py:6\tload_runtime_config() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/config.py:19\tload_feature_flags() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/cache.py:25\tstore_job() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/audit_log.py:23\twrite_audit_entry() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/audit_log.py:30\tverify_password_reset_flow() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/config.py:20\tload_config_from_env() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/client.py:26\tget_job() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/client.py:43\tclose() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/filters.py:6\tcompile_field_filter() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/filters.py:22\trender_filter_docs_example() is a public symbol with no test covering it\nFAIL (14 issues)\n",
+          "exitCode": 1
         },
         "gate-4-docs-parity": {
           "stdout": "PASS (0 issues)\n",
@@ -369,8 +399,23 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 14,
+            "fingerprint": [
+              "fp-untested-symbol-backend-server-submit_telemetry",
+              "fp-untested-symbol-backend-server-run_diagnostics",
+              "fp-untested-symbol-backend-server-restart_status",
+              "fp-untested-symbol-backend-server-get_job",
+              "fp-untested-symbol-backend-config-load_runtime_config",
+              "fp-untested-symbol-backend-config-load_feature_flags",
+              "fp-untested-symbol-backend-cache-store_job",
+              "fp-untested-symbol-backend-audit_log-write_audit_entry",
+              "fp-untested-symbol-backend-audit_log-verify_password_reset_flow",
+              "fp-untested-symbol-clientlib-config-load_config_from_env",
+              "fp-untested-symbol-clientlib-client-get_job",
+              "fp-untested-symbol-clientlib-client-close",
+              "fp-untested-symbol-clientlib-filters-compile_field_filter",
+              "fp-untested-symbol-clientlib-filters-render_filter_docs_example"
+            ]
           },
           "gate-3-security": {
             "count": 6,
@@ -400,7 +445,7 @@
             "fingerprint": []
           }
         },
-        "total": 6
+        "total": 20
       }
     },
     {
@@ -411,8 +456,8 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "backend/src/signal_relay_backend/server.py:14\tsubmit_telemetry() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/server.py:23\trun_diagnostics() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/server.py:38\trestart_status() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/server.py:51\tget_job() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/config.py:6\tload_runtime_config() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/config.py:19\tload_feature_flags() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/cache.py:25\tstore_job() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/audit_log.py:23\twrite_audit_entry() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/audit_log.py:30\tverify_password_reset_flow() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/config.py:24\tload_config_from_env() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/client.py:26\tget_job() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/client.py:43\tclose() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/filters.py:6\tcompile_field_filter() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/filters.py:22\trender_filter_docs_example() is a public symbol with no test covering it\nFAIL (14 issues)\n",
+          "exitCode": 1
         },
         "gate-4-docs-parity": {
           "stdout": "PASS (0 issues)\n",
@@ -444,8 +489,23 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 14,
+            "fingerprint": [
+              "fp-untested-symbol-backend-server-submit_telemetry",
+              "fp-untested-symbol-backend-server-run_diagnostics",
+              "fp-untested-symbol-backend-server-restart_status",
+              "fp-untested-symbol-backend-server-get_job",
+              "fp-untested-symbol-backend-config-load_runtime_config",
+              "fp-untested-symbol-backend-config-load_feature_flags",
+              "fp-untested-symbol-backend-cache-store_job",
+              "fp-untested-symbol-backend-audit_log-write_audit_entry",
+              "fp-untested-symbol-backend-audit_log-verify_password_reset_flow",
+              "fp-untested-symbol-clientlib-config-load_config_from_env",
+              "fp-untested-symbol-clientlib-client-get_job",
+              "fp-untested-symbol-clientlib-client-close",
+              "fp-untested-symbol-clientlib-filters-compile_field_filter",
+              "fp-untested-symbol-clientlib-filters-render_filter_docs_example"
+            ]
           },
           "gate-3-security": {
             "count": 6,
@@ -475,7 +535,7 @@
             "fingerprint": []
           }
         },
-        "total": 6
+        "total": 20
       }
     },
     {
@@ -486,8 +546,8 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "backend/src/signal_relay_backend/server.py:14\tsubmit_telemetry() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/server.py:23\trun_diagnostics() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/server.py:38\trestart_status() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/server.py:51\tget_job() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/config.py:6\tload_runtime_config() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/config.py:19\tload_feature_flags() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/cache.py:25\tstore_job() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/audit_log.py:23\twrite_audit_entry() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/audit_log.py:30\tverify_password_reset_flow() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/config.py:24\tload_config_from_env() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/client.py:26\tget_job() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/client.py:43\tclose() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/filters.py:6\tcompile_field_filter() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/filters.py:22\trender_filter_docs_example() is a public symbol with no test covering it\nFAIL (14 issues)\n",
+          "exitCode": 1
         },
         "gate-4-docs-parity": {
           "stdout": "PASS (0 issues)\n",
@@ -519,8 +579,23 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 14,
+            "fingerprint": [
+              "fp-untested-symbol-backend-server-submit_telemetry",
+              "fp-untested-symbol-backend-server-run_diagnostics",
+              "fp-untested-symbol-backend-server-restart_status",
+              "fp-untested-symbol-backend-server-get_job",
+              "fp-untested-symbol-backend-config-load_runtime_config",
+              "fp-untested-symbol-backend-config-load_feature_flags",
+              "fp-untested-symbol-backend-cache-store_job",
+              "fp-untested-symbol-backend-audit_log-write_audit_entry",
+              "fp-untested-symbol-backend-audit_log-verify_password_reset_flow",
+              "fp-untested-symbol-clientlib-config-load_config_from_env",
+              "fp-untested-symbol-clientlib-client-get_job",
+              "fp-untested-symbol-clientlib-client-close",
+              "fp-untested-symbol-clientlib-filters-compile_field_filter",
+              "fp-untested-symbol-clientlib-filters-render_filter_docs_example"
+            ]
           },
           "gate-3-security": {
             "count": 6,
@@ -550,7 +625,7 @@
             "fingerprint": []
           }
         },
-        "total": 6
+        "total": 20
       }
     },
     {
@@ -561,8 +636,8 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "backend/src/signal_relay_backend/server.py:14\tsubmit_telemetry() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/server.py:23\trun_diagnostics() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/server.py:38\trestart_status() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/server.py:51\tget_job() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/config.py:6\tload_runtime_config() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/config.py:19\tload_feature_flags() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/cache.py:25\tstore_job() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/audit_log.py:23\twrite_audit_entry() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/audit_log.py:30\tverify_password_reset_flow() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/config.py:24\tload_config_from_env() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/client.py:26\tget_job() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/client.py:43\tclose() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/filters.py:6\tcompile_field_filter() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/filters.py:22\trender_filter_docs_example() is a public symbol with no test covering it\nFAIL (14 issues)\n",
+          "exitCode": 1
         },
         "gate-4-docs-parity": {
           "stdout": "PASS (0 issues)\n",
@@ -594,8 +669,23 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 14,
+            "fingerprint": [
+              "fp-untested-symbol-backend-server-submit_telemetry",
+              "fp-untested-symbol-backend-server-run_diagnostics",
+              "fp-untested-symbol-backend-server-restart_status",
+              "fp-untested-symbol-backend-server-get_job",
+              "fp-untested-symbol-backend-config-load_runtime_config",
+              "fp-untested-symbol-backend-config-load_feature_flags",
+              "fp-untested-symbol-backend-cache-store_job",
+              "fp-untested-symbol-backend-audit_log-write_audit_entry",
+              "fp-untested-symbol-backend-audit_log-verify_password_reset_flow",
+              "fp-untested-symbol-clientlib-config-load_config_from_env",
+              "fp-untested-symbol-clientlib-client-get_job",
+              "fp-untested-symbol-clientlib-client-close",
+              "fp-untested-symbol-clientlib-filters-compile_field_filter",
+              "fp-untested-symbol-clientlib-filters-render_filter_docs_example"
+            ]
           },
           "gate-3-security": {
             "count": 6,
@@ -625,7 +715,7 @@
             "fingerprint": []
           }
         },
-        "total": 6
+        "total": 20
       }
     },
     {
@@ -636,8 +726,8 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "backend/src/signal_relay_backend/server.py:14\tsubmit_telemetry() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/server.py:23\trun_diagnostics() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/server.py:38\trestart_status() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/server.py:51\tget_job() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/config.py:6\tload_runtime_config() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/config.py:19\tload_feature_flags() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/cache.py:25\tstore_job() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/audit_log.py:23\twrite_audit_entry() is a public symbol with no test covering it\nbackend/src/signal_relay_backend/audit_log.py:30\tverify_password_reset_flow() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/config.py:24\tload_config_from_env() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/client.py:26\tget_job() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/client.py:43\tclose() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/filters.py:6\tcompile_field_filter() is a public symbol with no test covering it\nclient-lib/src/signal_relay_client/filters.py:22\trender_filter_docs_example() is a public symbol with no test covering it\nFAIL (14 issues)\n",
+          "exitCode": 1
         },
         "gate-4-docs-parity": {
           "stdout": "PASS (0 issues)\n",
@@ -669,8 +759,23 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 14,
+            "fingerprint": [
+              "fp-untested-symbol-backend-server-submit_telemetry",
+              "fp-untested-symbol-backend-server-run_diagnostics",
+              "fp-untested-symbol-backend-server-restart_status",
+              "fp-untested-symbol-backend-server-get_job",
+              "fp-untested-symbol-backend-config-load_runtime_config",
+              "fp-untested-symbol-backend-config-load_feature_flags",
+              "fp-untested-symbol-backend-cache-store_job",
+              "fp-untested-symbol-backend-audit_log-write_audit_entry",
+              "fp-untested-symbol-backend-audit_log-verify_password_reset_flow",
+              "fp-untested-symbol-clientlib-config-load_config_from_env",
+              "fp-untested-symbol-clientlib-client-get_job",
+              "fp-untested-symbol-clientlib-client-close",
+              "fp-untested-symbol-clientlib-filters-compile_field_filter",
+              "fp-untested-symbol-clientlib-filters-render_filter_docs_example"
+            ]
           },
           "gate-3-security": {
             "count": 6,
@@ -700,7 +805,7 @@
             "fingerprint": []
           }
         },
-        "total": 6
+        "total": 20
       }
     }
   ]

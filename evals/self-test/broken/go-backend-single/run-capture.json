@@ -79,7 +79,7 @@
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-3-security": { "stdout": "internal/api/purge.go:34\tshell command built from unsanitized 'pattern' query parameter — arbitrary command execution via crafted pattern\ninternal/diag/build_info.go:17\texec.Command call site flagged by shell-injection heuristic\nFAIL (2 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
-        "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-6-test-integrity": { "stdout": "internal/diag/resolve.go:11\texported handler has no matching _test.go file\ninternal/diag/build_info.go:16\texported handler has no matching _test.go file\nFAIL (2 issues)\n", "exitCode": 1 },
         "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
       },
       "runState": {
@@ -89,10 +89,10 @@
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
           "gate-2-completeness": { "count": 0, "fingerprint": [] },
           "gate-3-security": { "count": 2, "fingerprint": ["fp-shell-injection-purge", "fp-shell-injection-buildinfo-decoy"] },
-          "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
+          "gate-6-test-integrity": { "count": 2, "fingerprint": ["fp-untested-handler-buildinfo", "fp-untested-handler-resolve"] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 2
+        "total": 4
       }
     },
     {
@@ -100,8 +100,8 @@
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-3-security": { "stdout": "internal/diag/build_info.go:17\texec.Command call site flagged by shell-injection heuristic\nFAIL (1 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
-        "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-3-security": { "stdout": "internal/api/purge.go:31\tsubprocess launched with variable — gosec's G204 taint analysis still fires on rm invoked with a tainted argv element, even though the shell-string concatenation itself was removed\ninternal/diag/build_info.go:17\texec.Command call site flagged by shell-injection heuristic\nFAIL (2 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
+        "gate-6-test-integrity": { "stdout": "internal/diag/resolve.go:11\texported handler has no matching _test.go file\ninternal/diag/build_info.go:16\texported handler has no matching _test.go file\nFAIL (2 issues)\n", "exitCode": 1 },
         "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
       },
       "runState": {
@@ -110,11 +110,121 @@
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
           "gate-2-completeness": { "count": 0, "fingerprint": [] },
-          "gate-3-security": { "count": 1, "fingerprint": ["fp-shell-injection-buildinfo-decoy"] },
-          "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
+          "gate-3-security": { "count": 2, "fingerprint": ["fp-shell-injection-purge", "fp-shell-injection-buildinfo-decoy"] },
+          "gate-6-test-integrity": { "count": 2, "fingerprint": ["fp-untested-handler-buildinfo", "fp-untested-handler-resolve"] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 1
+        "total": 4
+      }
+    },
+    {
+      "trigger": "02-regression",
+      "gateResults": {
+        "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-3-security": { "stdout": "internal/api/purge.go:31\tsubprocess launched with variable — gosec's G204 taint analysis still fires on rm invoked with a tainted argv element, even though the shell-string concatenation itself was removed\ninternal/api/purge.go:63\tshell command built from unsanitized 'glob' query parameter — arbitrary command execution via crafted glob\ninternal/diag/build_info.go:17\texec.Command call site flagged by shell-injection heuristic\nFAIL (3 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
+        "gate-6-test-integrity": { "stdout": "internal/diag/resolve.go:11\texported handler has no matching _test.go file\ninternal/diag/build_info.go:16\texported handler has no matching _test.go file\nFAIL (2 issues)\n", "exitCode": 1 },
+        "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
+      },
+      "runState": {
+        "run": 3,
+        "timestamp": "2026-06-15T09:40:00Z",
+        "gates": {
+          "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 0, "fingerprint": [] },
+          "gate-3-security": { "count": 3, "fingerprint": ["fp-shell-injection-purge", "fp-shell-injection-purge-glob", "fp-shell-injection-buildinfo-decoy"] },
+          "gate-6-test-integrity": { "count": 2, "fingerprint": ["fp-untested-handler-buildinfo", "fp-untested-handler-resolve"] },
+          "gate-7-agent-context": { "count": 0, "fingerprint": [] }
+        },
+        "total": 5
+      }
+    },
+    {
+      "trigger": "03-noop-line-shift",
+      "gateResults": {
+        "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-3-security": { "stdout": "internal/api/purge.go:31\tsubprocess launched with variable — gosec's G204 taint analysis still fires on rm invoked with a tainted argv element, even though the shell-string concatenation itself was removed\ninternal/api/purge.go:63\tshell command built from unsanitized 'glob' query parameter — arbitrary command execution via crafted glob\ninternal/diag/build_info.go:17\texec.Command call site flagged by shell-injection heuristic\nFAIL (3 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
+        "gate-6-test-integrity": { "stdout": "internal/diag/resolve.go:11\texported handler has no matching _test.go file\ninternal/diag/build_info.go:16\texported handler has no matching _test.go file\nFAIL (2 issues)\n", "exitCode": 1 },
+        "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
+      },
+      "runState": {
+        "run": 4,
+        "timestamp": "2026-06-15T10:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 0, "fingerprint": [] },
+          "gate-3-security": { "count": 3, "fingerprint": ["fp-shell-injection-purge", "fp-shell-injection-purge-glob", "fp-shell-injection-buildinfo-decoy"] },
+          "gate-6-test-integrity": { "count": 2, "fingerprint": ["fp-untested-handler-buildinfo", "fp-untested-handler-resolve"] },
+          "gate-7-agent-context": { "count": 0, "fingerprint": [] }
+        },
+        "total": 5
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-1",
+      "gateResults": {
+        "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-3-security": { "stdout": "internal/api/purge.go:31\tsubprocess launched with variable — gosec's G204 taint analysis still fires on rm invoked with a tainted argv element, even though the shell-string concatenation itself was removed\ninternal/api/purge.go:63\tshell command built from unsanitized 'glob' query parameter — arbitrary command execution via crafted glob\ninternal/diag/build_info.go:17\texec.Command call site flagged by shell-injection heuristic\nFAIL (3 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
+        "gate-6-test-integrity": { "stdout": "internal/diag/resolve.go:11\texported handler has no matching _test.go file\ninternal/diag/build_info.go:16\texported handler has no matching _test.go file\nFAIL (2 issues)\n", "exitCode": 1 },
+        "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
+      },
+      "runState": {
+        "run": 5,
+        "timestamp": "2026-06-15T10:20:00Z",
+        "gates": {
+          "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 0, "fingerprint": [] },
+          "gate-3-security": { "count": 3, "fingerprint": ["fp-shell-injection-purge", "fp-shell-injection-purge-glob", "fp-shell-injection-buildinfo-decoy"] },
+          "gate-6-test-integrity": { "count": 2, "fingerprint": ["fp-untested-handler-buildinfo", "fp-untested-handler-resolve"] },
+          "gate-7-agent-context": { "count": 0, "fingerprint": [] }
+        },
+        "total": 5
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-2",
+      "gateResults": {
+        "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-3-security": { "stdout": "internal/api/purge.go:31\tsubprocess launched with variable — gosec's G204 taint analysis still fires on rm invoked with a tainted argv element, even though the shell-string concatenation itself was removed\ninternal/api/purge.go:63\tshell command built from unsanitized 'glob' query parameter — arbitrary command execution via crafted glob\ninternal/diag/build_info.go:17\texec.Command call site flagged by shell-injection heuristic\nFAIL (3 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
+        "gate-6-test-integrity": { "stdout": "internal/diag/resolve.go:11\texported handler has no matching _test.go file\ninternal/diag/build_info.go:16\texported handler has no matching _test.go file\nFAIL (2 issues)\n", "exitCode": 1 },
+        "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
+      },
+      "runState": {
+        "run": 6,
+        "timestamp": "2026-06-15T10:40:00Z",
+        "gates": {
+          "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 0, "fingerprint": [] },
+          "gate-3-security": { "count": 3, "fingerprint": ["fp-shell-injection-purge", "fp-shell-injection-purge-glob", "fp-shell-injection-buildinfo-decoy"] },
+          "gate-6-test-integrity": { "count": 2, "fingerprint": ["fp-untested-handler-buildinfo", "fp-untested-handler-resolve"] },
+          "gate-7-agent-context": { "count": 0, "fingerprint": [] }
+        },
+        "total": 5
+      }
+    },
+    {
+      "trigger": "04-repeat-noop-3",
+      "gateResults": {
+        "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-3-security": { "stdout": "internal/api/purge.go:31\tsubprocess launched with variable — gosec's G204 taint analysis still fires on rm invoked with a tainted argv element, even though the shell-string concatenation itself was removed\ninternal/api/purge.go:63\tshell command built from unsanitized 'glob' query parameter — arbitrary command execution via crafted glob\ninternal/diag/build_info.go:17\texec.Command call site flagged by shell-injection heuristic\nFAIL (3 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
+        "gate-6-test-integrity": { "stdout": "internal/diag/resolve.go:11\texported handler has no matching _test.go file\ninternal/diag/build_info.go:16\texported handler has no matching _test.go file\nFAIL (2 issues)\n", "exitCode": 1 },
+        "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
+      },
+      "runState": {
+        "run": 7,
+        "timestamp": "2026-06-15T11:00:00Z",
+        "gates": {
+          "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 0, "fingerprint": [] },
+          "gate-3-security": { "count": 3, "fingerprint": ["fp-shell-injection-purge", "fp-shell-injection-purge-glob", "fp-shell-injection-buildinfo-decoy"] },
+          "gate-6-test-integrity": { "count": 2, "fingerprint": ["fp-untested-handler-buildinfo", "fp-untested-handler-resolve"] },
+          "gate-7-agent-context": { "count": 0, "fingerprint": [] }
+        },
+        "total": 5
       }
     }
   ]

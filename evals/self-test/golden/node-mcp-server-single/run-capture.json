@@ -95,11 +95,11 @@
           "typescript"
         ],
         "deployment": [
-          "node-server"
+          "mcp-stdio"
         ],
         "audience": "internal",
         "aiPowered": true,
-        "aiPoweredReason": "BLUEPRINT.md's ai-agent profile is satisfied by EITHER condition, not just the 'calls an LLM at runtime' one — this server is 'invoked by an LLM's tool-calling loop, runs agentic tool-call handlers, and exposes a conversational-adjacent surface (a connecting LLM client drives it end to end)' even though it never itself makes an outbound call to an LLM API. The blueprint's own excessive-agency check (LLM06/ASI 01-02) is specifically about 'agent-initiated actions... with no gate/allow-list/human-in-the-loop checkpoint before they take effect' — that threat class exists precisely because *some* agent (here, the connecting LLM client) is initiating the actions this server executes. Classifying this as aiPowered: false because the server has no outbound LLM call would silently exempt run_shell_command and read_config from the excessive-agency, unbounded-consumption, and prompt-injection checks that are exactly the checks this project needs most — an MCP tool-call handler fed by an LLM's tool-call arguments is the textbook case for LLM01 (prompt injection reaching a tool-call context) and LLM06 (excessive agency), regardless of which side of the MCP connection issues the LLM call itself. Decided deliberately per EVALS-PLAN.md section 10's open question: aiPowered=true for a plain MCP server with no LLM calls of its own.",
+        "aiPoweredReason": "BLUEPRINT.md's ai-agent profile recognizes a tool-provider server — an MCP server, a plugin, a webhook handler invoked by someone else's agent loop — as aiPowered: true even though it never itself calls an LLM. This server is invoked by a connecting LLM's tool-calling loop and runs agentic tool-call handlers (run_shell_command, read_config) end to end. The blueprint's own excessive-agency check (LLM06/ASI 01-02) is specifically about 'agent-initiated actions... with no gate/allow-list/human-in-the-loop checkpoint before they take effect' — that threat class exists precisely because *some* agent (here, the connecting LLM client) is initiating the actions this server executes. Classifying this as aiPowered: false because the server has no outbound LLM call would silently exempt run_shell_command and read_config from the excessive-agency, unbounded-consumption, and prompt-injection checks that are exactly the checks this project needs most — an MCP tool-call handler fed by an LLM's tool-call arguments is the textbook case for LLM01 (prompt injection reaching a tool-call context) and LLM06 (excessive agency), regardless of which side of the MCP connection issues the LLM call itself.",
         "agentActions": {
           "scope": "maximal",
           "reason": "Interview confirmed run_shell_command is intentionally broad — on-call engineers need arbitrary diagnostic/remediation shell access during incidents; a fixed allow-list would defeat the tool's purpose. Bar is 'every call logged and reviewable,' not 'minimal surface' — declared once at the project level since this is a single-package repo with no subprojects to scope it to."
@@ -143,7 +143,7 @@
       "gate-3-security": "#!/usr/bin/env bash\n# gate-3-security: semgrep structural scan for hardcoded secrets, shell\n# injection, and path traversal. Zero-tolerance — any finding fails the gate.\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nout=\"\"\nfindings=\"$(semgrep --config p/secrets --config p/nodejsscan --json \"$root\" 2>/dev/null || echo '{\"results\":[]}')\"\nwhile IFS=$'\\t' read -r file line msg; do\n  [ -z \"$file\" ] && continue\n  out+=\"$file:$line\\t$msg\\n\"\n  issues=$((issues+1))\ndone < <(echo \"$findings\" | node -e '\n  let s=\"\"; process.stdin.on(\"data\", d => s+=d);\n  process.stdin.on(\"end\", () => {\n    const j = JSON.parse(s || \"{}\");\n    for (const r of (j.results || [])) {\n      console.log([r.path, r.start.line, r.extra.message].join(\"\\t\"));\n    }\n  });\n')\nprintf \"%b\" \"$out\"\nif [ \"$issues\" -eq 0 ]; then\n  echo \"PASS (0 issues)\"; exit 0\nelse\n  echo \"FAIL ($issues issues)\"\n  echo \"ZERO-TOLERANCE\"\n  exit 1\nfi\n",
       "gate-4-docs-parity": "#!/usr/bin/env bash\n# gate-4-docs-parity: markdown doctest (README code blocks tagged\n# karen:runnable) + symbol diff between README and exported tool surface.\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nout=\"\"\nexported_tools=\"$(grep -oh '\"name\": \"[a-z_]*\"' src/tools/*.ts | sed -E 's/.*\"([a-z_]+)\"$/\\1/' | sort -u)\"\nfor tool in $exported_tools; do\n  if ! grep -q \"$tool\" README.md; then\n    out+=\"README.md:1\\ttool '$tool' is not documented in README\\n\"\n    issues=$((issues+1))\n  fi\ndone\nprintf \"%b\" \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
       "gate-6-test-integrity": "#!/usr/bin/env bash\n# gate-6-test-integrity: vitest --coverage, enforce the configured threshold\n# and flag assertion-free \"smoke\" tests.\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nout=\"\"\nnpx vitest run --coverage --reporter=json > /tmp/vitest-out.json 2>/dev/null || true\npct=\"$(node -e '\n  try {\n    const s = require(\"fs\").readFileSync(\"coverage/coverage-summary.json\", \"utf8\");\n    const j = JSON.parse(s);\n    console.log(j.total.lines.pct);\n  } catch { console.log(\"0\"); }\n')\"\nthreshold=80\nif awk \"BEGIN{exit !($pct < $threshold)}\"; then\n  out+=\"coverage/lcov.info:1\\tline coverage ${pct}% is below the ${threshold}% threshold\\n\"\n  issues=$((issues+1))\nfi\nprintf \"%b\" \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
-      "gate-7-agent-context": "#!/usr/bin/env bash\n# gate-7-agent-context: checklist over CLAUDE.md — must state the quality\n# gate command, the stopping condition, and model-selection guidance; also\n# checks any claimed multi-tool audience against the tool-specific files\n# that claim would require.\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nout=\"\"\nfile=\"CLAUDE.md\"\nif [ ! -f \"$file\" ]; then\n  echo \"$file:1\\tagent context file is missing\"\n  echo \"FAIL (1 issues)\"\n  exit 1\nfi\ngrep -qi \"karen audit\" \"$file\" || { out+=\"$file:1\\tmissing the karen audit quality-gate command\\n\"; issues=$((issues+1)); }\ngrep -qi \"exit 2\" \"$file\" || { out+=\"$file:1\\tmissing the circuit-breaker escalation (exit 2) stopping rule\\n\"; issues=$((issues+1)); }\ngrep -qi \"model\" \"$file\" || { out+=\"$file:1\\tmissing model-selection guidance\\n\"; issues=$((issues+1)); }\nclaim_line=$(grep -in \"cursor\" \"$file\" | head -1 | cut -d: -f1)\nif [ -n \"$claim_line\" ] \u0026\u0026 [ ! -f \".cursorrules\" ]; then\n  out+=\"$file:$claim_line\\tagent-context-audience-overclaim: claims Cursor as an audience but no .cursorrules exists anywhere in the repo\\n\"; issues=$((issues+1))\nfi\nprintf \"%b\" \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n"
+      "gate-7-agent-context": "#!/usr/bin/env bash\n# gate-7-agent-context: checklist over CLAUDE.md — must state the quality\n# gate command, the stopping condition, and model-selection guidance; also\n# checks any claimed multi-tool audience against the tool-specific files\n# that claim would require.\nset -euo pipefail\nroot=\"$1\"\ncd \"$root\"\nissues=0\nout=\"\"\nfile=\"CLAUDE.md\"\nif [ ! -f \"$file\" ]; then\n  echo \"$file:1\\tagent context file is missing\"\n  echo \"FAIL (1 issues)\"\n  exit 1\nfi\ngrep -qi \"karen audit\" \"$file\" || { out+=\"$file:1\\tmissing the karen audit quality-gate command\\n\"; issues=$((issues+1)); }\ngrep -qi \"exit 2\" \"$file\" || { out+=\"$file:1\\tmissing the circuit-breaker escalation (exit 2) stopping rule\\n\"; issues=$((issues+1)); }\ngrep -qi \"model\" \"$file\" || { out+=\"$file:1\\tmissing model-selection guidance\\n\"; issues=$((issues+1)); }\nclaim_line=$(grep -in \"cursor\" \"$file\" | head -1 | cut -d: -f1)\nif [ -n \"$claim_line\" ] && [ ! -f \".cursorrules\" ]; then\n  out+=\"$file:$claim_line\\tagent-context-audience-overclaim: claims Cursor as an audience but no .cursorrules exists anywhere in the repo\\n\"; issues=$((issues+1))\nfi\nprintf \"%b\" \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n"
     }
   },
   "auditRuns": [
@@ -155,7 +155,7 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "src/tools/notify.ts:17\texported function is unimplemented — throws instead of doing its job\nFAIL (1 issues)\n",
+          "stdout": "src/tools/notify.ts:17\texported function is unimplemented — throws instead of doing its job\nsrc/tools/runShellCommand.ts:27\thandleRunShellCommand() is a public symbol with no test covering it\nsrc/tools/readConfig.ts:24\thandleReadConfig() is a public symbol with no test covering it\nsrc/tools/notify.ts:9\tlogNotifyStatus() is a public symbol with no test covering it\nsrc/utils/config.ts:19\tloadConfig() is a public symbol with no test covering it\nFAIL (5 issues)\n",
           "exitCode": 1
         },
         "gate-3-security": {
@@ -184,9 +184,13 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 1,
+            "count": 5,
             "fingerprint": [
-              "fp-stub-implementation-notify-ts"
+              "fp-stub-implementation-notify-ts",
+              "fp-untested-symbol-runshellcommand-handlerunshellcommand",
+              "fp-untested-symbol-readconfig-handlereadconfig",
+              "fp-untested-symbol-notify-lognotifystatus",
+              "fp-untested-symbol-config-loadconfig"
             ]
           },
           "gate-3-security": {
@@ -209,10 +213,12 @@
           },
           "gate-7-agent-context": {
             "count": 1,
-            "fingerprint": ["fp-agent-context-audience-overclaim-claude-md"]
+            "fingerprint": [
+              "fp-agent-context-audience-overclaim-claude-md"
+            ]
           }
         },
-        "total": 6,
+        "total": 10,
         "exitCode": 1
       }
     },
@@ -224,8 +230,8 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "src/tools/runShellCommand.ts:27\thandleRunShellCommand() is a public symbol with no test covering it\nsrc/tools/readConfig.ts:24\thandleReadConfig() is a public symbol with no test covering it\nsrc/tools/notify.ts:9\tlogNotifyStatus() is a public symbol with no test covering it\nsrc/tools/notify.ts:14\tpageOnCall() is a public symbol with no test covering it\nsrc/utils/config.ts:19\tloadConfig() is a public symbol with no test covering it\nFAIL (5 issues)\n",
+          "exitCode": 1
         },
         "gate-3-security": {
           "stdout": "src/utils/config.ts:17\thardcoded API key fallback committed to source — credential leak via repository\nsrc/tools/runShellCommand.ts:29\texec() called directly on caller-supplied command string with no allow-list — arbitrary shell command execution\nsrc/tools/readConfig.ts:26\tfilename joined onto configDir with no path containment check — path traversal reads arbitrary files\nFAIL (3 issues)\nZERO-TOLERANCE\n",
@@ -253,8 +259,14 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 5,
+            "fingerprint": [
+              "fp-untested-symbol-runshellcommand-handlerunshellcommand",
+              "fp-untested-symbol-readconfig-handlereadconfig",
+              "fp-untested-symbol-notify-lognotifystatus",
+              "fp-untested-symbol-notify-pageoncall",
+              "fp-untested-symbol-config-loadconfig"
+            ]
           },
           "gate-3-security": {
             "count": 3,
@@ -276,10 +288,12 @@
           },
           "gate-7-agent-context": {
             "count": 1,
-            "fingerprint": ["fp-agent-context-audience-overclaim-claude-md"]
+            "fingerprint": [
+              "fp-agent-context-audience-overclaim-claude-md"
+            ]
           }
         },
-        "total": 5,
+        "total": 10,
         "exitCode": 1
       }
     },
@@ -291,8 +305,8 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "src/tools/runShellCommand.ts:27\thandleRunShellCommand() is a public symbol with no test covering it\nsrc/tools/readConfig.ts:24\thandleReadConfig() is a public symbol with no test covering it\nsrc/tools/notify.ts:9\tlogNotifyStatus() is a public symbol with no test covering it\nsrc/tools/notify.ts:14\tpageOnCall() is a public symbol with no test covering it\nsrc/utils/config.ts:19\tloadConfig() is a public symbol with no test covering it\nFAIL (5 issues)\n",
+          "exitCode": 1
         },
         "gate-3-security": {
           "stdout": "src/utils/config.ts:17\thardcoded API key fallback committed to source — credential leak via repository\nsrc/tools/runShellCommand.ts:29\texec() called directly on caller-supplied command string with no allow-list — arbitrary shell command execution\nsrc/tools/readConfig.ts:26\tfilename joined onto configDir with no path containment check — path traversal reads arbitrary files\nsrc/index.ts:8\thardcoded crash-reporter token committed to source — credential leak via repository\nFAIL (4 issues)\nZERO-TOLERANCE\n",
@@ -320,8 +334,14 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 5,
+            "fingerprint": [
+              "fp-untested-symbol-runshellcommand-handlerunshellcommand",
+              "fp-untested-symbol-readconfig-handlereadconfig",
+              "fp-untested-symbol-notify-lognotifystatus",
+              "fp-untested-symbol-notify-pageoncall",
+              "fp-untested-symbol-config-loadconfig"
+            ]
           },
           "gate-3-security": {
             "count": 4,
@@ -344,10 +364,12 @@
           },
           "gate-7-agent-context": {
             "count": 1,
-            "fingerprint": ["fp-agent-context-audience-overclaim-claude-md"]
+            "fingerprint": [
+              "fp-agent-context-audience-overclaim-claude-md"
+            ]
           }
         },
-        "total": 6,
+        "total": 11,
         "exitCode": 1
       }
     },
@@ -359,8 +381,8 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "src/tools/runShellCommand.ts:27\thandleRunShellCommand() is a public symbol with no test covering it\nsrc/tools/readConfig.ts:27\thandleReadConfig() is a public symbol with no test covering it\nsrc/tools/notify.ts:9\tlogNotifyStatus() is a public symbol with no test covering it\nsrc/tools/notify.ts:14\tpageOnCall() is a public symbol with no test covering it\nsrc/utils/config.ts:19\tloadConfig() is a public symbol with no test covering it\nFAIL (5 issues)\n",
+          "exitCode": 1
         },
         "gate-3-security": {
           "stdout": "src/utils/config.ts:17\thardcoded API key fallback committed to source — credential leak via repository\nsrc/tools/runShellCommand.ts:29\texec() called directly on caller-supplied command string with no allow-list — arbitrary shell command execution\nsrc/tools/readConfig.ts:29\tfilename joined onto configDir with no path containment check — path traversal reads arbitrary files\nsrc/index.ts:8\thardcoded crash-reporter token committed to source — credential leak via repository\nFAIL (4 issues)\nZERO-TOLERANCE\n",
@@ -388,8 +410,14 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 5,
+            "fingerprint": [
+              "fp-untested-symbol-runshellcommand-handlerunshellcommand",
+              "fp-untested-symbol-readconfig-handlereadconfig",
+              "fp-untested-symbol-notify-lognotifystatus",
+              "fp-untested-symbol-notify-pageoncall",
+              "fp-untested-symbol-config-loadconfig"
+            ]
           },
           "gate-3-security": {
             "count": 4,
@@ -412,10 +440,12 @@
           },
           "gate-7-agent-context": {
             "count": 1,
-            "fingerprint": ["fp-agent-context-audience-overclaim-claude-md"]
+            "fingerprint": [
+              "fp-agent-context-audience-overclaim-claude-md"
+            ]
           }
         },
-        "total": 6,
+        "total": 11,
         "exitCode": 1
       }
     },
@@ -427,8 +457,8 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "src/tools/runShellCommand.ts:27\thandleRunShellCommand() is a public symbol with no test covering it\nsrc/tools/readConfig.ts:27\thandleReadConfig() is a public symbol with no test covering it\nsrc/tools/notify.ts:9\tlogNotifyStatus() is a public symbol with no test covering it\nsrc/tools/notify.ts:14\tpageOnCall() is a public symbol with no test covering it\nsrc/utils/config.ts:19\tloadConfig() is a public symbol with no test covering it\nFAIL (5 issues)\n",
+          "exitCode": 1
         },
         "gate-3-security": {
           "stdout": "src/utils/config.ts:17\thardcoded API key fallback committed to source — credential leak via repository\nsrc/tools/runShellCommand.ts:29\texec() called directly on caller-supplied command string with no allow-list — arbitrary shell command execution\nsrc/tools/readConfig.ts:29\tfilename joined onto configDir with no path containment check — path traversal reads arbitrary files\nsrc/index.ts:8\thardcoded crash-reporter token committed to source — credential leak via repository\nFAIL (4 issues)\nZERO-TOLERANCE\n",
@@ -456,8 +486,14 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 5,
+            "fingerprint": [
+              "fp-untested-symbol-runshellcommand-handlerunshellcommand",
+              "fp-untested-symbol-readconfig-handlereadconfig",
+              "fp-untested-symbol-notify-lognotifystatus",
+              "fp-untested-symbol-notify-pageoncall",
+              "fp-untested-symbol-config-loadconfig"
+            ]
           },
           "gate-3-security": {
             "count": 4,
@@ -480,10 +516,12 @@
           },
           "gate-7-agent-context": {
             "count": 1,
-            "fingerprint": ["fp-agent-context-audience-overclaim-claude-md"]
+            "fingerprint": [
+              "fp-agent-context-audience-overclaim-claude-md"
+            ]
           }
         },
-        "total": 6,
+        "total": 11,
         "exitCode": 1
       }
     },
@@ -495,8 +533,8 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "src/tools/runShellCommand.ts:27\thandleRunShellCommand() is a public symbol with no test covering it\nsrc/tools/readConfig.ts:27\thandleReadConfig() is a public symbol with no test covering it\nsrc/tools/notify.ts:9\tlogNotifyStatus() is a public symbol with no test covering it\nsrc/tools/notify.ts:14\tpageOnCall() is a public symbol with no test covering it\nsrc/utils/config.ts:19\tloadConfig() is a public symbol with no test covering it\nFAIL (5 issues)\n",
+          "exitCode": 1
         },
         "gate-3-security": {
           "stdout": "src/utils/config.ts:17\thardcoded API key fallback committed to source — credential leak via repository\nsrc/tools/runShellCommand.ts:29\texec() called directly on caller-supplied command string with no allow-list — arbitrary shell command execution\nsrc/tools/readConfig.ts:29\tfilename joined onto configDir with no path containment check — path traversal reads arbitrary files\nsrc/index.ts:8\thardcoded crash-reporter token committed to source — credential leak via repository\nFAIL (4 issues)\nZERO-TOLERANCE\n",
@@ -524,8 +562,14 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 5,
+            "fingerprint": [
+              "fp-untested-symbol-runshellcommand-handlerunshellcommand",
+              "fp-untested-symbol-readconfig-handlereadconfig",
+              "fp-untested-symbol-notify-lognotifystatus",
+              "fp-untested-symbol-notify-pageoncall",
+              "fp-untested-symbol-config-loadconfig"
+            ]
           },
           "gate-3-security": {
             "count": 4,
@@ -548,10 +592,12 @@
           },
           "gate-7-agent-context": {
             "count": 1,
-            "fingerprint": ["fp-agent-context-audience-overclaim-claude-md"]
+            "fingerprint": [
+              "fp-agent-context-audience-overclaim-claude-md"
+            ]
           }
         },
-        "total": 6,
+        "total": 11,
         "exitCode": 1
       }
     },
@@ -563,8 +609,8 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "src/tools/runShellCommand.ts:27\thandleRunShellCommand() is a public symbol with no test covering it\nsrc/tools/readConfig.ts:27\thandleReadConfig() is a public symbol with no test covering it\nsrc/tools/notify.ts:9\tlogNotifyStatus() is a public symbol with no test covering it\nsrc/tools/notify.ts:14\tpageOnCall() is a public symbol with no test covering it\nsrc/utils/config.ts:19\tloadConfig() is a public symbol with no test covering it\nFAIL (5 issues)\n",
+          "exitCode": 1
         },
         "gate-3-security": {
           "stdout": "src/utils/config.ts:17\thardcoded API key fallback committed to source — credential leak via repository\nsrc/tools/runShellCommand.ts:29\texec() called directly on caller-supplied command string with no allow-list — arbitrary shell command execution\nsrc/tools/readConfig.ts:29\tfilename joined onto configDir with no path containment check — path traversal reads arbitrary files\nsrc/index.ts:8\thardcoded crash-reporter token committed to source — credential leak via repository\nFAIL (4 issues)\nZERO-TOLERANCE\n",
@@ -592,8 +638,14 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 5,
+            "fingerprint": [
+              "fp-untested-symbol-runshellcommand-handlerunshellcommand",
+              "fp-untested-symbol-readconfig-handlereadconfig",
+              "fp-untested-symbol-notify-lognotifystatus",
+              "fp-untested-symbol-notify-pageoncall",
+              "fp-untested-symbol-config-loadconfig"
+            ]
           },
           "gate-3-security": {
             "count": 4,
@@ -616,10 +668,12 @@
           },
           "gate-7-agent-context": {
             "count": 1,
-            "fingerprint": ["fp-agent-context-audience-overclaim-claude-md"]
+            "fingerprint": [
+              "fp-agent-context-audience-overclaim-claude-md"
+            ]
           }
         },
-        "total": 6,
+        "total": 11,
         "exitCode": 2
       }
     }

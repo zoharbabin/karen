@@ -5,6 +5,7 @@ Not a callable tool. This is the procedure you carry out yourself with `Glob`/`R
 ## What to gather
 
 - **Manifests, at any depth**: `package.json`, `pyproject.toml`, `go.mod`, `Gemfile`, `Cargo.toml`, and equivalents for any other language. Don't stop at the first one found — walk the whole tree. More than one manifest means this is a poly-repo or monorepo, whether or not it declares workspaces; see `monorepo.md` before assuming a single global profile applies.
+- **Frameworks**: named application/web frameworks found via manifest dependencies (e.g. `express`, `fastapi`). For a project whose only manifest is `package.json` with no more specific JS/TS framework detected, still report `"node"` in the frameworks array to record the Node.js/npm tooling identity — don't leave the array empty just because no named library framework exists. Exclude test runners (already captured separately under existing test setup) and generic HTTP client/utility libraries (e.g. `httpx`, `requests`) from this field — a dependency being present doesn't make it a framework.
 - **CI configuration**: `.github/workflows/`, `.gitlab-ci.yml`, `.circleci/`, etc. — what already runs on push/PR.
 - **Existing test setup**: test runner config, existing test files, any coverage tooling already wired in.
 - **Existing compliance artifacts**: `SECURITY.md`, `LICENSE`, `CHANGELOG.md`, `CONTRIBUTING.md`, SBOM config, provenance attestation config.

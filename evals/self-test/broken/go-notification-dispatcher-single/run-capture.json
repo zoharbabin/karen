@@ -122,6 +122,10 @@
         {
           "gate": "gate-1-supply-chain",
           "note": "Zero runtime dependencies — the entire service is built on the Go standard library, no third-party module required"
+        },
+        {
+          "gate": "gate-6-test-integrity",
+          "note": "cmd/scoreformat runs FormatJSONPayload against a hand-labeled gold set (internal/dispatch/testdata/format_gold.json) and reports match rate against the v2 spec — a real, runnable accuracy eval backing any formatting-accuracy claim"
         }
       ],
       "exceptions": {}

@@ -1,5 +1,7 @@
 # Poly-repo & monorepo structure
 
+**Root `project.type` is never `"monorepo"`** — it must be one of the same software-kind labels used for subprojects (`service`, `library`, `application`, `cli-tool`, `mcp-server`, `root-utility`, or a project-specific label). Monorepo-ness is already conveyed by a populated `subprojects[]` array, so overloading `.type` with a structural label is redundant and schema-incompatible. When subprojects are explicit peers with no primary, pick one of the peers' own kind labels for the root rather than inventing a new value. See `karen-json-schema.md`.
+
 Not every project is one manifest at the root. `detect_project` (see `detect-project.md`) walks the tree and reports every manifest it finds (`package.json`, `pyproject.toml`, `go.mod`, `Gemfile`, `Cargo.toml`, at any depth) — a project with more than one is a poly-repo or monorepo, whether or not it declares workspaces. Don't silently audit the first manifest found and call the rest out of scope; treating a multi-package repo as single-package is a coverage gap, not a simplification.
 
 ## Every gate that can be scoped by directory declares that scope explicitly
@@ -12,7 +14,7 @@ The JS/TS `testRunner.packages` list (see `deployment-profiles.md`) is the templ
 | Gate 2 (completeness) | Scans each subproject's source tree independently; a stub in `apps/harness` and a stub in `sdk` are two distinct findings, not merged into one root-level count. |
 | Gate 3 (security) | Same source-tree walk as gate 2, plus the working-tree secret scan (inherently root-wide — secrets don't respect package boundaries). |
 | Gate 4 (docs-parity) | Each subproject's own README/docs are checked against its own source; a root README describing the whole repo is checked separately against the union of public entry points, not against any one subproject's internals. |
-| Gate 5 (compliance) | Compliance artifacts (`SECURITY.md`, `LICENSE`, etc.) are checked at the root by default — most compliance requirements apply repo-wide — unless the interview identifies a subproject with its own distinct compliance regime (e.g. one app is SOC2-scoped, others aren't), in which case that subproject gets its own artifact set. |
+| Gate 5 (compliance) | Compliance artifacts (`SECURITY.md`, `LICENSE`, etc.) are checked at the root by default — most compliance requirements apply repo-wide — unless the interview identifies a subproject with its own distinct compliance regime (e.g. one app is SOC2-scoped, others aren't), in which case that subproject gets its own artifact set and the regime is **not** also duplicated into the root's `compliance[]` — see `karen-json-schema.md`'s `compliance[]` section. |
 | Gate 6 (test-integrity) | As specified in `testRunner.packages` — see `deployment-profiles.md`. |
 | Gate 7 (agent-context) | Checks for an agent context file at the root and, separately, per subproject where one plausibly should exist (a subproject with its own independent build/test/deploy lifecycle) — a root-only `CLAUDE.md` that doesn't mention a subproject's distinct conventions is a finding, not silently adequate. |
 

@@ -62,7 +62,9 @@
       "existingGates": [],
       "crossSubprojectConsistency": [],
       "knownGaps": [],
-      "exceedsBaseline": [],
+      "exceedsBaseline": [
+        { "gate": "gate-1-supply-chain", "note": "Zero runtime dependencies — package.json's dependencies field is empty; the entire widget is built on browser platform APIs alone" }
+      ],
       "exceptions": {}
     },
     "gateScripts": {

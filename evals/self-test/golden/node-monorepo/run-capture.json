@@ -357,7 +357,7 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "backend/src/chatProxy.ts:19\tstreaming branch throws 'not implemented: streaming chat completions' instead of degrading or being rejected up front\nsdk/src/generated/chatClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@a83f21c but backend/openapi.yaml is now at d94e6b0 -- generator never re-run after /chat gained a citations field\nFAIL (2 issues)\n",
+          "stdout": "backend/src/chatProxy.ts:19\tstreaming branch throws 'not implemented: streaming chat completions' instead of degrading or being rejected up front\nsdk/src/generated/chatClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@a83f21c but backend/openapi.yaml is now at d94e6b0 -- generator never re-run after /chat gained a citations field\nsdk/src/sdk.ts:17\tSignalAvatarSDK is a public symbol with no test covering it\nFAIL (3 issues)\n",
           "exitCode": 1
         },
         "gate-3-security": {
@@ -382,10 +382,11 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 2,
+            "count": 3,
             "fingerprint": [
               "fp-stub-implementation-chatproxy",
-              "fp-stale-codegen-chatclient"
+              "fp-stale-codegen-chatclient",
+              "fp-untested-symbol-sdk-signalavatarsdk"
             ]
           },
           "gate-3-security": {
@@ -406,7 +407,7 @@
             "fingerprint": []
           }
         },
-        "total": 6
+        "total": 7
       }
     },
     {
@@ -417,7 +418,7 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "backend/src/chatProxy.ts:19\tstreaming branch throws 'not implemented: streaming chat completions' instead of degrading or being rejected up front\nsdk/src/generated/chatClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@a83f21c but backend/openapi.yaml is now at d94e6b0 -- generator never re-run after /chat gained a citations field\nFAIL (2 issues)\n",
+          "stdout": "backend/src/chatProxy.ts:19\tstreaming branch throws 'not implemented: streaming chat completions' instead of degrading or being rejected up front\nsdk/src/generated/chatClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@a83f21c but backend/openapi.yaml is now at d94e6b0 -- generator never re-run after /chat gained a citations field\nsdk/src/sdk.ts:17\tSignalAvatarSDK is a public symbol with no test covering it\nFAIL (3 issues)\n",
           "exitCode": 1
         },
         "gate-3-security": {
@@ -442,10 +443,11 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 2,
+            "count": 3,
             "fingerprint": [
               "fp-stub-implementation-chatproxy",
-              "fp-stale-codegen-chatclient"
+              "fp-stale-codegen-chatclient",
+              "fp-untested-symbol-sdk-signalavatarsdk"
             ]
           },
           "gate-3-security": {
@@ -465,7 +467,7 @@
             "fingerprint": []
           }
         },
-        "total": 5
+        "total": 6
       }
     },
     {
@@ -476,7 +478,7 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "backend/src/chatProxy.ts:19\tstreaming branch throws 'not implemented: streaming chat completions' instead of degrading or being rejected up front\nsdk/src/generated/chatClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@a83f21c but backend/openapi.yaml is now at d94e6b0 -- generator never re-run after /chat gained a citations field\nFAIL (2 issues)\n",
+          "stdout": "backend/src/chatProxy.ts:19\tstreaming branch throws 'not implemented: streaming chat completions' instead of degrading or being rejected up front\nsdk/src/generated/chatClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@a83f21c but backend/openapi.yaml is now at d94e6b0 -- generator never re-run after /chat gained a citations field\nsdk/src/sdk.ts:17\tSignalAvatarSDK is a public symbol with no test covering it\nFAIL (3 issues)\n",
           "exitCode": 1
         },
         "gate-3-security": {
@@ -501,10 +503,11 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 2,
+            "count": 3,
             "fingerprint": [
               "fp-stub-implementation-chatproxy",
-              "fp-stale-codegen-chatclient"
+              "fp-stale-codegen-chatclient",
+              "fp-untested-symbol-sdk-signalavatarsdk"
             ]
           },
           "gate-3-security": {
@@ -525,7 +528,7 @@
             "fingerprint": []
           }
         },
-        "total": 6
+        "total": 7
       }
     },
     {
@@ -536,7 +539,7 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "backend/src/chatProxy.ts:19\tstreaming branch throws 'not implemented: streaming chat completions' instead of degrading or being rejected up front\nsdk/src/generated/chatClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@a83f21c but backend/openapi.yaml is now at d94e6b0 -- generator never re-run after /chat gained a citations field\nFAIL (2 issues)\n",
+          "stdout": "backend/src/chatProxy.ts:19\tstreaming branch throws 'not implemented: streaming chat completions' instead of degrading or being rejected up front\nsdk/src/generated/chatClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@a83f21c but backend/openapi.yaml is now at d94e6b0 -- generator never re-run after /chat gained a citations field\nsdk/src/sdk.ts:17\tSignalAvatarSDK is a public symbol with no test covering it\nFAIL (3 issues)\n",
           "exitCode": 1
         },
         "gate-3-security": {
@@ -561,10 +564,11 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 2,
+            "count": 3,
             "fingerprint": [
               "fp-stub-implementation-chatproxy",
-              "fp-stale-codegen-chatclient"
+              "fp-stale-codegen-chatclient",
+              "fp-untested-symbol-sdk-signalavatarsdk"
             ]
           },
           "gate-3-security": {
@@ -585,7 +589,7 @@
             "fingerprint": []
           }
         },
-        "total": 6
+        "total": 7
       }
     },
     {
@@ -596,7 +600,7 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "backend/src/chatProxy.ts:19\tstreaming branch throws 'not implemented: streaming chat completions' instead of degrading or being rejected up front\nsdk/src/generated/chatClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@a83f21c but backend/openapi.yaml is now at d94e6b0 -- generator never re-run after /chat gained a citations field\nFAIL (2 issues)\n",
+          "stdout": "backend/src/chatProxy.ts:19\tstreaming branch throws 'not implemented: streaming chat completions' instead of degrading or being rejected up front\nsdk/src/generated/chatClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@a83f21c but backend/openapi.yaml is now at d94e6b0 -- generator never re-run after /chat gained a citations field\nsdk/src/sdk.ts:17\tSignalAvatarSDK is a public symbol with no test covering it\nFAIL (3 issues)\n",
           "exitCode": 1
         },
         "gate-3-security": {
@@ -621,10 +625,11 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 2,
+            "count": 3,
             "fingerprint": [
               "fp-stub-implementation-chatproxy",
-              "fp-stale-codegen-chatclient"
+              "fp-stale-codegen-chatclient",
+              "fp-untested-symbol-sdk-signalavatarsdk"
             ]
           },
           "gate-3-security": {
@@ -645,7 +650,7 @@
             "fingerprint": []
           }
         },
-        "total": 6
+        "total": 7
       }
     },
     {
@@ -656,7 +661,7 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "backend/src/chatProxy.ts:19\tstreaming branch throws 'not implemented: streaming chat completions' instead of degrading or being rejected up front\nsdk/src/generated/chatClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@a83f21c but backend/openapi.yaml is now at d94e6b0 -- generator never re-run after /chat gained a citations field\nFAIL (2 issues)\n",
+          "stdout": "backend/src/chatProxy.ts:19\tstreaming branch throws 'not implemented: streaming chat completions' instead of degrading or being rejected up front\nsdk/src/generated/chatClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@a83f21c but backend/openapi.yaml is now at d94e6b0 -- generator never re-run after /chat gained a citations field\nsdk/src/sdk.ts:17\tSignalAvatarSDK is a public symbol with no test covering it\nFAIL (3 issues)\n",
           "exitCode": 1
         },
         "gate-3-security": {
@@ -681,10 +686,11 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 2,
+            "count": 3,
             "fingerprint": [
               "fp-stub-implementation-chatproxy",
-              "fp-stale-codegen-chatclient"
+              "fp-stale-codegen-chatclient",
+              "fp-untested-symbol-sdk-signalavatarsdk"
             ]
           },
           "gate-3-security": {
@@ -705,7 +711,7 @@
             "fingerprint": []
           }
         },
-        "total": 6
+        "total": 7
       }
     },
     {
@@ -716,7 +722,7 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "backend/src/chatProxy.ts:19\tstreaming branch throws 'not implemented: streaming chat completions' instead of degrading or being rejected up front\nsdk/src/generated/chatClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@a83f21c but backend/openapi.yaml is now at d94e6b0 -- generator never re-run after /chat gained a citations field\nFAIL (2 issues)\n",
+          "stdout": "backend/src/chatProxy.ts:19\tstreaming branch throws 'not implemented: streaming chat completions' instead of degrading or being rejected up front\nsdk/src/generated/chatClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@a83f21c but backend/openapi.yaml is now at d94e6b0 -- generator never re-run after /chat gained a citations field\nsdk/src/sdk.ts:17\tSignalAvatarSDK is a public symbol with no test covering it\nFAIL (3 issues)\n",
           "exitCode": 1
         },
         "gate-3-security": {
@@ -741,10 +747,11 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 2,
+            "count": 3,
             "fingerprint": [
               "fp-stub-implementation-chatproxy",
-              "fp-stale-codegen-chatclient"
+              "fp-stale-codegen-chatclient",
+              "fp-untested-symbol-sdk-signalavatarsdk"
             ]
           },
           "gate-3-security": {
@@ -765,7 +772,7 @@
             "fingerprint": []
           }
         },
-        "total": 6
+        "total": 7
       }
     }
   ]

@@ -34,8 +34,12 @@
 //   exceedsBaseline[]          -> item.gate
 //   crossSubprojectConsistency[] -> item.pattern
 //   exceptions                 -> object keyed by gate id -> array of entries;
-//                                  flattened first, then keyed by
-//                                  `${gate}::${pattern}::${file}`
+//                                  flattened first, then keyed by `${gate}::${file}`
+//                                  (not `pattern` — karen-json-schema.md documents
+//                                  `pattern` as "a short, minimal matchable token",
+//                                  an example wording choice, not a stable identity;
+//                                  two runs can legitimately pick different
+//                                  substrings of the same exempted construct)
 //
 // pass = scalarMatchRate === 1 && every arrayFieldMetrics[*].f1 >= 0.9
 
@@ -112,14 +116,18 @@ function keyCrossSubprojectConsistency(item) {
 }
 
 // exceptions is `{ [gateId]: [{ pattern, file, reason, expires }, ...] }` —
-// flatten into a list of stable `gate::pattern::file` keys.
+// flatten into a list of stable `gate::file` keys. `pattern` is deliberately
+// excluded from the identity key: karen-json-schema.md documents it as "a
+// short, minimal matchable token" (an example wording choice, not a fixed
+// literal), so two correct runs can pick different valid substrings of the
+// same exempted construct.
 function keyedExceptions(exceptionsObj) {
   if (!exceptionsObj || typeof exceptionsObj !== 'object') return [];
   const keys = [];
   for (const [gate, entries] of Object.entries(exceptionsObj)) {
     if (!Array.isArray(entries)) continue;
     for (const entry of entries) {
-      keys.push(`${gate}::${entry?.pattern ?? ''}::${entry?.file ?? ''}`);
+      keys.push(`${gate}::${entry?.file ?? ''}`);
     }
   }
   return keys;

@@ -2,7 +2,7 @@
   "flaws": [
     {
       "dimension": "gateIssues",
-      "description": "internal/tools/read_config.go:26 path-traversal (real, non-decoy) is never emitted by gate-3-security's stdout in any auditRuns entry — a false negative.",
+      "description": "internal/tools/read_config.go:27 path-traversal (real, non-decoy) is never emitted by gate-3-security's stdout in any auditRuns entry — a false negative.",
       "expectedGraderFinding": "false negative on path-traversal (internal/tools/read_config.go)"
     },
     {

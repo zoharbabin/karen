@@ -75,24 +75,44 @@ function keywordsOf(topic) {
     .filter((word) => word.length >= 3 && !STOPWORDS.has(word));
 }
 
+// Overloaded words that show up across multiple, semantically unrelated
+// ground-truth topics in this benchmark's answer keys (e.g. "coverage"
+// meaning "test coverage threshold" in one fixture and "vendored-file
+// provenance coverage" in another; "reachable"/"mcp" appearing once in an
+// unrelated scene-setting sentence). A single hit on one of these is not
+// enough evidence a topic was actually covered — require it alongside at
+// least one other, more specific keyword from the same topic.
+const OVERLOADED_KEYWORDS = new Set(['reachable', 'mcp', 'runtime']);
+
 // Deterministic keyword/topic match: a karen-role message "matches" a topic
 // if it contains the full topic phrase as a case-insensitive substring, or
 // (fallback, since real questions rarely echo a ground-truth phrase
-// verbatim) contains any of the topic's significant keywords as a whole
-// word, case-insensitive. Used for mustAskRecall, where a generous match is
-// the safer failure direction — a missed match wrongly penalizes a question
-// Karen actually asked.
+// verbatim) contains one of the topic's significant keywords as a whole
+// word. Used for mustAskRecall, where a generous match is the safer failure
+// direction — a missed match wrongly penalizes a question Karen actually
+// asked.
+//
+// Matched within a single sentence, not the whole message, mirroring
+// findViolatingMessage below — a message that states one already-known fact
+// and then asks an unrelated question in the next sentence must not let a
+// keyword from one sentence combine with a keyword from the other sentence
+// into a false match. A keyword on the overloaded list above only counts if
+// a second, non-overloaded keyword from the same topic also appears in the
+// same sentence — closing the specific false-miss/false-match failure modes
+// those words caused without weakening every other, more specific keyword's
+// single-hit match.
 function findMatchingMessage(topic, karenMessages) {
   const topicLower = topic.toLowerCase();
   const keywords = keywordsOf(topic);
   for (const message of karenMessages) {
-    const messageLower = message.toLowerCase();
-    if (topicLower.length > 0 && messageLower.includes(topicLower)) {
-      return message;
-    }
-    for (const keyword of keywords) {
-      const wordBoundary = new RegExp(`\\b${keyword}\\b`, 'i');
-      if (wordBoundary.test(message)) {
+    for (const sentence of splitSentences(message)) {
+      const sentenceLower = sentence.toLowerCase();
+      if (topicLower.length > 0 && sentenceLower.includes(topicLower)) {
+        return message;
+      }
+      const hits = keywords.filter((keyword) => new RegExp(`\\b${keyword}\\b`, 'i').test(sentence));
+      const hasSpecificHit = hits.some((keyword) => !OVERLOADED_KEYWORDS.has(keyword));
+      if (hasSpecificHit || hits.length >= 2) {
         return message;
       }
     }

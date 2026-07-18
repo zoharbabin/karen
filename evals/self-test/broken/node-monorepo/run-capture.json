@@ -358,7 +358,7 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "sdk/src/generated/sessionClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@d94e6b0 -- flagged for review against backend/openapi.yaml's current revision\nFAIL (1 issues)\n",
+          "stdout": "sdk/src/generated/sessionClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@d94e6b0 -- flagged for review against backend/openapi.yaml's current revision\nsdk/src/sdk.ts:17\tSignalAvatarSDK is a public symbol with no test covering it\nFAIL (2 issues)\n",
           "exitCode": 1
         },
         "gate-3-security": {
@@ -383,8 +383,11 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 1,
-            "fingerprint": ["fp-decoy-stale-codegen-sessionclient"]
+            "count": 2,
+            "fingerprint": [
+              "fp-decoy-stale-codegen-sessionclient",
+              "fp-untested-symbol-sdk-signalavatarsdk"
+            ]
           },
           "gate-3-security": {
             "count": 5,
@@ -405,7 +408,7 @@
             "fingerprint": []
           }
         },
-        "total": 6
+        "total": 7
       }
     },
     {
@@ -416,7 +419,7 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "sdk/src/generated/sessionClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@d94e6b0 -- flagged for review against backend/openapi.yaml's current revision\nFAIL (1 issues)\n",
+          "stdout": "sdk/src/generated/sessionClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@d94e6b0 -- flagged for review against backend/openapi.yaml's current revision\nsdk/src/sdk.ts:17\tSignalAvatarSDK is a public symbol with no test covering it\nFAIL (2 issues)\n",
           "exitCode": 1
         },
         "gate-3-security": {
@@ -441,8 +444,11 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 1,
-            "fingerprint": ["fp-decoy-stale-codegen-sessionclient"]
+            "count": 2,
+            "fingerprint": [
+              "fp-decoy-stale-codegen-sessionclient",
+              "fp-untested-symbol-sdk-signalavatarsdk"
+            ]
           },
           "gate-3-security": {
             "count": 4,
@@ -462,7 +468,7 @@
             "fingerprint": []
           }
         },
-        "total": 5
+        "total": 6
       }
     },
     {
@@ -473,7 +479,7 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "sdk/src/generated/sessionClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@d94e6b0 -- flagged for review against backend/openapi.yaml's current revision\nFAIL (1 issues)\n",
+          "stdout": "sdk/src/generated/sessionClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@d94e6b0 -- flagged for review against backend/openapi.yaml's current revision\nsdk/src/sdk.ts:17\tSignalAvatarSDK is a public symbol with no test covering it\nFAIL (2 issues)\n",
           "exitCode": 1
         },
         "gate-3-security": {
@@ -498,8 +504,11 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 1,
-            "fingerprint": ["fp-decoy-stale-codegen-sessionclient"]
+            "count": 2,
+            "fingerprint": [
+              "fp-decoy-stale-codegen-sessionclient",
+              "fp-untested-symbol-sdk-signalavatarsdk"
+            ]
           },
           "gate-3-security": {
             "count": 5,
@@ -520,7 +529,7 @@
             "fingerprint": []
           }
         },
-        "total": 6
+        "total": 7
       }
     },
     {
@@ -531,7 +540,7 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "sdk/src/generated/sessionClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@d94e6b0 -- flagged for review against backend/openapi.yaml's current revision\nFAIL (1 issues)\n",
+          "stdout": "sdk/src/generated/sessionClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@d94e6b0 -- flagged for review against backend/openapi.yaml's current revision\nsdk/src/sdk.ts:17\tSignalAvatarSDK is a public symbol with no test covering it\nFAIL (2 issues)\n",
           "exitCode": 1
         },
         "gate-3-security": {
@@ -556,8 +565,11 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 1,
-            "fingerprint": ["fp-decoy-stale-codegen-sessionclient"]
+            "count": 2,
+            "fingerprint": [
+              "fp-decoy-stale-codegen-sessionclient",
+              "fp-untested-symbol-sdk-signalavatarsdk"
+            ]
           },
           "gate-3-security": {
             "count": 5,
@@ -578,7 +590,7 @@
             "fingerprint": []
           }
         },
-        "total": 6
+        "total": 7
       }
     },
     {
@@ -589,7 +601,7 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "sdk/src/generated/sessionClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@d94e6b0 -- flagged for review against backend/openapi.yaml's current revision\nFAIL (1 issues)\n",
+          "stdout": "sdk/src/generated/sessionClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@d94e6b0 -- flagged for review against backend/openapi.yaml's current revision\nsdk/src/sdk.ts:17\tSignalAvatarSDK is a public symbol with no test covering it\nFAIL (2 issues)\n",
           "exitCode": 1
         },
         "gate-3-security": {
@@ -614,8 +626,11 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 1,
-            "fingerprint": ["fp-decoy-stale-codegen-sessionclient"]
+            "count": 2,
+            "fingerprint": [
+              "fp-decoy-stale-codegen-sessionclient",
+              "fp-untested-symbol-sdk-signalavatarsdk"
+            ]
           },
           "gate-3-security": {
             "count": 5,
@@ -636,7 +651,7 @@
             "fingerprint": []
           }
         },
-        "total": 6
+        "total": 7
       }
     },
     {
@@ -647,7 +662,7 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "sdk/src/generated/sessionClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@d94e6b0 -- flagged for review against backend/openapi.yaml's current revision\nFAIL (1 issues)\n",
+          "stdout": "sdk/src/generated/sessionClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@d94e6b0 -- flagged for review against backend/openapi.yaml's current revision\nsdk/src/sdk.ts:17\tSignalAvatarSDK is a public symbol with no test covering it\nFAIL (2 issues)\n",
           "exitCode": 1
         },
         "gate-3-security": {
@@ -672,8 +687,11 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 1,
-            "fingerprint": ["fp-decoy-stale-codegen-sessionclient"]
+            "count": 2,
+            "fingerprint": [
+              "fp-decoy-stale-codegen-sessionclient",
+              "fp-untested-symbol-sdk-signalavatarsdk"
+            ]
           },
           "gate-3-security": {
             "count": 5,
@@ -694,7 +712,7 @@
             "fingerprint": []
           }
         },
-        "total": 6
+        "total": 7
       }
     },
     {
@@ -705,7 +723,7 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "sdk/src/generated/sessionClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@d94e6b0 -- flagged for review against backend/openapi.yaml's current revision\nFAIL (1 issues)\n",
+          "stdout": "sdk/src/generated/sessionClient.ts:1\tstale-codegen-output: generation-marker names backend/openapi.yaml@d94e6b0 -- flagged for review against backend/openapi.yaml's current revision\nsdk/src/sdk.ts:17\tSignalAvatarSDK is a public symbol with no test covering it\nFAIL (2 issues)\n",
           "exitCode": 1
         },
         "gate-3-security": {
@@ -730,8 +748,11 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 1,
-            "fingerprint": ["fp-decoy-stale-codegen-sessionclient"]
+            "count": 2,
+            "fingerprint": [
+              "fp-decoy-stale-codegen-sessionclient",
+              "fp-untested-symbol-sdk-signalavatarsdk"
+            ]
           },
           "gate-3-security": {
             "count": 5,
@@ -752,7 +773,7 @@
             "fingerprint": []
           }
         },
-        "total": 6
+        "total": 7
       }
     }
   ]

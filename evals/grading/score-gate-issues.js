@@ -38,6 +38,8 @@ function main() {
 
   const fixture = path.basename(path.resolve(fixtureDir));
   const plantedIssues = readJson(path.join(fixtureDir, 'planted-issues.json'));
+  const expectedGates = readJson(path.join(fixtureDir, 'expected-gates.json')) || [];
+  const coversCategoriesByGate = new Map(expectedGates.map((g) => [g.id, new Set(g.coversCategories || [])]));
 
   // No compliance/planted-issues ground truth for this fixture: vacuously pass.
   if (plantedIssues === null) {
@@ -87,9 +89,18 @@ function main() {
     const stdout = result && typeof result.stdout === 'string' ? result.stdout : '';
     const { issues } = parseGateOutput(stdout);
 
+    const coversCategories = coversCategoriesByGate.get(gateId);
+
     for (const emitted of issues) {
       const key = `${emitted.file}:${emitted.line}`;
-      const matches = plantedByFileLine.get(key) || [];
+      const allMatchesAtLine = plantedByFileLine.get(key) || [];
+      // Scope matches to categories this gate actually covers (per expected-gates.json)
+      // so a different gate's unrelated finding at the same file:line (e.g. a lint
+      // warning landing on a shell-injection decoy's line) isn't misattributed to
+      // that category's precision/recall.
+      const matches = coversCategories
+        ? allMatchesAtLine.filter((m) => coversCategories.has(m.category))
+        : allMatchesAtLine;
 
       if (matches.length === 0) {
         unmatchedFindings.push({ file: emitted.file, line: emitted.line, gate: gateId, message: emitted.message });

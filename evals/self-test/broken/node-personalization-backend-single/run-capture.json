@@ -12,6 +12,7 @@
         }
       ],
       "frameworks": [
+        "node",
         "express"
       ],
       "ciConfig": [
@@ -141,7 +142,7 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "src/consent/registry.ts:62\tunannotated-intentional-duplication: near-identical erasure-eligibility checks duplicated across jurisdictions with no karen-intentional-duplicate marker\nFAIL (1 issues)\n",
+          "stdout": "src/consent/registry.ts:62\tunannotated-intentional-duplication: near-identical erasure-eligibility checks duplicated across jurisdictions with no karen-intentional-duplicate marker\nsrc/server.ts:8\tcreateServer() is a public symbol with no test covering it\nsrc/features.ts:13\tisFeatureEnabled() is a public symbol with no test covering it\nsrc/consent/registry.ts:38\tformatExportManifestGDPR() is a public symbol with no test covering it\nsrc/consent/registry.ts:56\tisErasureEligibleGDPR() is a public symbol with no test covering it\nsrc/datastores/userTable.ts:18\tuserTable is a public symbol with no test covering it\nsrc/datastores/eventStore.ts:28\teventStore is a public symbol with no test covering it\nsrc/datastores/sessionCache.ts:21\tsessionCache is a public symbol with no test covering it\nFAIL (8 issues)\n",
           "exitCode": 1
         },
         "gate-3-security": {
@@ -174,9 +175,16 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 1,
+            "count": 8,
             "fingerprint": [
-              "fp-decoy-unannotated-duplication-registry-ts"
+              "fp-decoy-unannotated-duplication-registry-ts",
+              "fp-untested-symbol-server-createserver",
+              "fp-untested-symbol-features-isfeatureenabled",
+              "fp-untested-symbol-registry-formatexportmanifestgdpr",
+              "fp-untested-symbol-registry-iserasureeligiblegdpr",
+              "fp-untested-symbol-usertable-usertable",
+              "fp-untested-symbol-eventstore-eventstore",
+              "fp-untested-symbol-sessioncache-sessioncache"
             ]
           },
           "gate-3-security": {
@@ -203,7 +211,7 @@
             "fingerprint": []
           }
         },
-        "total": 3
+        "total": 10
       }
     },
     {
@@ -214,7 +222,7 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "src/consent/registry.ts:62\tunannotated-intentional-duplication: near-identical erasure-eligibility checks duplicated across jurisdictions with no karen-intentional-duplicate marker\nFAIL (1 issues)\n",
+          "stdout": "src/consent/registry.ts:62\tunannotated-intentional-duplication: near-identical erasure-eligibility checks duplicated across jurisdictions with no karen-intentional-duplicate marker\nsrc/server.ts:8\tcreateServer() is a public symbol with no test covering it\nsrc/features.ts:13\tisFeatureEnabled() is a public symbol with no test covering it\nsrc/consent/registry.ts:38\tformatExportManifestGDPR() is a public symbol with no test covering it\nsrc/consent/registry.ts:56\tisErasureEligibleGDPR() is a public symbol with no test covering it\nsrc/datastores/userTable.ts:18\tuserTable is a public symbol with no test covering it\nsrc/datastores/eventStore.ts:34\teventStore is a public symbol with no test covering it\nsrc/datastores/sessionCache.ts:21\tsessionCache is a public symbol with no test covering it\nFAIL (8 issues)\n",
           "exitCode": 1
         },
         "gate-3-security": {
@@ -247,9 +255,16 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 1,
+            "count": 8,
             "fingerprint": [
-              "fp-decoy-unannotated-duplication-registry-ts"
+              "fp-decoy-unannotated-duplication-registry-ts",
+              "fp-untested-symbol-server-createserver",
+              "fp-untested-symbol-features-isfeatureenabled",
+              "fp-untested-symbol-registry-formatexportmanifestgdpr",
+              "fp-untested-symbol-registry-iserasureeligiblegdpr",
+              "fp-untested-symbol-usertable-usertable",
+              "fp-untested-symbol-eventstore-eventstore",
+              "fp-untested-symbol-sessioncache-sessioncache"
             ]
           },
           "gate-3-security": {
@@ -275,7 +290,7 @@
             "fingerprint": []
           }
         },
-        "total": 2
+        "total": 9
       }
     },
     {
@@ -286,7 +301,7 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "src/consent/registry.ts:62\tunannotated-intentional-duplication: near-identical erasure-eligibility checks duplicated across jurisdictions with no karen-intentional-duplicate marker\nFAIL (1 issues)\n",
+          "stdout": "src/consent/registry.ts:62\tunannotated-intentional-duplication: near-identical erasure-eligibility checks duplicated across jurisdictions with no karen-intentional-duplicate marker\nsrc/server.ts:8\tcreateServer() is a public symbol with no test covering it\nsrc/features.ts:13\tisFeatureEnabled() is a public symbol with no test covering it\nsrc/consent/registry.ts:38\tformatExportManifestGDPR() is a public symbol with no test covering it\nsrc/consent/registry.ts:56\tisErasureEligibleGDPR() is a public symbol with no test covering it\nsrc/datastores/userTable.ts:18\tuserTable is a public symbol with no test covering it\nsrc/datastores/eventStore.ts:34\teventStore is a public symbol with no test covering it\nsrc/datastores/sessionCache.ts:21\tsessionCache is a public symbol with no test covering it\nFAIL (8 issues)\n",
           "exitCode": 1
         },
         "gate-3-security": {
@@ -319,9 +334,16 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 1,
+            "count": 8,
             "fingerprint": [
-              "fp-decoy-unannotated-duplication-registry-ts"
+              "fp-decoy-unannotated-duplication-registry-ts",
+              "fp-untested-symbol-server-createserver",
+              "fp-untested-symbol-features-isfeatureenabled",
+              "fp-untested-symbol-registry-formatexportmanifestgdpr",
+              "fp-untested-symbol-registry-iserasureeligiblegdpr",
+              "fp-untested-symbol-usertable-usertable",
+              "fp-untested-symbol-eventstore-eventstore",
+              "fp-untested-symbol-sessioncache-sessioncache"
             ]
           },
           "gate-3-security": {
@@ -348,7 +370,7 @@
             "fingerprint": []
           }
         },
-        "total": 3
+        "total": 10
       }
     },
     {
@@ -359,7 +381,7 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "src/consent/registry.ts:62\tunannotated-intentional-duplication: near-identical erasure-eligibility checks duplicated across jurisdictions with no karen-intentional-duplicate marker\nFAIL (1 issues)\n",
+          "stdout": "src/consent/registry.ts:62\tunannotated-intentional-duplication: near-identical erasure-eligibility checks duplicated across jurisdictions with no karen-intentional-duplicate marker\nsrc/server.ts:8\tcreateServer() is a public symbol with no test covering it\nsrc/features.ts:13\tisFeatureEnabled() is a public symbol with no test covering it\nsrc/consent/registry.ts:38\tformatExportManifestGDPR() is a public symbol with no test covering it\nsrc/consent/registry.ts:56\tisErasureEligibleGDPR() is a public symbol with no test covering it\nsrc/datastores/userTable.ts:18\tuserTable is a public symbol with no test covering it\nsrc/datastores/eventStore.ts:34\teventStore is a public symbol with no test covering it\nsrc/datastores/sessionCache.ts:21\tsessionCache is a public symbol with no test covering it\nFAIL (8 issues)\n",
           "exitCode": 1
         },
         "gate-3-security": {
@@ -392,9 +414,16 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 1,
+            "count": 8,
             "fingerprint": [
-              "fp-decoy-unannotated-duplication-registry-ts"
+              "fp-decoy-unannotated-duplication-registry-ts",
+              "fp-untested-symbol-server-createserver",
+              "fp-untested-symbol-features-isfeatureenabled",
+              "fp-untested-symbol-registry-formatexportmanifestgdpr",
+              "fp-untested-symbol-registry-iserasureeligiblegdpr",
+              "fp-untested-symbol-usertable-usertable",
+              "fp-untested-symbol-eventstore-eventstore",
+              "fp-untested-symbol-sessioncache-sessioncache"
             ]
           },
           "gate-3-security": {
@@ -421,7 +450,7 @@
             "fingerprint": []
           }
         },
-        "total": 3
+        "total": 10
       }
     },
     {
@@ -432,7 +461,7 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "src/consent/registry.ts:62\tunannotated-intentional-duplication: near-identical erasure-eligibility checks duplicated across jurisdictions with no karen-intentional-duplicate marker\nFAIL (1 issues)\n",
+          "stdout": "src/consent/registry.ts:62\tunannotated-intentional-duplication: near-identical erasure-eligibility checks duplicated across jurisdictions with no karen-intentional-duplicate marker\nsrc/server.ts:8\tcreateServer() is a public symbol with no test covering it\nsrc/features.ts:13\tisFeatureEnabled() is a public symbol with no test covering it\nsrc/consent/registry.ts:38\tformatExportManifestGDPR() is a public symbol with no test covering it\nsrc/consent/registry.ts:56\tisErasureEligibleGDPR() is a public symbol with no test covering it\nsrc/datastores/userTable.ts:18\tuserTable is a public symbol with no test covering it\nsrc/datastores/eventStore.ts:34\teventStore is a public symbol with no test covering it\nsrc/datastores/sessionCache.ts:21\tsessionCache is a public symbol with no test covering it\nFAIL (8 issues)\n",
           "exitCode": 1
         },
         "gate-3-security": {
@@ -465,9 +494,16 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 1,
+            "count": 8,
             "fingerprint": [
-              "fp-decoy-unannotated-duplication-registry-ts"
+              "fp-decoy-unannotated-duplication-registry-ts",
+              "fp-untested-symbol-server-createserver",
+              "fp-untested-symbol-features-isfeatureenabled",
+              "fp-untested-symbol-registry-formatexportmanifestgdpr",
+              "fp-untested-symbol-registry-iserasureeligiblegdpr",
+              "fp-untested-symbol-usertable-usertable",
+              "fp-untested-symbol-eventstore-eventstore",
+              "fp-untested-symbol-sessioncache-sessioncache"
             ]
           },
           "gate-3-security": {
@@ -494,7 +530,7 @@
             "fingerprint": []
           }
         },
-        "total": 3
+        "total": 10
       }
     },
     {
@@ -505,7 +541,7 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "src/consent/registry.ts:62\tunannotated-intentional-duplication: near-identical erasure-eligibility checks duplicated across jurisdictions with no karen-intentional-duplicate marker\nFAIL (1 issues)\n",
+          "stdout": "src/consent/registry.ts:62\tunannotated-intentional-duplication: near-identical erasure-eligibility checks duplicated across jurisdictions with no karen-intentional-duplicate marker\nsrc/server.ts:8\tcreateServer() is a public symbol with no test covering it\nsrc/features.ts:13\tisFeatureEnabled() is a public symbol with no test covering it\nsrc/consent/registry.ts:38\tformatExportManifestGDPR() is a public symbol with no test covering it\nsrc/consent/registry.ts:56\tisErasureEligibleGDPR() is a public symbol with no test covering it\nsrc/datastores/userTable.ts:18\tuserTable is a public symbol with no test covering it\nsrc/datastores/eventStore.ts:34\teventStore is a public symbol with no test covering it\nsrc/datastores/sessionCache.ts:21\tsessionCache is a public symbol with no test covering it\nFAIL (8 issues)\n",
           "exitCode": 1
         },
         "gate-3-security": {
@@ -538,9 +574,16 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 1,
+            "count": 8,
             "fingerprint": [
-              "fp-decoy-unannotated-duplication-registry-ts"
+              "fp-decoy-unannotated-duplication-registry-ts",
+              "fp-untested-symbol-server-createserver",
+              "fp-untested-symbol-features-isfeatureenabled",
+              "fp-untested-symbol-registry-formatexportmanifestgdpr",
+              "fp-untested-symbol-registry-iserasureeligiblegdpr",
+              "fp-untested-symbol-usertable-usertable",
+              "fp-untested-symbol-eventstore-eventstore",
+              "fp-untested-symbol-sessioncache-sessioncache"
             ]
           },
           "gate-3-security": {
@@ -567,7 +610,7 @@
             "fingerprint": []
           }
         },
-        "total": 3
+        "total": 10
       }
     },
     {
@@ -578,7 +621,7 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "src/consent/registry.ts:62\tunannotated-intentional-duplication: near-identical erasure-eligibility checks duplicated across jurisdictions with no karen-intentional-duplicate marker\nFAIL (1 issues)\n",
+          "stdout": "src/consent/registry.ts:62\tunannotated-intentional-duplication: near-identical erasure-eligibility checks duplicated across jurisdictions with no karen-intentional-duplicate marker\nsrc/server.ts:8\tcreateServer() is a public symbol with no test covering it\nsrc/features.ts:13\tisFeatureEnabled() is a public symbol with no test covering it\nsrc/consent/registry.ts:38\tformatExportManifestGDPR() is a public symbol with no test covering it\nsrc/consent/registry.ts:56\tisErasureEligibleGDPR() is a public symbol with no test covering it\nsrc/datastores/userTable.ts:18\tuserTable is a public symbol with no test covering it\nsrc/datastores/eventStore.ts:34\teventStore is a public symbol with no test covering it\nsrc/datastores/sessionCache.ts:21\tsessionCache is a public symbol with no test covering it\nFAIL (8 issues)\n",
           "exitCode": 1
         },
         "gate-3-security": {
@@ -611,9 +654,16 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 1,
+            "count": 8,
             "fingerprint": [
-              "fp-decoy-unannotated-duplication-registry-ts"
+              "fp-decoy-unannotated-duplication-registry-ts",
+              "fp-untested-symbol-server-createserver",
+              "fp-untested-symbol-features-isfeatureenabled",
+              "fp-untested-symbol-registry-formatexportmanifestgdpr",
+              "fp-untested-symbol-registry-iserasureeligiblegdpr",
+              "fp-untested-symbol-usertable-usertable",
+              "fp-untested-symbol-eventstore-eventstore",
+              "fp-untested-symbol-sessioncache-sessioncache"
             ]
           },
           "gate-3-security": {
@@ -640,7 +690,7 @@
             "fingerprint": []
           }
         },
-        "total": 3
+        "total": 10
       }
     }
   ]

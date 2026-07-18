@@ -173,7 +173,7 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "src/prism_sdk/exporter.py:6\texport_to_srt() raises NotImplementedError — stub implementation\nFAIL (1 issues)\n",
+          "stdout": "src/prism_sdk/client.py:23\ttranscribe() is a public symbol with no test covering it\nsrc/prism_sdk/client.py:40\tget_job() is a public symbol with no test covering it\nsrc/prism_sdk/config.py:6\tload_config() is a public symbol with no test covering it\nsrc/prism_sdk/exporter.py:6\texport_to_srt() raises NotImplementedError — stub implementation\nsrc/prism_sdk/utils.py:6\tconvert_audio() is a public symbol with no test covering it\nsrc/prism_sdk/utils.py:18\tlist_output_dir() is a public symbol with no test covering it\nFAIL (6 issues)\n",
           "exitCode": 1
         },
         "gate-3-security": {
@@ -202,9 +202,14 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 1,
+            "count": 6,
             "fingerprint": [
-              "fp-stub-implementation-exporter"
+              "fp-untested-symbol-client-transcribe",
+              "fp-untested-symbol-client-getjob",
+              "fp-untested-symbol-config-loadconfig",
+              "fp-stub-implementation-exporter",
+              "fp-untested-symbol-utils-convertaudio",
+              "fp-untested-symbol-utils-listoutputdir"
             ]
           },
           "gate-3-security": {
@@ -228,7 +233,7 @@
             "fingerprint": []
           }
         },
-        "total": 4
+        "total": 9
       }
     },
     {
@@ -239,8 +244,8 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "src/prism_sdk/client.py:23\ttranscribe() is a public symbol with no test covering it\nsrc/prism_sdk/client.py:40\tget_job() is a public symbol with no test covering it\nsrc/prism_sdk/config.py:6\tload_config() is a public symbol with no test covering it\nsrc/prism_sdk/exporter.py:4\texport_to_srt() is a public symbol with no test covering it\nsrc/prism_sdk/utils.py:6\tconvert_audio() is a public symbol with no test covering it\nsrc/prism_sdk/utils.py:18\tlist_output_dir() is a public symbol with no test covering it\nFAIL (6 issues)\n",
+          "exitCode": 1
         },
         "gate-3-security": {
           "stdout": "src/prism_sdk/client.py:9\tDEFAULT_API_KEY is a live-looking credential committed to source\nsrc/prism_sdk/utils.py:15\tconvert_audio() builds a shell command by string interpolation with shell=True — caller-supplied input can break out of the intended command\nsrc/prism_sdk/config.py:9\teval() call found in comment — flagged by textual scanner\nFAIL (3 issues)\nZERO-TOLERANCE\n",
@@ -268,8 +273,15 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 6,
+            "fingerprint": [
+              "fp-untested-symbol-client-transcribe",
+              "fp-untested-symbol-client-getjob",
+              "fp-untested-symbol-config-loadconfig",
+              "fp-untested-symbol-exporter-exporttosrt",
+              "fp-untested-symbol-utils-convertaudio",
+              "fp-untested-symbol-utils-listoutputdir"
+            ]
           },
           "gate-3-security": {
             "count": 3,
@@ -292,7 +304,7 @@
             "fingerprint": []
           }
         },
-        "total": 3
+        "total": 9
       }
     },
     {
@@ -303,8 +315,8 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "src/prism_sdk/client.py:23\ttranscribe() is a public symbol with no test covering it\nsrc/prism_sdk/client.py:40\tget_job() is a public symbol with no test covering it\nsrc/prism_sdk/config.py:6\tload_config() is a public symbol with no test covering it\nsrc/prism_sdk/exporter.py:4\texport_to_srt() is a public symbol with no test covering it\nsrc/prism_sdk/utils.py:6\tconvert_audio() is a public symbol with no test covering it\nsrc/prism_sdk/utils.py:18\tlist_output_dir() is a public symbol with no test covering it\nFAIL (6 issues)\n",
+          "exitCode": 1
         },
         "gate-3-security": {
           "stdout": "src/prism_sdk/client.py:9\tDEFAULT_API_KEY is a live-looking credential committed to source\nsrc/prism_sdk/utils.py:15\tconvert_audio() builds a shell command by string interpolation with shell=True — caller-supplied input can break out of the intended command\nsrc/prism_sdk/webhooks.py:6\tDEFAULT_WEBHOOK_SECRET is a fallback signing secret committed to source\nsrc/prism_sdk/config.py:9\teval() call found in comment — flagged by textual scanner\nFAIL (4 issues)\nZERO-TOLERANCE\n",
@@ -332,8 +344,15 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 6,
+            "fingerprint": [
+              "fp-untested-symbol-client-transcribe",
+              "fp-untested-symbol-client-getjob",
+              "fp-untested-symbol-config-loadconfig",
+              "fp-untested-symbol-exporter-exporttosrt",
+              "fp-untested-symbol-utils-convertaudio",
+              "fp-untested-symbol-utils-listoutputdir"
+            ]
           },
           "gate-3-security": {
             "count": 4,
@@ -357,7 +376,7 @@
             "fingerprint": []
           }
         },
-        "total": 4
+        "total": 10
       }
     },
     {
@@ -368,8 +387,8 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "src/prism_sdk/client.py:23\ttranscribe() is a public symbol with no test covering it\nsrc/prism_sdk/client.py:40\tget_job() is a public symbol with no test covering it\nsrc/prism_sdk/config.py:6\tload_config() is a public symbol with no test covering it\nsrc/prism_sdk/exporter.py:4\texport_to_srt() is a public symbol with no test covering it\nsrc/prism_sdk/utils.py:6\tconvert_audio() is a public symbol with no test covering it\nsrc/prism_sdk/utils.py:21\tlist_output_dir() is a public symbol with no test covering it\nFAIL (6 issues)\n",
+          "exitCode": 1
         },
         "gate-3-security": {
           "stdout": "src/prism_sdk/client.py:9\tDEFAULT_API_KEY is a live-looking credential committed to source\nsrc/prism_sdk/utils.py:18\tconvert_audio() builds a shell command by string interpolation with shell=True — caller-supplied input can break out of the intended command\nsrc/prism_sdk/webhooks.py:6\tDEFAULT_WEBHOOK_SECRET is a fallback signing secret committed to source\nsrc/prism_sdk/config.py:9\teval() call found in comment — flagged by textual scanner\nFAIL (4 issues)\nZERO-TOLERANCE\n",
@@ -397,8 +416,15 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 6,
+            "fingerprint": [
+              "fp-untested-symbol-client-transcribe",
+              "fp-untested-symbol-client-getjob",
+              "fp-untested-symbol-config-loadconfig",
+              "fp-untested-symbol-exporter-exporttosrt",
+              "fp-untested-symbol-utils-convertaudio",
+              "fp-untested-symbol-utils-listoutputdir"
+            ]
           },
           "gate-3-security": {
             "count": 4,
@@ -422,7 +448,7 @@
             "fingerprint": []
           }
         },
-        "total": 4
+        "total": 10
       }
     },
     {
@@ -433,8 +459,8 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "src/prism_sdk/client.py:23\ttranscribe() is a public symbol with no test covering it\nsrc/prism_sdk/client.py:40\tget_job() is a public symbol with no test covering it\nsrc/prism_sdk/config.py:6\tload_config() is a public symbol with no test covering it\nsrc/prism_sdk/exporter.py:4\texport_to_srt() is a public symbol with no test covering it\nsrc/prism_sdk/utils.py:6\tconvert_audio() is a public symbol with no test covering it\nsrc/prism_sdk/utils.py:21\tlist_output_dir() is a public symbol with no test covering it\nFAIL (6 issues)\n",
+          "exitCode": 1
         },
         "gate-3-security": {
           "stdout": "src/prism_sdk/client.py:9\tDEFAULT_API_KEY is a live-looking credential committed to source\nsrc/prism_sdk/utils.py:18\tconvert_audio() builds a shell command by string interpolation with shell=True — caller-supplied input can break out of the intended command\nsrc/prism_sdk/webhooks.py:6\tDEFAULT_WEBHOOK_SECRET is a fallback signing secret committed to source\nsrc/prism_sdk/config.py:9\teval() call found in comment — flagged by textual scanner\nFAIL (4 issues)\nZERO-TOLERANCE\n",
@@ -462,8 +488,15 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 6,
+            "fingerprint": [
+              "fp-untested-symbol-client-transcribe",
+              "fp-untested-symbol-client-getjob",
+              "fp-untested-symbol-config-loadconfig",
+              "fp-untested-symbol-exporter-exporttosrt",
+              "fp-untested-symbol-utils-convertaudio",
+              "fp-untested-symbol-utils-listoutputdir"
+            ]
           },
           "gate-3-security": {
             "count": 4,
@@ -487,7 +520,7 @@
             "fingerprint": []
           }
         },
-        "total": 4
+        "total": 10
       }
     },
     {
@@ -498,8 +531,8 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "src/prism_sdk/client.py:23\ttranscribe() is a public symbol with no test covering it\nsrc/prism_sdk/client.py:40\tget_job() is a public symbol with no test covering it\nsrc/prism_sdk/config.py:6\tload_config() is a public symbol with no test covering it\nsrc/prism_sdk/exporter.py:4\texport_to_srt() is a public symbol with no test covering it\nsrc/prism_sdk/utils.py:6\tconvert_audio() is a public symbol with no test covering it\nsrc/prism_sdk/utils.py:21\tlist_output_dir() is a public symbol with no test covering it\nFAIL (6 issues)\n",
+          "exitCode": 1
         },
         "gate-3-security": {
           "stdout": "src/prism_sdk/client.py:9\tDEFAULT_API_KEY is a live-looking credential committed to source\nsrc/prism_sdk/utils.py:18\tconvert_audio() builds a shell command by string interpolation with shell=True — caller-supplied input can break out of the intended command\nsrc/prism_sdk/webhooks.py:6\tDEFAULT_WEBHOOK_SECRET is a fallback signing secret committed to source\nsrc/prism_sdk/config.py:9\teval() call found in comment — flagged by textual scanner\nFAIL (4 issues)\nZERO-TOLERANCE\n",
@@ -527,8 +560,15 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 6,
+            "fingerprint": [
+              "fp-untested-symbol-client-transcribe",
+              "fp-untested-symbol-client-getjob",
+              "fp-untested-symbol-config-loadconfig",
+              "fp-untested-symbol-exporter-exporttosrt",
+              "fp-untested-symbol-utils-convertaudio",
+              "fp-untested-symbol-utils-listoutputdir"
+            ]
           },
           "gate-3-security": {
             "count": 4,
@@ -552,7 +592,7 @@
             "fingerprint": []
           }
         },
-        "total": 4
+        "total": 10
       }
     },
     {
@@ -563,8 +603,8 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "src/prism_sdk/client.py:23\ttranscribe() is a public symbol with no test covering it\nsrc/prism_sdk/client.py:40\tget_job() is a public symbol with no test covering it\nsrc/prism_sdk/config.py:6\tload_config() is a public symbol with no test covering it\nsrc/prism_sdk/exporter.py:4\texport_to_srt() is a public symbol with no test covering it\nsrc/prism_sdk/utils.py:6\tconvert_audio() is a public symbol with no test covering it\nsrc/prism_sdk/utils.py:21\tlist_output_dir() is a public symbol with no test covering it\nFAIL (6 issues)\n",
+          "exitCode": 1
         },
         "gate-3-security": {
           "stdout": "src/prism_sdk/client.py:9\tDEFAULT_API_KEY is a live-looking credential committed to source\nsrc/prism_sdk/utils.py:18\tconvert_audio() builds a shell command by string interpolation with shell=True — caller-supplied input can break out of the intended command\nsrc/prism_sdk/webhooks.py:6\tDEFAULT_WEBHOOK_SECRET is a fallback signing secret committed to source\nsrc/prism_sdk/config.py:9\teval() call found in comment — flagged by textual scanner\nFAIL (4 issues)\nZERO-TOLERANCE\n",
@@ -592,8 +632,15 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 6,
+            "fingerprint": [
+              "fp-untested-symbol-client-transcribe",
+              "fp-untested-symbol-client-getjob",
+              "fp-untested-symbol-config-loadconfig",
+              "fp-untested-symbol-exporter-exporttosrt",
+              "fp-untested-symbol-utils-convertaudio",
+              "fp-untested-symbol-utils-listoutputdir"
+            ]
           },
           "gate-3-security": {
             "count": 4,
@@ -617,7 +664,7 @@
             "fingerprint": []
           }
         },
-        "total": 4
+        "total": 10
       }
     }
   ]

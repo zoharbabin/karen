@@ -47,8 +47,15 @@ node evals/grading/score-gate-issues.js evals/fixtures/node-sdk-single evals/sel
 node evals/self-test/run-self-test.js
 
 # Drive a real fixture against the installed Karen plugin (mode: 'full')
-# — see evals/runner/fixture-workflow.js; one fixture has passed at 100%
-# pass@1 so far, the rest are still ahead of EVALS-PLAN.md §9 step 5
+# — see evals/runner/fixture-workflow.js. 11 of 14 fixtures have a real
+# mode:'full' result as of this writing (node-sdk-single, go-monorepo,
+# node-personalization-backend-single, python-sdk-single, go-backend-single,
+# go-mcp-server-single, node-mcp-server-single, python-mcp-server-single,
+# and python-monorepo all pass or have every failing dimension traced to a
+# specific cause and fixed/classified; see evals/README.md's Status
+# section). The remaining fixtures are still ahead of EVALS-PLAN.md §9 step
+# 5, and a fresh live re-run to confirm this round's fixes hold under a new
+# generation hasn't happened yet.
 ```
 
 CI (`.github/workflows/evals-selftest.yml`) runs the self-test suite on every push/PR touching `evals/`. It has to stay green.

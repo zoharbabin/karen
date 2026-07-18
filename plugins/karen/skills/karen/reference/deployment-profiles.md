@@ -12,7 +12,7 @@ Knowledge to apply based on what the interview surfaced. These shape the securit
 
 **Additional zero-tolerance checks:**
 
-- Global scope writes (`window.*`, `globalThis.*` outside constructor opt-in)
+- Global scope writes (`window.*`, `globalThis.*` outside constructor opt-in — "opt-in" means conditioned on a caller-supplied config flag, e.g. `if (config.enableX) { window.foo = ... }`, not merely lexically inside the constructor body. An unconditional global write that runs on every instantiation is still zero-tolerance even if it sits inside the constructor.)
 - Event listeners without paired removal in `destroy()`
 - Prototype modifications (`Array.prototype.*`, etc.)
 - `setInterval`/`setTimeout` without cleanup reference
@@ -102,7 +102,7 @@ Document COOP/COEP incompatibilities if `SharedArrayBuffer` is used.
 
 ## `node-server`
 
-*Server-side Node.js, Deno, or Bun applications and services.*
+*The generic backend-service deployment profile — a server-side process (Node.js, Deno, Bun, Go, or any other server-side language) with no more specific profile (browser-direct-js, browser-iframe, python) applying. Despite the name, this is the profile to reuse for a plain backend service in any language rather than inventing a new deployment label.*
 
 **Additional checks:**
 
@@ -143,7 +143,7 @@ Covers two distinct things — a project can be either, or both, and the intervi
 | Unbounded consumption (LLM10) | No rate limit or turn cap on a conversational loop that can be driven by user input |
 | Supply chain (LLM03) | Model/weights/prompt-template provenance — distinct from the standard dependency audit, which still applies in parallel |
 
-A project is `aiPowered: true` in `.karen.json` if *either* condition holds. Ask both questions separately — "is this built with AI coding agents?" and "does this product call an LLM or run agentic behavior at runtime?" — because a project can be one without the other, and the checks that follow are different in each case.
+`project.aiPowered` in `.karen.json` reflects the runtime-AI condition only — the project calls an LLM, runs agentic tool-calling, or exposes a conversational surface at runtime (or is a tool-provider per the third case below). "Built using LLM coding agents" does **not** by itself set `aiPowered: true` — nearly every modern project is built with a coding agent, so treating that alone as the trigger would make the field meaningless. It independently activates only the Agent Context Engineering gate (`quality-dimensions.md`). Ask both questions separately — "is this built with AI coding agents?" and "does this product call an LLM or run agentic behavior at runtime?" — because each question drives a different, independent gate, but only the second (or the tool-provider case) flips `aiPowered`.
 
 **A tool-provider server — an MCP server, a plugin, a webhook handler invoked by someone else's agent loop — is `aiPowered: true` even though it never itself calls an LLM.** This is a third case the two questions above can miss if read too literally: the project doesn't call an LLM, and it wasn't necessarily built by a coding agent either, yet its runtime is still driven by tool-call arguments an LLM decided to send. The threat model is the same one the runtime-AI branch exists for — LLM01 (a connecting model's tool-call arguments are untrusted input reaching this server exactly like a network request), LLM06/ASI excessive agency (the server executes actions an agent initiated, whether or not that agent lives in this process) — so exempting it because "we never call the model ourselves" would silently drop coverage from the exact tool-call surface (`run_shell_command`, `apply_config_patch`, or equivalent) that needs it most. During `karen init`, if `detect_project` finds an MCP SDK dependency, a plugin manifest, or another tool-provider shape, ask the runtime-AI question as "are you invoked by an LLM's tool-calling loop, even if you never call one yourself?" — not just "do you call an LLM" — precisely so a plain tool-provider doesn't get waved through as `aiPowered: false` by a literal reading of the first two questions.
 

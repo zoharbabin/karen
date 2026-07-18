@@ -23,9 +23,12 @@
 // }
 //
 // Item identity: knownGaps[] keyed by `${pattern}::${scope}` (matches
-// score-karen-json.js's keyKnownGap). exceptions keyed by
-// `${gate}::${pattern}::${file}` (matches score-karen-json.js's
-// keyedExceptions), flattened from the `{ [gateId]: [entry, ...] }` shape.
+// score-karen-json.js's keyKnownGap). exceptions keyed by `${gate}::${file}`
+// (matches score-karen-json.js's keyedExceptions), flattened from the
+// `{ [gateId]: [entry, ...] }` shape — `pattern` is excluded from the
+// identity key since karen-json-schema.md documents it as "a short, minimal
+// matchable token" (an example wording choice, not a fixed literal); two
+// correct runs can pick different valid substrings of the same construct.
 // Swap detection cross-checks by `pattern` alone, since that's the only
 // field shared between a knownGaps entry (pattern/scope) and an exceptions
 // entry (pattern/file) — the two structures don't share a `scope`/`file` key.
@@ -46,14 +49,16 @@ function keyKnownGap(item) {
 }
 
 // exceptions is `{ [gateId]: [{ pattern, file, reason, expires }, ...] }` —
-// flatten into a list of { key, pattern } pairs.
+// flatten into a list of { key, pattern } pairs. `key` (identity) excludes
+// `pattern` — see note above; `pattern` is kept alongside for swap detection
+// only, which cross-checks against knownGaps by pattern, not by this key.
 function flattenExceptions(exceptionsObj) {
   if (!exceptionsObj || typeof exceptionsObj !== 'object') return [];
   const out = [];
   for (const [gate, entries] of Object.entries(exceptionsObj)) {
     if (!Array.isArray(entries)) continue;
     for (const entry of entries) {
-      out.push({ key: `${gate}::${entry?.pattern ?? ''}::${entry?.file ?? ''}`, pattern: entry?.pattern ?? '' });
+      out.push({ key: `${gate}::${entry?.file ?? ''}`, pattern: entry?.pattern ?? '' });
     }
   }
   return out;

@@ -38,7 +38,7 @@
         "type": "mcp-server",
         "language": ["go"],
         "deployment": ["mcp-stdio"],
-        "audience": "developer-tooling",
+        "audience": "internal",
         "aiPowered": true,
         "subprojects": []
       },
@@ -71,7 +71,7 @@
       "trigger": "initial",
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-2-completeness": { "stdout": "internal/tools/notify.go:23\tstub implementation left in exported function\nFAIL (1 issues)\n", "exitCode": 1 },
+        "gate-2-completeness": { "stdout": "internal/tools/notify.go:23\tstub implementation left in exported function\ninternal/tools/notify.go:12\tLogNotifyStatus() is a public symbol with no test covering it\ninternal/config/config.go:33\tLoad() is a public symbol with no test covering it\nFAIL (3 issues)\n", "exitCode": 1 },
         "gate-3-security": { "stdout": "internal/tools/run_shell_command.go:33\tshell-injection: args.Command spliced directly into `sh -c` with no validation — arbitrary command execution via any connected MCP client\ninternal/tools/read_config.go:43\tshell-injection: exec.Command call site matches the shell-injection pattern textually (false positive — every argument here is a hardcoded literal, no caller input reaches this call)\ninternal/config/config.go:29\thardcoded-secret: live-looking API token committed to source as the default admin credential\nFAIL (3 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
         "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
@@ -81,19 +81,19 @@
         "timestamp": "2026-06-25T10:00:00Z",
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
-          "gate-2-completeness": { "count": 1, "fingerprint": ["fp-stub-notify"] },
+          "gate-2-completeness": { "count": 3, "fingerprint": ["fp-stub-notify", "fp-untested-symbol-notify-lognotifystatus", "fp-untested-symbol-config-load"] },
           "gate-3-security": { "count": 3, "fingerprint": ["fp-shellinj-run-shell-command", "fp-shellinj-read-config-decoy", "fp-secret-config"] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 4
+        "total": 6
       }
     },
     {
       "trigger": "01-partial-fix",
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
+        "gate-2-completeness": { "stdout": "internal/config/config.go:33\tLoad() is a public symbol with no test covering it\ninternal/tools/notify.go:12\tLogNotifyStatus() is a public symbol with no test covering it\ninternal/tools/notify.go:20\tPageOnCall() is a public symbol with no test covering it\nFAIL (3 issues)\n", "exitCode": 1 },
         "gate-3-security": { "stdout": "internal/tools/run_shell_command.go:33\tshell-injection: args.Command spliced directly into `sh -c` with no validation — arbitrary command execution via any connected MCP client\ninternal/tools/read_config.go:43\tshell-injection: exec.Command call site matches the shell-injection pattern textually (false positive — every argument here is a hardcoded literal, no caller input reaches this call)\ninternal/config/config.go:29\thardcoded-secret: live-looking API token committed to source as the default admin credential\nFAIL (3 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
         "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
@@ -103,20 +103,20 @@
         "timestamp": "2026-06-25T10:12:00Z",
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
-          "gate-2-completeness": { "count": 0, "fingerprint": [] },
+          "gate-2-completeness": { "count": 3, "fingerprint": ["fp-untested-symbol-config-load", "fp-untested-symbol-notify-lognotifystatus", "fp-untested-symbol-notify-pageoncall"] },
           "gate-3-security": { "count": 3, "fingerprint": ["fp-shellinj-run-shell-command", "fp-shellinj-read-config-decoy", "fp-secret-config"] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 3
+        "total": 6
       }
     },
     {
       "trigger": "02-regression",
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-3-security": { "stdout": "internal/tools/run_shell_command.go:33\tshell-injection: args.Command spliced directly into `sh -c` with no validation — arbitrary command execution via any connected MCP client\ninternal/tools/read_config.go:43\tshell-injection: exec.Command call site matches the shell-injection pattern textually (false positive — every argument here is a hardcoded literal, no caller input reaches this call)\ninternal/config/config.go:29\thardcoded-secret: live-looking API token committed to source as the default admin credential\ninternal/tools/backup_config.go:24\tshell-injection: args.Dest spliced directly into `sh -c` with no validation — arbitrary command execution via backup_config\nFAIL (4 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
+        "gate-2-completeness": { "stdout": "internal/config/config.go:33\tLoad() is a public symbol with no test covering it\ninternal/tools/notify.go:12\tLogNotifyStatus() is a public symbol with no test covering it\ninternal/tools/notify.go:20\tPageOnCall() is a public symbol with no test covering it\nFAIL (3 issues)\n", "exitCode": 1 },
+        "gate-3-security": { "stdout": "internal/tools/run_shell_command.go:33\tshell-injection: args.Command spliced directly into `sh -c` with no validation — arbitrary command execution via any connected MCP client\ninternal/tools/read_config.go:43\tshell-injection: exec.Command call site matches the shell-injection pattern textually (false positive — every argument here is a hardcoded literal, no caller input reaches this call)\ninternal/config/config.go:29\thardcoded-secret: live-looking API token committed to source as the default admin credential\ninternal/tools/backup_config.go:24\tshell-injection: args.Dest spliced directly into `sh -c` with no validation — arbitrary command execution via backup_config\ninternal/mcpserver/server.go:113\tunlabeled-tool-output: out (externally-sourced command/file output) returned to the connecting LLM client with no delimiter marking it as data rather than instructions\nFAIL (5 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
         "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
       },
@@ -125,20 +125,20 @@
         "timestamp": "2026-06-25T10:25:00Z",
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
-          "gate-2-completeness": { "count": 0, "fingerprint": [] },
-          "gate-3-security": { "count": 4, "fingerprint": ["fp-shellinj-run-shell-command", "fp-shellinj-read-config-decoy", "fp-secret-config", "fp-shellinj-backup-config"] },
+          "gate-2-completeness": { "count": 3, "fingerprint": ["fp-untested-symbol-config-load", "fp-untested-symbol-notify-lognotifystatus", "fp-untested-symbol-notify-pageoncall"] },
+          "gate-3-security": { "count": 5, "fingerprint": ["fp-shellinj-run-shell-command", "fp-shellinj-read-config-decoy", "fp-secret-config", "fp-shellinj-backup-config", "fp-unlabeled-backup-config"] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 4
+        "total": 8
       }
     },
     {
       "trigger": "03-noop-line-shift",
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-3-security": { "stdout": "internal/tools/run_shell_command.go:36\tshell-injection: args.Command spliced directly into `sh -c` with no validation — arbitrary command execution via any connected MCP client\ninternal/tools/read_config.go:43\tshell-injection: exec.Command call site matches the shell-injection pattern textually (false positive — every argument here is a hardcoded literal, no caller input reaches this call)\ninternal/config/config.go:29\thardcoded-secret: live-looking API token committed to source as the default admin credential\ninternal/tools/backup_config.go:24\tshell-injection: args.Dest spliced directly into `sh -c` with no validation — arbitrary command execution via backup_config\nFAIL (4 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
+        "gate-2-completeness": { "stdout": "internal/config/config.go:33\tLoad() is a public symbol with no test covering it\ninternal/tools/notify.go:12\tLogNotifyStatus() is a public symbol with no test covering it\ninternal/tools/notify.go:20\tPageOnCall() is a public symbol with no test covering it\nFAIL (3 issues)\n", "exitCode": 1 },
+        "gate-3-security": { "stdout": "internal/tools/run_shell_command.go:36\tshell-injection: args.Command spliced directly into `sh -c` with no validation — arbitrary command execution via any connected MCP client\ninternal/tools/read_config.go:43\tshell-injection: exec.Command call site matches the shell-injection pattern textually (false positive — every argument here is a hardcoded literal, no caller input reaches this call)\ninternal/config/config.go:29\thardcoded-secret: live-looking API token committed to source as the default admin credential\ninternal/tools/backup_config.go:24\tshell-injection: args.Dest spliced directly into `sh -c` with no validation — arbitrary command execution via backup_config\ninternal/mcpserver/server.go:113\tunlabeled-tool-output: out (externally-sourced command/file output) returned to the connecting LLM client with no delimiter marking it as data rather than instructions\nFAIL (5 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
         "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
       },
@@ -147,20 +147,20 @@
         "timestamp": "2026-06-25T10:40:00Z",
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
-          "gate-2-completeness": { "count": 0, "fingerprint": [] },
-          "gate-3-security": { "count": 4, "fingerprint": ["fp-shellinj-run-shell-command", "fp-shellinj-read-config-decoy", "fp-secret-config", "fp-shellinj-backup-config"] },
+          "gate-2-completeness": { "count": 3, "fingerprint": ["fp-untested-symbol-config-load", "fp-untested-symbol-notify-lognotifystatus", "fp-untested-symbol-notify-pageoncall"] },
+          "gate-3-security": { "count": 5, "fingerprint": ["fp-shellinj-run-shell-command", "fp-shellinj-read-config-decoy", "fp-secret-config", "fp-shellinj-backup-config", "fp-unlabeled-backup-config"] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 4
+        "total": 8
       }
     },
     {
       "trigger": "04-repeat-noop-1",
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-3-security": { "stdout": "internal/tools/run_shell_command.go:36\tshell-injection: args.Command spliced directly into `sh -c` with no validation — arbitrary command execution via any connected MCP client\ninternal/tools/read_config.go:43\tshell-injection: exec.Command call site matches the shell-injection pattern textually (false positive — every argument here is a hardcoded literal, no caller input reaches this call)\ninternal/config/config.go:29\thardcoded-secret: live-looking API token committed to source as the default admin credential\ninternal/tools/backup_config.go:24\tshell-injection: args.Dest spliced directly into `sh -c` with no validation — arbitrary command execution via backup_config\nFAIL (4 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
+        "gate-2-completeness": { "stdout": "internal/config/config.go:33\tLoad() is a public symbol with no test covering it\ninternal/tools/notify.go:12\tLogNotifyStatus() is a public symbol with no test covering it\ninternal/tools/notify.go:20\tPageOnCall() is a public symbol with no test covering it\nFAIL (3 issues)\n", "exitCode": 1 },
+        "gate-3-security": { "stdout": "internal/tools/run_shell_command.go:36\tshell-injection: args.Command spliced directly into `sh -c` with no validation — arbitrary command execution via any connected MCP client\ninternal/tools/read_config.go:43\tshell-injection: exec.Command call site matches the shell-injection pattern textually (false positive — every argument here is a hardcoded literal, no caller input reaches this call)\ninternal/config/config.go:29\thardcoded-secret: live-looking API token committed to source as the default admin credential\ninternal/tools/backup_config.go:24\tshell-injection: args.Dest spliced directly into `sh -c` with no validation — arbitrary command execution via backup_config\ninternal/mcpserver/server.go:113\tunlabeled-tool-output: out (externally-sourced command/file output) returned to the connecting LLM client with no delimiter marking it as data rather than instructions\nFAIL (5 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
         "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
       },
@@ -169,20 +169,20 @@
         "timestamp": "2026-06-25T10:45:00Z",
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
-          "gate-2-completeness": { "count": 0, "fingerprint": [] },
-          "gate-3-security": { "count": 4, "fingerprint": ["fp-shellinj-run-shell-command", "fp-shellinj-read-config-decoy", "fp-secret-config", "fp-shellinj-backup-config"] },
+          "gate-2-completeness": { "count": 3, "fingerprint": ["fp-untested-symbol-config-load", "fp-untested-symbol-notify-lognotifystatus", "fp-untested-symbol-notify-pageoncall"] },
+          "gate-3-security": { "count": 5, "fingerprint": ["fp-shellinj-run-shell-command", "fp-shellinj-read-config-decoy", "fp-secret-config", "fp-shellinj-backup-config", "fp-unlabeled-backup-config"] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 4
+        "total": 8
       }
     },
     {
       "trigger": "04-repeat-noop-2",
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-3-security": { "stdout": "internal/tools/run_shell_command.go:36\tshell-injection: args.Command spliced directly into `sh -c` with no validation — arbitrary command execution via any connected MCP client\ninternal/tools/read_config.go:43\tshell-injection: exec.Command call site matches the shell-injection pattern textually (false positive — every argument here is a hardcoded literal, no caller input reaches this call)\ninternal/config/config.go:29\thardcoded-secret: live-looking API token committed to source as the default admin credential\ninternal/tools/backup_config.go:24\tshell-injection: args.Dest spliced directly into `sh -c` with no validation — arbitrary command execution via backup_config\nFAIL (4 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
+        "gate-2-completeness": { "stdout": "internal/config/config.go:33\tLoad() is a public symbol with no test covering it\ninternal/tools/notify.go:12\tLogNotifyStatus() is a public symbol with no test covering it\ninternal/tools/notify.go:20\tPageOnCall() is a public symbol with no test covering it\nFAIL (3 issues)\n", "exitCode": 1 },
+        "gate-3-security": { "stdout": "internal/tools/run_shell_command.go:36\tshell-injection: args.Command spliced directly into `sh -c` with no validation — arbitrary command execution via any connected MCP client\ninternal/tools/read_config.go:43\tshell-injection: exec.Command call site matches the shell-injection pattern textually (false positive — every argument here is a hardcoded literal, no caller input reaches this call)\ninternal/config/config.go:29\thardcoded-secret: live-looking API token committed to source as the default admin credential\ninternal/tools/backup_config.go:24\tshell-injection: args.Dest spliced directly into `sh -c` with no validation — arbitrary command execution via backup_config\ninternal/mcpserver/server.go:113\tunlabeled-tool-output: out (externally-sourced command/file output) returned to the connecting LLM client with no delimiter marking it as data rather than instructions\nFAIL (5 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
         "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
       },
@@ -191,20 +191,20 @@
         "timestamp": "2026-06-25T10:50:00Z",
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
-          "gate-2-completeness": { "count": 0, "fingerprint": [] },
-          "gate-3-security": { "count": 4, "fingerprint": ["fp-shellinj-run-shell-command", "fp-shellinj-read-config-decoy", "fp-secret-config", "fp-shellinj-backup-config"] },
+          "gate-2-completeness": { "count": 3, "fingerprint": ["fp-untested-symbol-config-load", "fp-untested-symbol-notify-lognotifystatus", "fp-untested-symbol-notify-pageoncall"] },
+          "gate-3-security": { "count": 5, "fingerprint": ["fp-shellinj-run-shell-command", "fp-shellinj-read-config-decoy", "fp-secret-config", "fp-shellinj-backup-config", "fp-unlabeled-backup-config"] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 4
+        "total": 8
       }
     },
     {
       "trigger": "04-repeat-noop-3",
       "gateResults": {
         "gate-1-supply-chain": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-2-completeness": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
-        "gate-3-security": { "stdout": "internal/tools/run_shell_command.go:36\tshell-injection: args.Command spliced directly into `sh -c` with no validation — arbitrary command execution via any connected MCP client\ninternal/tools/read_config.go:43\tshell-injection: exec.Command call site matches the shell-injection pattern textually (false positive — every argument here is a hardcoded literal, no caller input reaches this call)\ninternal/config/config.go:29\thardcoded-secret: live-looking API token committed to source as the default admin credential\ninternal/tools/backup_config.go:24\tshell-injection: args.Dest spliced directly into `sh -c` with no validation — arbitrary command execution via backup_config\nFAIL (4 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
+        "gate-2-completeness": { "stdout": "internal/config/config.go:33\tLoad() is a public symbol with no test covering it\ninternal/tools/notify.go:12\tLogNotifyStatus() is a public symbol with no test covering it\ninternal/tools/notify.go:20\tPageOnCall() is a public symbol with no test covering it\nFAIL (3 issues)\n", "exitCode": 1 },
+        "gate-3-security": { "stdout": "internal/tools/run_shell_command.go:36\tshell-injection: args.Command spliced directly into `sh -c` with no validation — arbitrary command execution via any connected MCP client\ninternal/tools/read_config.go:43\tshell-injection: exec.Command call site matches the shell-injection pattern textually (false positive — every argument here is a hardcoded literal, no caller input reaches this call)\ninternal/config/config.go:29\thardcoded-secret: live-looking API token committed to source as the default admin credential\ninternal/tools/backup_config.go:24\tshell-injection: args.Dest spliced directly into `sh -c` with no validation — arbitrary command execution via backup_config\ninternal/mcpserver/server.go:113\tunlabeled-tool-output: out (externally-sourced command/file output) returned to the connecting LLM client with no delimiter marking it as data rather than instructions\nFAIL (5 issues)\nZERO-TOLERANCE\n", "exitCode": 1 },
         "gate-6-test-integrity": { "stdout": "PASS (0 issues)\n", "exitCode": 0 },
         "gate-7-agent-context": { "stdout": "PASS (0 issues)\n", "exitCode": 0 }
       },
@@ -213,12 +213,12 @@
         "timestamp": "2026-06-25T10:55:00Z",
         "gates": {
           "gate-1-supply-chain": { "count": 0, "fingerprint": [] },
-          "gate-2-completeness": { "count": 0, "fingerprint": [] },
-          "gate-3-security": { "count": 4, "fingerprint": ["fp-shellinj-run-shell-command", "fp-shellinj-read-config-decoy", "fp-secret-config", "fp-shellinj-backup-config"] },
+          "gate-2-completeness": { "count": 3, "fingerprint": ["fp-untested-symbol-config-load", "fp-untested-symbol-notify-lognotifystatus", "fp-untested-symbol-notify-pageoncall"] },
+          "gate-3-security": { "count": 5, "fingerprint": ["fp-shellinj-run-shell-command", "fp-shellinj-read-config-decoy", "fp-secret-config", "fp-shellinj-backup-config", "fp-unlabeled-backup-config"] },
           "gate-6-test-integrity": { "count": 0, "fingerprint": [] },
           "gate-7-agent-context": { "count": 0, "fingerprint": [] }
         },
-        "total": 4
+        "total": 8
       }
     }
   ]

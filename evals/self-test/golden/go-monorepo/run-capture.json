@@ -188,7 +188,7 @@
     },
     "gateScripts": {
       "gate-1-supply-chain": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nout=\"\"\nfor mod in backend cli; do\n  report=\"$(cd \"$root/$mod\" && govulncheck ./... 2>/dev/null || true)\"\n  while IFS=$'\\t' read -r file line msg; do\n    [ -z \"$file\" ] && continue\n    out+=\"$mod/$file:$line\"$'\\t'\"$msg\"$'\\n'\n    issues=$((issues+1))\n  done < <(echo \"$report\" | node \"$root/.karen/gates/format-govulncheck.js\")\ndone\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
-      "gate-2-completeness": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nout=\"\"\nfor mod in backend cli; do\n  while IFS=$'\\t' read -r file line msg; do\n    [ -z \"$file\" ] && continue\n    out+=\"$file:$line\"$'\\t'\"$msg\"$'\\n'\n    issues=$((issues+1))\n  done < <(cd \"$root/$mod\" && go vet ./... 2>&1 | node \"$root/.karen/gates/format-govet.js\")\ndone\n# structural stub scan also walks the unowned root-utility script.\nwhile IFS=$'\\t' read -r file line msg; do\n  [ -z \"$file\" ] && continue\n  out+=\"$file:$line\"$'\\t'\"$msg\"$'\\n'\n  issues=$((issues+1))\ndone < <(node \"$root/.karen/gates/stub-scan.js\" \"$root/mint-admin-token.sh\")\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
+      "gate-2-completeness": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nout=\"\"\nfor mod in backend cli; do\n  while IFS=$'\\t' read -r file line msg; do\n    [ -z \"$file\" ] && continue\n    out+=\"$file:$line\"$'\\t'\"$msg\"$'\\n'\n    issues=$((issues+1))\n  done < <(cd \"$root/$mod\" && go vet ./... 2>&1 | node \"$root/.karen/gates/format-govet.js\")\ndone\n# structural stub scan also walks the unowned root-utility script.\nwhile IFS=$'\\t' read -r file line msg; do\n  [ -z \"$file\" ] && continue\n  out+=\"$file:$line\"$'\\t'\"$msg\"$'\\n'\n  issues=$((issues+1))\ndone < <(node \"$root/.karen/gates/stub-scan.js\" \"$root/mint-admin-token.sh\")\n\n# Structural: exported Go functions/methods in cli/ and backend/ with no\n# test referencing their name anywhere in that module's own test files.\nfor mod in backend cli; do\n  test_text=\"$(cat \"$root/$mod\"/**/*_test.go 2>/dev/null || true)\"\n  while IFS=: read -r file line rest; do\n    [ -z \"$file\" ] && continue\n    name=\"$(echo \"$rest\" | grep -oE '^func [A-Z][A-Za-z0-9_]*' | sed 's/^func //')\"\n    [ -z \"$name\" ] && continue\n    if ! grep -q \"\\b${name}\\b\" <<< \"$test_text\"; then\n      out+=\"$file:$line\\t${name}() is a public symbol with no test covering it\\n\"\n      issues=$((issues + 1))\n    fi\n  done < <(grep -rn \"^func [A-Z]\" \"$root/$mod\" --include=\"*.go\" | grep -v \"_test.go\")\ndone\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
       "gate-3-security": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nout=\"\"\nfor mod in backend cli; do\n  while IFS=$'\\t' read -r file line msg; do\n    [ -z \"$file\" ] && continue\n    out+=\"$file:$line\"$'\\t'\"$msg\"$'\\n'\n    issues=$((issues+1))\n  done < <(cd \"$root/$mod\" && gosec -fmt json ./... 2>/dev/null | node \"$root/.karen/gates/format-gosec.js\")\ndone\n# mint-admin-token.sh is unowned by either go.mod; scan it explicitly for\n# hardcoded secrets and shell-injection via `sh -c` string interpolation.\nwhile IFS=$'\\t' read -r file line msg; do\n  [ -z \"$file\" ] && continue\n  out+=\"$file:$line\"$'\\t'\"$msg\"$'\\n'\n  issues=$((issues+1))\ndone < <(node \"$root/.karen/gates/shell-secret-scan.js\" \"$root/mint-admin-token.sh\")\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; echo \"ZERO-TOLERANCE\"; exit 1; fi\n",
       "gate-6-test-integrity": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nout=\"\"\nfor mod in backend cli; do\n  cov=\"$(cd \"$root/$mod\" && go test -coverprofile=coverage.out ./... 2>&1)\"\n  pct=\"$(cd \"$root/$mod\" && go tool cover -func=coverage.out | tail -1 | awk '{print $NF}' | tr -d '%')\"\n  threshold=80\n  if [ -n \"$pct\" ] && awk -v p=\"$pct\" -v t=\"$threshold\" 'BEGIN{exit !(p<t)}'; then\n    out+=\"$mod/coverage.out:0\"$'\\t'\"coverage $pct% below $threshold% threshold\"$'\\n'\n    issues=$((issues+1))\n  fi\ndone\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n",
       "gate-7-agent-context": "#!/usr/bin/env bash\nset -euo pipefail\nroot=\"$1\"\nissues=0\nout=\"\"\nagents_file=\"$root/AGENTS.md\"\nif [ ! -f \"$agents_file\" ]; then\n  out+=\"AGENTS.md:0\"$'\\t'\"missing root agent-context file\"$'\\n'\n  issues=$((issues+1))\nelse\n  while IFS=$'\\t' read -r file line msg; do\n    [ -z \"$file\" ] && continue\n    out+=\"$file:$line\"$'\\t'\"$msg\"$'\\n'\n    issues=$((issues+1))\n  done < <(node \"$root/.karen/gates/agent-context-checklist.js\" \"$agents_file\" backend cli)\nfi\nprintf '%s' \"$out\"\nif [ \"$issues\" -eq 0 ]; then echo \"PASS (0 issues)\"; exit 0; else echo \"FAIL ($issues issues)\"; exit 1; fi\n"
@@ -203,8 +203,8 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "cli/internal/config/validate.go:14\tValidatePasswordLength() is a public symbol with no test covering it\nFAIL (1 issues)\n",
+          "exitCode": 1
         },
         "gate-6-test-integrity": {
           "stdout": "PASS (0 issues)\n",
@@ -228,8 +228,10 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": [
+              "fp-untested-symbol-validate-validatepasswordlength"
+            ]
           },
           "gate-6-test-integrity": {
             "count": 0,
@@ -247,7 +249,7 @@
             ]
           }
         },
-        "total": 2
+        "total": 3
       }
     },
     {
@@ -258,8 +260,8 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "cli/internal/config/validate.go:14\tValidatePasswordLength() is a public symbol with no test covering it\nFAIL (1 issues)\n",
+          "exitCode": 1
         },
         "gate-6-test-integrity": {
           "stdout": "PASS (0 issues)\n",
@@ -283,8 +285,10 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": [
+              "fp-untested-symbol-validate-validatepasswordlength"
+            ]
           },
           "gate-6-test-integrity": {
             "count": 0,
@@ -301,7 +305,7 @@
             ]
           }
         },
-        "total": 1
+        "total": 2
       }
     },
     {
@@ -312,8 +316,8 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "cli/internal/config/validate.go:14\tValidatePasswordLength() is a public symbol with no test covering it\nFAIL (1 issues)\n",
+          "exitCode": 1
         },
         "gate-6-test-integrity": {
           "stdout": "PASS (0 issues)\n",
@@ -337,8 +341,10 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": [
+              "fp-untested-symbol-validate-validatepasswordlength"
+            ]
           },
           "gate-6-test-integrity": {
             "count": 0,
@@ -356,7 +362,7 @@
             ]
           }
         },
-        "total": 2
+        "total": 3
       }
     },
     {
@@ -367,8 +373,8 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "cli/internal/config/validate.go:14\tValidatePasswordLength() is a public symbol with no test covering it\nFAIL (1 issues)\n",
+          "exitCode": 1
         },
         "gate-6-test-integrity": {
           "stdout": "PASS (0 issues)\n",
@@ -392,8 +398,10 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": [
+              "fp-untested-symbol-validate-validatepasswordlength"
+            ]
           },
           "gate-6-test-integrity": {
             "count": 0,
@@ -411,7 +419,7 @@
             ]
           }
         },
-        "total": 2
+        "total": 3
       }
     },
     {
@@ -422,8 +430,8 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "cli/internal/config/validate.go:14\tValidatePasswordLength() is a public symbol with no test covering it\nFAIL (1 issues)\n",
+          "exitCode": 1
         },
         "gate-6-test-integrity": {
           "stdout": "PASS (0 issues)\n",
@@ -447,8 +455,10 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": [
+              "fp-untested-symbol-validate-validatepasswordlength"
+            ]
           },
           "gate-6-test-integrity": {
             "count": 0,
@@ -466,7 +476,7 @@
             ]
           }
         },
-        "total": 2
+        "total": 3
       }
     },
     {
@@ -477,8 +487,8 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "cli/internal/config/validate.go:14\tValidatePasswordLength() is a public symbol with no test covering it\nFAIL (1 issues)\n",
+          "exitCode": 1
         },
         "gate-6-test-integrity": {
           "stdout": "PASS (0 issues)\n",
@@ -502,8 +512,10 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": [
+              "fp-untested-symbol-validate-validatepasswordlength"
+            ]
           },
           "gate-6-test-integrity": {
             "count": 0,
@@ -521,7 +533,7 @@
             ]
           }
         },
-        "total": 2
+        "total": 3
       }
     },
     {
@@ -532,8 +544,8 @@
           "exitCode": 0
         },
         "gate-2-completeness": {
-          "stdout": "PASS (0 issues)\n",
-          "exitCode": 0
+          "stdout": "cli/internal/config/validate.go:14\tValidatePasswordLength() is a public symbol with no test covering it\nFAIL (1 issues)\n",
+          "exitCode": 1
         },
         "gate-6-test-integrity": {
           "stdout": "PASS (0 issues)\n",
@@ -557,8 +569,10 @@
             "fingerprint": []
           },
           "gate-2-completeness": {
-            "count": 0,
-            "fingerprint": []
+            "count": 1,
+            "fingerprint": [
+              "fp-untested-symbol-validate-validatepasswordlength"
+            ]
           },
           "gate-6-test-integrity": {
             "count": 0,
@@ -576,7 +590,7 @@
             ]
           }
         },
-        "total": 2
+        "total": 3
       }
     }
   ]

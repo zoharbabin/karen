@@ -12,7 +12,7 @@ export const meta = {
 
 // args shape:
 //   { mode: 'grade-only' | 'full', source: 'golden' | 'broken' | '<abs path to a run-capture.json dir>',
-//     fixtures?: string[], repeatJudge?: number }
+//     fixtures?: string[], repeatJudge?: number, fixtureRetries?: number }
 // Defaults: mode 'grade-only', source 'golden', every fixture under evals/fixtures/ (discovered
 // live each run, not hardcoded — new fixtures need no edit here), repeatJudge 1 (grade-only) / 3 (full).
 
@@ -183,6 +183,30 @@ const RUN_STATE_UPDATER_SRC = [
   'fs.writeFileSync(outPath, JSON.stringify({ gateResults: gateResults, runState: runState }));',
 ].join('\n')
 
+// Deterministic audit-result merger, embedded verbatim and run once per
+// fixture after all 7 audit triggers have written their own outPath file, so
+// assembling the combined auditRuns array is a plain file read+concat rather
+// than an LLM asked to reconstruct 7 nested {gateResults, runState} objects
+// through a schema tool-call — that reconstruction step was observed to
+// silently mistranscribe a single numeric field (a gate's staleCount) deep
+// inside one trigger's runState even at model:'sonnet'. Same "mechanical
+// piece stays byte-for-byte reproducible" rationale as GRADE_MERGE_SRC and
+// RUN_STATE_UPDATER_SRC above. Declared here for the same temporal-dead-zone
+// reason as those two consts.
+const AUDIT_MERGE_SRC = [
+  "const fs = require('fs');",
+  '',
+  'const triggerToOutPath = JSON.parse(process.argv[2]);',
+  'const outPath = process.argv[3];',
+  '',
+  'const combined = {};',
+  'for (const [trigger, filePath] of Object.entries(triggerToOutPath)) {',
+  "  combined[trigger] = JSON.parse(fs.readFileSync(filePath, 'utf8'));",
+  '}',
+  '',
+  'fs.writeFileSync(outPath, JSON.stringify(combined));',
+].join('\n')
+
 // Observed empirically: args sometimes arrives JSON-encoded as a string
 // rather than as the object it was invoked with — parse defensively so
 // mode/source/fixtures/repeatJudge resolve correctly either way.
@@ -198,6 +222,16 @@ const source = (parsedArgs && parsedArgs.source) || 'golden'
 // individual runs: 0.45, 0.92, 0.45). Deterministic dimensions are now
 // stable, so this is that point — move to 5.
 const repeatJudge = (parsedArgs && parsedArgs.repeatJudge) || 5
+// captureFromLiveKaren is dozens of sequential agent() calls per fixture (karen
+// turns, persist-harness, 7 audit runs, merge, relay) with no internal resume —
+// one transient Bedrock 503 / mid-response error anywhere in that chain sacrifices
+// the whole fixture even though agent()'s own 5x stall-retry already absorbed
+// everything it could. Confirmed empirically: a live mode:'full' run across all 14
+// fixtures returned fixturesSucceeded:3 with the other 11 losses traced to exactly
+// this kind of one-off transient error, not a real skill or fixture defect. Retrying
+// the entire per-fixture capture (cheap relative to losing the fixture outright) is
+// the fix; default 3 attempts, overridable since a full run is expensive to redo.
+const fixtureRetries = (parsedArgs && parsedArgs.fixtureRetries) || 3
 
 if (mode !== 'grade-only' && mode !== 'full') {
   throw new Error(`Unknown mode "${mode}" — expected "grade-only" or "full"`)
@@ -214,9 +248,16 @@ log(`Running ${fixtures.length} fixture(s) in ${mode} mode (source: ${source})`)
 phase('Capture')
 const captures = await pipeline(
   fixtures,
-  (fixtureName) => mode === 'grade-only'
-    ? captureFromSelfTest(fixtureName, source)
-    : captureFromLiveKaren(fixtureName)
+  async (fixtureName) => {
+    if (mode === 'grade-only') return captureFromSelfTest(fixtureName, source)
+    for (let attempt = 1; attempt <= fixtureRetries; attempt++) {
+      const result = await captureFromLiveKaren(fixtureName)
+      if (result) return result
+      log(`${fixtureName}: capture attempt ${attempt}/${fixtureRetries} failed`)
+    }
+    log(`${fixtureName}: capture failed after ${fixtureRetries} attempt(s) — dropping this fixture from the run`)
+    return null
+  }
 )
 
 // pipeline()'s 2nd callback arg (originalItem) is drawn from *this call's own*
@@ -242,10 +283,16 @@ const combined = judged.map((judgeResult, i) => {
   return { fixture: fixtures[i], deterministic: graded[i], judge: judgeResult }
 }).filter(Boolean)
 
+// Failed fixtures were previously visible only in the ephemeral `logs` array
+// (whatever log() calls happened to fire during that run) — surfacing the
+// list directly on the returned result means a caller doesn't have to go
+// digging through task-output files to know which fixtures dropped out.
+const failedFixtures = fixtures.filter((_, i) => !graded[i])
+
 phase('Report')
 const report = await buildAggregateReport(combined)
 
-return { mode, source, fixturesRun: fixtures.length, fixturesSucceeded: combined.length, report }
+return { mode, source, fixturesRun: fixtures.length, fixturesSucceeded: combined.length, failedFixtures, report }
 
 // ---------------------------------------------------------------------------
 
@@ -332,7 +379,7 @@ Return only that one line.`,
 
     for (let turn = 0; turn < MAX_TURNS && !karenDone; turn++) {
       const karenTurn = await agent(
-        `You are Karen, running "karen init" against the project at ${scratchDir} (BLUEPRINT.md "The Init Conversation"). Call detect_project-equivalent analysis on the real files there first if this is turn 0. Conversation so far:\n${JSON.stringify(transcript)}\n\nAsk your next interview question, OR if you have everything you need, respond with a JSON object {"done": true, "detectProjectOutput": {...}, "karenJson": {...}, "gateScripts": {"gate-id": "script source", ...}, "harnessJson": {...}} representing the final .karen.json, generated gate scripts, and .karen/harness.json (per write-harness.md's "Registering everything in .karen/harness.json" — id/name/script path/run order/zeroTolerance for every gate in gateScripts, script paths relative to ${scratchDir} matching exactly where you'll write each one under .karen/gates/) all written to ${scratchDir}/.karen/. detectProjectOutput MUST use exactly this field shape (evals/schema/CONTRACT.md §1's fixture-manifest.json contract — this is graded by exact field name against ground truth, not free-form): {"languages": [...string], "manifests": [{"path": "...", "language": "..."}, ...], "frameworks": [...string], "ciConfig": [...string paths], "existingTestSetup": {"runner": "...", "coverageTool": "...", "coverageReport": "..."}, "agentContextFiles": [...string paths], "existingGates": [{"id": "...", "command": "...", "outputFormat": "...", "coverage": [...]}], "subprojects": [{"path": "...", "manifestPath": "...", "language": "..."}, ...] (empty array for single-package projects), "unclaimedPaths": [...string paths] (empty array if nothing is unowned)}. Otherwise respond with {"done": false, "question": "..."}. Respond with ONLY that JSON object.`,
+        `You are Karen, running "karen init" against the project at ${scratchDir} (BLUEPRINT.md "The Init Conversation"). Call detect_project-equivalent analysis on the real files there first if this is turn 0. Conversation so far:\n${JSON.stringify(transcript)}\n\nDo not read, grep, or otherwise consult anything under ${EVALS}/self-test/, or any of ${fixtureDir}/answer-key.md, ${fixtureDir}/expected-karen.json, ${fixtureDir}/planted-issues.json, ${fixtureDir}/expected-gates.json, or ${fixtureDir}/fixture-manifest.json — those are this fixture's grading ground truth, and consulting them to shortcut detection or the interview instead of reasoning from ${scratchDir}'s own files invalidates this run. Everything you need is either derivable from ${scratchDir} itself or must be asked in the conversation.\n\nAsk your next interview question, OR if you have everything you need, respond with a JSON object {"done": true, "detectProjectOutput": {...}, "karenJson": {...}, "gateScripts": {"gate-id": "script source", ...}, "harnessJson": {...}} representing the final .karen.json, generated gate scripts, and .karen/harness.json (per write-harness.md's "Registering everything in .karen/harness.json" — id/name/script path/run order/zeroTolerance for every gate in gateScripts, script paths relative to ${scratchDir} matching exactly where you'll write each one under .karen/gates/) all written to ${scratchDir}/.karen/. detectProjectOutput MUST use exactly this field shape (evals/schema/CONTRACT.md §1's fixture-manifest.json contract — this is graded by exact field name against ground truth, not free-form): {"languages": [...string], "manifests": [{"path": "...", "language": "..."}, ...], "frameworks": [...string], "ciConfig": [...string paths], "existingTestSetup": {"runner": "...", "coverageTool": "...", "coverageReport": "..."}, "agentContextFiles": [...string paths], "existingGates": [{"id": "...", "command": "...", "outputFormat": "...", "coverage": [...]}], "subprojects": [{"path": "...", "manifestPath": "...", "language": "..."}, ...] (empty array for single-package projects), "unclaimedPaths": [...string paths] (empty array if nothing is unowned)}. Otherwise respond with {"done": false, "question": "..."}. Respond with ONLY that JSON object.`,
         { label: `karen-turn-${turn}:${fixtureName}`, phase: 'Capture', model: 'sonnet',
           // detectProjectOutput's nested shape is pinned here (not just described
           // in the prompt prose above) because a plain {type:'object'} lets the
@@ -355,7 +402,31 @@ Return only that one line.`,
               unclaimedPaths: { type: 'array', items: { type: 'string' } },
             },
             required: ['languages', 'manifests', 'frameworks', 'ciConfig', 'existingTestSetup', 'agentContextFiles', 'existingGates', 'subprojects', 'unclaimedPaths'],
-          }, karenJson: { type: 'object' }, gateScripts: { type: 'object' }, harnessJson: { type: 'object' } }, required: ['done'] } }
+          // minProperties:1 (not just type:'object') because a done:true
+          // response validated fine with karenJson/gateScripts/harnessJson
+          // all present but literally {} — confirmed on node-mcp-server-single,
+          // where the final turn's own transcript showed it had already read
+          // real, correctly-generated content for all three back off disk
+          // (from an earlier turn in the same capture attempt) immediately
+          // before its final tool call, but that call's argument generation
+          // collapsed to empty objects anyway (its accompanying output_tokens
+          // was far too small to hold the ~28KB of gate-script content it had
+          // just verified) — the schema only checked presence, not shape, so
+          // this passed validation and clobbered real prior content when
+          // persisted. This forces a retry instead of silently accepting a
+          // degenerate empty result.
+          }, karenJson: { type: 'object', minProperties: 1 }, gateScripts: { type: 'object', minProperties: 1 }, harnessJson: { type: 'object', minProperties: 1 } }, required: ['done'],
+            // Plain required:['done'] let a done:true response validate even when
+            // detectProjectOutput/karenJson/gateScripts/harnessJson were omitted or
+            // nested somewhere else — confirmed on node-sdk-single, where the final
+            // turn's karenJson held a correctly-shaped nested detectProjectOutput but
+            // the top-level field the persist/capture steps below actually read was
+            // absent, silently zeroing detection scoring downstream. This conditional
+            // makes the four result fields mandatory specifically when done is true,
+            // so a same-shape omission fails validation and retries instead of
+            // capturing an incomplete result.
+            if: { properties: { done: { const: true } } },
+            then: { required: ['done', 'detectProjectOutput', 'karenJson', 'gateScripts', 'harnessJson'] } } }
       )
       if (!karenTurn) break
       if (karenTurn.done) {
@@ -455,7 +526,13 @@ async function runAuditSequence(fixtureDir, scratchDir, fixtureName) {
     const captureDir = `/tmp/karen-eval-${fixtureName}-${trigger}-gateout`
     const outPath = `/tmp/karen-eval-${fixtureName}-${trigger}-audit.json`
     outPaths[trigger] = outPath
-    const updaterPath = `${scratchDir}/.karen/_update-run-state.js`
+    // .cjs (not .js) so Node always treats this as CommonJS regardless of the
+    // target fixture's own package.json "type" field — RUN_STATE_UPDATER_SRC
+    // uses require(), and a fixture whose package.json declares "type":
+    // "module" makes Node treat every .js file under it as ESM by default,
+    // crashing with "require is not defined in ES module scope" (confirmed
+    // on node-mcp-server-single, the only Node fixture with "type": "module").
+    const updaterPath = `${scratchDir}/.karen/_update-run-state.cjs`
     // Redirect each gate script's real stdout/exit code to files first, then
     // assemble the JSON via a fixed Node script reading those files — asking
     // the agent to run a gate script AND retype its raw (often multi-line,
@@ -480,36 +557,69 @@ async function runAuditSequence(fixtureDir, scratchDir, fixtureName) {
     // the one deliberate bundled script in the plugin itself.
     const ran = await agent(
       `Working in ${scratchDir} (a scratch copy of a fixture repo mid-Karen-eval):
-${patchFile ? `1. Apply the patch at ${fixtureDir}/patches/${patchFile} with \`git apply --allow-empty\` (init a throwaway git repo first with \`git init -q\` and \`git add -A && git commit -q -m init\` if one doesn't exist yet, so git apply has a tree to work against; \`--allow-empty\` is required because some of these fixture patches are deliberately empty zero-hunk diffs used to test no-op-repeat handling, not a sign of a broken patch). If it fails to apply even with --allow-empty, print exactly PATCH_FAILED:${patchFile} and stop.\n2. ` : '1. '}\`rm -rf ${captureDir} && mkdir -p ${captureDir}\` (this path is reused across separate eval runs, so it must start empty — a stale .out/.exit file left over from a prior run would get double-counted alongside this run's fresh output). Then read ${scratchDir}/.karen/harness.json and run exactly the gates listed in its "gates" array (using each entry's own "id" and "script" path, resolved relative to ${scratchDir}) against ${scratchDir} — never every file physically present under ${scratchDir}/.karen/gates/, since a stale or duplicate file left in that directory that isn't registered in harness.json must NOT be executed. A gate script can be written in any language (bash, Node, Python, ...) and always starts with its own shebang and is already chmod +x — invoke it by DIRECT EXECUTION of its own path, never by guessing an interpreter from the extension and prefixing it (do NOT prefix with \`bash\`, \`node\`, \`python3\`, etc. — that breaks the moment the guess is wrong; the shebang picks the interpreter). Redirect each gate's raw stdout+stderr to its own file under ${captureDir}/<gate-id>.out (using the gate's "id" from harness.json, not its filename) and its exit code to ${captureDir}/<gate-id>.exit — e.g. for each gate entry: \`${scratchDir}/<script-path-from-harness.json> ${scratchDir} > ${captureDir}/<gate-id>.out 2>&1; echo $? > ${captureDir}/<gate-id>.exit\`. Never retype, summarize, or paraphrase a gate's output yourself.
+0. \`rm -f ${outPath}\` first, unconditionally, before doing anything else below. ${outPath} is reused across separate eval runs; if this turn fails partway through (e.g. step 2's script crashing) and leaves ${outPath} absent, that must show up downstream as a missing file, never as a stale result from an earlier, unrelated run silently standing in for this one.
+${patchFile ? `1. Apply the patch at ${fixtureDir}/patches/${patchFile} with \`git apply --allow-empty\` (init a throwaway git repo first with \`git init -q\` and \`git add -A && git commit -q -m init\` if one doesn't exist yet, so git apply has a tree to work against; \`--allow-empty\` is required because some of these fixture patches are deliberately empty zero-hunk diffs used to test no-op-repeat handling, not a sign of a broken patch). If it fails to apply even with --allow-empty, print exactly PATCH_FAILED:${patchFile} and stop.\n2. ` : '1. '}\`rm -rf ${captureDir} && mkdir -p ${captureDir}\` (this path is reused across separate eval runs, so it must start empty — a stale .out/.exit file left over from a prior run would get double-counted alongside this run's fresh output). Then read ${scratchDir}/.karen/harness.json, and for every entry in its "gates" array run \`chmod +x ${scratchDir}/<script-path-from-harness.json>\` before executing anything (idempotent — a script the persist step already made executable is unaffected; this guards against the executable bit not yet being visible to this fresh agent turn right after a prior turn wrote it). Then run exactly the gates listed in that "gates" array (using each entry's own "id" and "script" path, resolved relative to ${scratchDir}) against ${scratchDir} — never every file physically present under ${scratchDir}/.karen/gates/, since a stale or duplicate file left in that directory that isn't registered in harness.json must NOT be executed. A gate script can be written in any language (bash, Node, Python, ...) and always starts with its own shebang — invoke it by DIRECT EXECUTION of its own path, never by guessing an interpreter from the extension and prefixing it (do NOT prefix with \`bash\`, \`node\`, \`python3\`, etc. — that breaks the moment the guess is wrong; the shebang picks the interpreter). Redirect each gate's raw stdout+stderr to its own file under ${captureDir}/<gate-id>.out (using the gate's "id" from harness.json, not its filename) and its exit code to ${captureDir}/<gate-id>.exit — e.g. for each gate entry: \`${scratchDir}/<script-path-from-harness.json> ${scratchDir} > ${captureDir}/<gate-id>.out 2>&1; echo $? > ${captureDir}/<gate-id>.exit\`. Never retype, summarize, or paraphrase a gate's output yourself.
 2. Write the exact JavaScript below to ${updaterPath} verbatim, character-for-character, between the START/END markers (excluding the marker lines themselves — do not add, remove, or reformat anything):
 ---SCRIPT START---
 ${RUN_STATE_UPDATER_SRC}
 ---SCRIPT END---
 3. Run: node ${updaterPath} ${scratchDir} ${captureDir} ${outPath}
-This reads ${scratchDir}/.karen/run-state.json if it exists (from a previous trigger), computes updated per-gate fingerprints/counts/staleCounts, writes the new run-state.json, and writes {"gateResults": ..., "runState": ...} to ${outPath}.
-Then print DONE.`,
+This reads ${scratchDir}/.karen/run-state.json if it exists (from a previous trigger), computes updated per-gate fingerprints/counts/staleCounts, writes the new run-state.json, and writes {"gateResults": ..., "runState": ...} to ${outPath}. If this step fails for any reason (a crash, a missing tool, anything) do NOT invent a workaround — report the exact failure as your final text instead of printing DONE.
+Only if every step above genuinely succeeded and ${outPath} now exists with fresh content, print DONE as the last line of your response.`,
       { label: `audit:${trigger}:${fixtureName}:run`, phase: 'Capture', model: 'sonnet' }
     )
-    if (!ran || (patchFile && ran.includes(`PATCH_FAILED:${patchFile}`))) {
-      log(`${fixtureName}: audit run "${trigger}" failed to execute — aborting capture for this fixture`)
+    if (!ran || !ran.includes('DONE') || (patchFile && ran.includes(`PATCH_FAILED:${patchFile}`))) {
+      log(`${fixtureName}: audit run "${trigger}" failed to execute — aborting capture for this fixture. Agent's report: ${ran ? ran.slice(0, 500) : '(no response)'}`)
       return null
     }
   }
 
-  const relayed = await agent(
-    `Read each of these files (one per audit trigger, each a JSON object matching the required output fields) and report every trigger's exact field values through the required output — do not summarize, reword, or drop any nested content under any trigger's "gateResults" or "runState":\n${triggers.map((t) => `${t}: ${outPaths[t]}`).join('\n')}`,
-    { label: `audit:${fixtureName}:relay`, phase: 'Capture', model: 'haiku', effort: 'low',
-      schema: { type: 'object', properties: Object.fromEntries(triggers.map((t) => [t, { type: 'object', properties: { gateResults: { type: 'object' }, runState: { type: 'object' } } }])), required: triggers } }
+  // Merge all 7 triggers' outPath files into one combined JSON file via a
+  // fixed Node script (AUDIT_MERGE_SRC — plain file read+concat, no model
+  // judgment involved), then relay that single combined file's raw bytes
+  // through agent() the same way captureFromSelfTest does — a raw-text
+  // final answer, parsed by this script's own JSON.parse, never retyped
+  // through a schema tool-call. This replaces the prior approach (an agent
+  // reading 7 separate files and reconstructing their content through a
+  // schema), which was observed to silently mistranscribe a single numeric
+  // field (a gate's staleCount) deep inside one trigger's runState while
+  // leaving everything else correct.
+  const mergePath = `/tmp/karen-eval-${fixtureName}-audit-merge.js`
+  const combinedPath = `/tmp/karen-eval-${fixtureName}-audit-combined.json`
+  const merged = await agent(
+    `Write the exact JavaScript below to ${mergePath} verbatim, character-for-character, between the START/END markers (excluding the marker lines themselves):
+---SCRIPT START---
+${AUDIT_MERGE_SRC}
+---SCRIPT END---
+Then run: node ${mergePath} '${JSON.stringify(outPaths)}' ${combinedPath}
+Then print DONE.`,
+    { label: `audit:${fixtureName}:merge`, phase: 'Capture', model: 'sonnet' }
   )
-  if (!relayed) {
+  if (!merged || !merged.includes('DONE')) {
+    log(`${fixtureName}: audit merge failed — aborting capture for this fixture`)
+    return null
+  }
+
+  const relayedText = await agent(
+    `Read the file at ${combinedPath} and print its exact raw contents to stdout, verbatim, with nothing else added before or after — no commentary, no code fences. Return that raw output as your final answer.`,
+    { label: `audit:${fixtureName}:relay`, phase: 'Capture', model: 'haiku', effort: 'low' }
+  )
+  if (!relayedText) {
     log(`${fixtureName}: audit relay failed — aborting capture for this fixture`)
+    return null
+  }
+  let relayed
+  try {
+    relayed = JSON.parse(stripCodeFence(relayedText))
+  } catch (e) {
+    log(`${fixtureName}: audit relay output failed to parse — aborting capture for this fixture (${e.message})`)
     return null
   }
 
   const auditRuns = []
   for (const trigger of triggers) {
     const result = relayed[trigger]
-    if (!result) {
+    if (!result || !result.gateResults || !result.runState) {
       log(`${fixtureName}: audit run "${trigger}" missing from relay — aborting capture for this fixture`)
       return null
     }
