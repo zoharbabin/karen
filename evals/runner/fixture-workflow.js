@@ -490,10 +490,25 @@ Then print WRITTEN.`,
     // top level. persist-harness above (same file, model:'sonnet') writes
     // comparably large content correctly — match that, not this file's
     // faster/cheaper tier used for small fixed-shape writes elsewhere.
-    await agent(
-      `Write this exact JSON to ${runCapturePath} (create parent dirs if needed), byte-for-byte — do not reformat, reorder, or restructure any part of it, especially not the top-level keys ("fixture", "init", "auditRuns" must all remain siblings at the top level, exactly as given):\n${JSON.stringify(runCapture)}\nThen print WRITTEN.`,
+    //
+    // rm -f before writing: this path is reused across separate eval runs
+    // (same reuse pattern as each trigger's outPath below). Confirmed on a
+    // real run against python-backend-single where a stale file from an
+    // earlier invocation already existed here — the Write tool's own
+    // "read it first" guard rejected the first write attempt, and the
+    // agent recovered by re-reading and reporting on the STALE file's
+    // keys instead of retrying the write, printing WRITTEN despite never
+    // having persisted the fresh runCapture. Deleting the path first
+    // removes the stale content so there's nothing plausible left to
+    // misreport, and the result is now checked instead of ignored.
+    const capturePersisted = await agent(
+      `Run \`rm -f ${runCapturePath}\` first. Then write this exact JSON to ${runCapturePath} (create parent dirs if needed), byte-for-byte — do not reformat, reorder, or restructure any part of it, especially not the top-level keys ("fixture", "init", "auditRuns" must all remain siblings at the top level, exactly as given):\n${JSON.stringify(runCapture)}\nThen read the file back and confirm its top-level keys are exactly ["fixture","init","auditRuns"] and that init.detectProjectOutput is non-empty. If the write failed or the readback doesn't match, print exactly PERSIST_FAILED and stop. Otherwise print WRITTEN.`,
       { label: `persist:${fixtureName}`, phase: 'Capture', model: 'sonnet' }
     )
+    if (!capturePersisted || !capturePersisted.includes('WRITTEN') || capturePersisted.includes('PERSIST_FAILED')) {
+      log(`${fixtureName}: failed to persist run-capture.json — aborting capture`)
+      return null
+    }
 
     return { fixtureDir, runCapturePath, runCapture }
   })

@@ -273,6 +273,29 @@ which is reserved for a stub/unimplemented capability some other gate
 would otherwise flag. Fixed by adding that clarification to both docs;
 needs verification in a future live re-run.
 
+A subsequent live re-run of `python-sdk-single` and `python-backend-single`
+surfaced one more real runner defect: `captureFromLiveKaren`'s final
+`persist:<fixture>` step writes `run-capture.json` to a fixed
+`/tmp/karen-eval-<fixture>-run-capture.json` path that's reused across
+separate invocations (same reuse pattern already handled for each trigger's
+`outPath`/`captureDir`, but this one path had no equivalent guard). When that
+path already held a stale file from an earlier run, the `Write` tool's own
+"read it first" guard rejected the first write attempt; the persisting agent
+recovered by re-reading and reporting on the *stale* file's plausible-looking
+top-level keys instead of retrying the write, printing `WRITTEN` despite the
+fresh capture never landing on disk. `python-backend-single`'s reported
+`delta` failure (`partialFix.gate-3-security` expected `1`, actual `0`) was
+graded entirely off that stale leftover — the real gate output and the
+per-trigger/merged audit files all show the correct `3→4` count. Fixed by
+having the persist step `rm -f` the path first, then read the write back and
+verify its top-level keys before reporting success, and by having the
+workflow itself abort the capture on a `PERSIST_FAILED`/missing result
+instead of trusting the agent's own claim. `python-sdk-single`'s separate
+total capture failure (`"agent stalled on all 6 attempts"`) is a distinct,
+not-yet-investigated issue. A fresh live re-run across all 14 fixtures to
+confirm this fix and re-check `python-sdk-single` is the next step before
+100% confidence.
+
 This benchmark is a high-priority investment for the project, not an
 internal-only QA tool — see [EVALS-PLAN.md §11](../EVALS-PLAN.md#11-benchmark-integrity--investment-priority)
 for what's still ahead before scores from this suite get used to make the
