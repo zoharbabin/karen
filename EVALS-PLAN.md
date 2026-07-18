@@ -152,6 +152,8 @@ Deterministic: does the script accept `$1`, emit `file:line\tmessage` lines, end
 
 Apply `01-partial-fix.patch`, rerun the gate, confirm Karen reports "N fewer complaints" on exactly the gate that changed. Apply `02-regression.patch` next, confirm "N more complaints." This mirrors SWE-bench's `FAIL_TO_PASS`/`PASS_TO_PASS` pairing [11] — a fixed patch that must flip specific outcomes, plus a regression guard that must not silently break something that was passing.
 
+A zero-tolerance gate's exact delta is graded by exact match — its finding count is a real, tool-verified fact. A non-zero-tolerance gate's exact delta is graded directionally instead (fix must decrease, regression must increase, net-zero must stay exactly zero): BLUEPRINT.md leaves those gate scripts' scope up to the implementing agent, so the exact count after a fix is agent-design-dependent, not a fixed ground truth — an exact-match check there would fail a correct implementation for choosing a differently-scoped, equally valid gate script.
+
 ### 4.7 Fingerprint stability under line drift
 
 Apply `03-noop-line-shift.patch` (insert an unrelated line above an unfixed issue) and confirm the issue's content-hash fingerprint is unchanged and `staleCount` does not reset — directly testing BLUEPRINT.md's explicit requirement that fingerprints be "content-based, not `file:line`" (§"Run State").

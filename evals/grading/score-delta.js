@@ -9,6 +9,18 @@
 // union of every gate the fixture exercises (named gates from the patch
 // sidecar's expectedDelta, plus every other gate present in run-state, which
 // must show delta 0 — the PASS_TO_PASS-equivalent regression guard).
+//
+// Gates named in expectedDelta are graded differently depending on
+// expected-gates.json's `zeroTolerance` flag. A zero-tolerance gate's count
+// is a real, tool-verified fact (e.g. a security scanner's finding count),
+// so it's graded by exact match. A non-zero-tolerance gate's exact count
+// after a fix is agent-design-dependent — BLUEPRINT.md leaves gate-script
+// scope (how many stub/test/doc checks it runs) up to the agent, so two
+// correct Karen agents can legitimately report different counts for the
+// same fix. Those gates are graded directionally instead: a claimed
+// decrease must not increase, a claimed increase must not decrease, and a
+// claimed net-zero must land at exactly zero (there's no direction to
+// relax when expected is 0).
 
 const fs = require('fs');
 const path = require('path');
@@ -71,13 +83,25 @@ function computeActualDeltas(auditRuns, trigger) {
   return deltas;
 }
 
-// Confirms every gate named in expectedDelta matches exactly, and every gate
-// not named in expectedDelta (but present in actualDeltas) shows a zero
-// delta — the regression guard.
-function checkDeltas(expectedDelta, actualDeltas) {
+// Whether an actual delta satisfies an expected delta for a given gate.
+// Zero-tolerance gates require an exact match. Non-zero-tolerance gates are
+// checked directionally: expected > 0 (claimed regression) only requires
+// actual > 0; expected < 0 (claimed fix) only requires actual < 0; expected
+// === 0 still requires actual === 0 (no direction to relax).
+function deltaSatisfies(expected, actual, isZeroTolerance) {
+  if (actual === undefined) return false;
+  if (isZeroTolerance || expected === 0) return actual === expected;
+  return expected > 0 ? actual > 0 : actual < 0;
+}
+
+// Confirms every gate named in expectedDelta satisfies its expected delta
+// (exact match for zero-tolerance gates, directional otherwise — see
+// deltaSatisfies), and every gate not named in expectedDelta (but present in
+// actualDeltas) shows a zero delta — the regression guard.
+function checkDeltas(expectedDelta, actualDeltas, zeroToleranceGates) {
   if (actualDeltas === null) return false;
   for (const [gateId, expected] of Object.entries(expectedDelta)) {
-    if (actualDeltas[gateId] !== expected) return false;
+    if (!deltaSatisfies(expected, actualDeltas[gateId], zeroToleranceGates.has(gateId))) return false;
   }
   for (const [gateId, actual] of Object.entries(actualDeltas)) {
     if (Object.prototype.hasOwnProperty.call(expectedDelta, gateId)) continue;
@@ -86,7 +110,7 @@ function checkDeltas(expectedDelta, actualDeltas) {
   return true;
 }
 
-function scoreSidecar(sidecar, trigger, auditRuns, details, label) {
+function scoreSidecar(sidecar, trigger, auditRuns, zeroToleranceGates, details, label) {
   // No sidecar for this fixture (e.g. patch not shipped) — vacuously pass.
   if (sidecar === null) {
     return { expectedDeltas: {}, actualDeltas: {}, matches: true };
@@ -103,16 +127,17 @@ function scoreSidecar(sidecar, trigger, auditRuns, details, label) {
     return { expectedDeltas: expectedDelta, actualDeltas: {}, matches: false };
   }
 
-  const matches = checkDeltas(expectedDelta, actualDeltas);
+  const matches = checkDeltas(expectedDelta, actualDeltas, zeroToleranceGates);
 
   if (!matches) {
     for (const [gateId, expected] of Object.entries(expectedDelta)) {
       const actual = actualDeltas[gateId];
-      if (actual !== expected) {
+      if (!deltaSatisfies(expected, actual, zeroToleranceGates.has(gateId))) {
         details.push({
           field: `${label}.${gateId}`,
           expectedDelta: expected,
           actualDelta: actual === undefined ? null : actual,
+          grading: zeroToleranceGates.has(gateId) ? 'exact' : 'directional',
         });
       }
     }
@@ -146,9 +171,12 @@ function main() {
   const partialFixSidecar = readJsonIfExists(path.join(fixtureDir, 'patches', '01-partial-fix.json'));
   const regressionSidecar = readJsonIfExists(path.join(fixtureDir, 'patches', '02-regression.json'));
 
+  const expectedGates = readJsonIfExists(path.join(fixtureDir, 'expected-gates.json')) || [];
+  const zeroToleranceGates = new Set(expectedGates.filter((g) => g.zeroTolerance).map((g) => g.id));
+
   const details = [];
-  const partialFix = scoreSidecar(partialFixSidecar, '01-partial-fix', auditRuns, details, 'partialFix');
-  const regression = scoreSidecar(regressionSidecar, '02-regression', auditRuns, details, 'regression');
+  const partialFix = scoreSidecar(partialFixSidecar, '01-partial-fix', auditRuns, zeroToleranceGates, details, 'partialFix');
+  const regression = scoreSidecar(regressionSidecar, '02-regression', auditRuns, zeroToleranceGates, details, 'regression');
 
   const result = {
     dimension: 'delta',

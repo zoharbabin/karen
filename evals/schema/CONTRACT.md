@@ -16,6 +16,8 @@ The fake project tree. Copied to a scratch dir before every run; the committed c
 ### `fixture-manifest.json`
 Ground truth for `detect_project`-equivalent output.
 
+`"node"` (runtime identity) and a named web framework (e.g. `"express"`) are not mutually exclusive — a project with `express` in its manifest should list both `["node", "express"]`, following the same additive convention used across every other Node fixture. Don't drop `"node"` just because a more specific framework was also detected.
+
 ```json
 {
   "languages": ["typescript"],
@@ -127,6 +129,8 @@ Each patch file has a matching `<name>.json` sidecar (e.g. `01-partial-fix.json`
 
 Issue identity string format (used everywhere an issue needs a stable ID across ground truth and captured output): `"<file>:<line>:<category>"`.
 
+`score-delta.js` grades each gate named in a sidecar's `expectedDelta` against `expected-gates.json`'s `zeroTolerance` flag for that gate: a zero-tolerance gate's delta must match exactly (its count is a real, tool-verified fact — a security scanner's finding count doesn't vary between correct implementations). A non-zero-tolerance gate's delta is graded directionally instead — a claimed fix (`expectedDelta < 0`) only requires the actual delta to also be negative, a claimed regression (`expectedDelta > 0`) only requires it to also be positive, and a claimed net-zero (`expectedDelta: 0`) still requires exactly zero. This is because BLUEPRINT.md leaves non-zero-tolerance gate scripts (e.g. `gate-2-completeness`'s stub/test/doc scope) up to the implementing agent, so two correct Karen agents can legitimately report different exact counts for the same fix — an exact-match check there would fail a correct implementation for choosing a different, equally valid gate-script scope. Gates not named in `expectedDelta` are still held to an exact zero delta regardless of tolerance (the regression guard).
+
 ---
 
 ## 2. Run-capture — the one artifact every grading script actually reads
@@ -197,7 +201,7 @@ Rules:
 
 - `gateResults[gateId].stdout` is the **raw** text the gate script printed — exactly the `FILE:LINE\tmessage` / `PASS|FAIL (N issues)` / `ZERO-TOLERANCE` contract from BLUEPRINT.md §"The Gate Contract". Nothing pre-parsed. `score-gate-contract.js` (§4.5) validates this raw text directly; every other grader that needs issues parses it via the shared parser (`grading/lib/parse-gate-output.js`) rather than re-implementing parsing.
 - `runState` is the full `.karen/run-state.json` shape from BLUEPRINT.md §"Run State" (`run`, `timestamp`, `gates: {id: {count, fingerprint}}`, `total`).
-- `auditRuns` is always exactly 7 entries in this fixed trigger order for fixtures that ship all four patches. A fixture may omit trailing repeat-noop entries only if `planted-issues.json` has zero non-decoy issues for every gate the patches target — in that case its `patches/` dir may contain fewer files and `auditRuns` stops after `initial`. (Only `go-backend-single` among the 14 fixtures in EVALS-PLAN.md §2 hits this exception today; it exists for that case and future fixtures.)
+- `auditRuns` is always exactly 7 entries in this fixed trigger order for fixtures that ship all four patches. A fixture may omit trailing repeat-noop entries only if `planted-issues.json` has zero non-decoy issues for every gate the patches target — in that case its `patches/` dir may contain fewer files and `auditRuns` stops after `initial`. All 14 fixtures in EVALS-PLAN.md §2 ship the full four-patch set today; this exception exists for a future fixture that doesn't.
 - `init.gateScripts` keys must exactly match `expected-gates.json[].id` plus any `existingGates` id the fixture's `expected-karen.json` records (existing-gate commands are not re-captured here since they're not Karen-generated — reconciliation grading reads `karenJson.existingGates` directly).
 
 ---
